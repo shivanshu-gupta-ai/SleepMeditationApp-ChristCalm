@@ -10,13 +10,16 @@ from typing import Optional, List
 
 import bcrypt
 import jwt as pyjwt
-import stripe
 from dotenv import load_dotenv
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
 from starlette.middleware.cors import CORSMiddleware
+from emergentintegrations.payments.stripe.checkout import (
+    StripeCheckout,
+    CheckoutSessionRequest,
+)
 
 from seed_data import EMOTIONS, MEDITATIONS, PRAYERS, DEVOTIONALS, PRAYER_CATEGORIES
 
@@ -28,8 +31,6 @@ DB_NAME = os.environ["DB_NAME"]
 JWT_SECRET = os.environ["JWT_SECRET"]
 EMERGENT_LLM_KEY = os.environ["EMERGENT_LLM_KEY"]
 STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
-
-stripe.api_key = STRIPE_API_KEY
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -199,12 +200,15 @@ async def signin(body: SignInIn):
 
 @api.get("/auth/me", response_model=UserOut)
 async def me(user: dict = Depends(get_current_user)):
-    # refresh premium from stripe record
-    sub = await db.subscriptions.find_one({"user_id": user["id"]})
-    if sub and sub.get("status") == "active":
-        if not user.get("is_premium"):
-            await db.users.update_one({"id": user["id"]}, {"$set": {"is_premium": True}})
-            user["is_premium"] = True
+    # Expire premium if premium_until is in the past
+    premium_until = user.get("premium_until")
+    if premium_until and user.get("is_premium"):
+        try:
+            if datetime.fromisoformat(premium_until) < datetime.now(timezone.utc):
+                await db.users.update_one({"id": user["id"]}, {"$set": {"is_premium": False}})
+                user["is_premium"] = False
+        except Exception:
+            pass
     return user_to_out(user)
 
 
@@ -372,10 +376,12 @@ async def ai_prayer_history(user: dict = Depends(get_current_user)):
     return {"prayers": docs}
 
 
-# ------------------- Stripe Subscription -------------------
+# ------------------- Stripe Subscription (via emergentintegrations) -------------------
+# NOTE: Emergent-managed Stripe test key supports only one-time payments.
+# We simulate subscriptions by granting premium access for N days per purchase.
 PLAN_PRICES = {
-    "monthly": {"amount": 999, "interval": "month", "label": "Monthly Premium"},
-    "annual": {"amount": 5999, "interval": "year", "label": "Annual Premium"},
+    "monthly": {"amount": 9.99, "days": 30, "label": "Monthly Premium"},
+    "annual": {"amount": 59.99, "days": 365, "label": "Annual Premium"},
 }
 
 
@@ -386,88 +392,116 @@ async def create_checkout(body: CheckoutIn, user: dict = Depends(get_current_use
 
     plan_cfg = PLAN_PRICES[body.plan]
     origin = body.origin_url.rstrip("/")
+    checkout = StripeCheckout(api_key=STRIPE_API_KEY)
 
     try:
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            line_items=[
-                {
-                    "price_data": {
-                        "currency": "usd",
-                        "unit_amount": plan_cfg["amount"],
-                        "recurring": {"interval": plan_cfg["interval"]},
-                        "product_data": {"name": f"ChristCalm {plan_cfg['label']}"},
-                    },
-                    "quantity": 1,
-                }
-            ],
-            customer_email=user["email"],
-            success_url=f"{origin}/paywall-success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{origin}/paywall-cancel",
-            metadata={"user_id": user["id"], "plan": body.plan},
+        session = await checkout.create_checkout_session(
+            CheckoutSessionRequest(
+                amount=float(plan_cfg["amount"]),
+                currency="usd",
+                success_url=f"{origin}/paywall-success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{origin}/paywall-cancel",
+                metadata={
+                    "user_id": user["id"],
+                    "plan": body.plan,
+                    "days": str(plan_cfg["days"]),
+                },
+            )
         )
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Stripe checkout error: {e}")
+        raise HTTPException(status_code=400, detail=f"Checkout failed: {str(e)}")
 
-    await db.subscriptions.update_one(
-        {"user_id": user["id"]},
+    await db.payment_transactions.update_one(
+        {"session_id": session.session_id},
         {
             "$set": {
+                "session_id": session.session_id,
                 "user_id": user["id"],
                 "email": user["email"],
-                "plan_requested": body.plan,
-                "checkout_session_id": session.id,
-                "status": "pending",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "plan": body.plan,
+                "amount": plan_cfg["amount"],
+                "currency": "usd",
+                "days": plan_cfg["days"],
+                "status": "initiated",
+                "payment_status": "pending",
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
         },
         upsert=True,
     )
 
-    return {"url": session.url, "session_id": session.id}
+    return {"url": session.url, "session_id": session.session_id}
 
 
 @api.get("/stripe/verify/{session_id}")
 async def verify_checkout(session_id: str, user: dict = Depends(get_current_user)):
     """Poll-based confirmation used by the mobile app after redirect."""
+    tx = await db.payment_transactions.find_one({"session_id": session_id})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    checkout = StripeCheckout(api_key=STRIPE_API_KEY)
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
-    except stripe.error.StripeError as e:
+        status = await checkout.get_checkout_status(session_id)
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    paid = session.get("payment_status") == "paid" or session.get("status") == "complete"
-    if paid:
-        sub_id = session.get("subscription")
-        plan = session.get("metadata", {}).get("plan")
-        await db.subscriptions.update_one(
-            {"user_id": user["id"]},
+    paid = status.payment_status == "paid"
+
+    # Idempotent grant of premium
+    already_granted = tx.get("payment_status") == "paid"
+    if paid and not already_granted:
+        days = int(status.metadata.get("days") or tx.get("days") or 30)
+        premium_until = datetime.now(timezone.utc) + timedelta(days=days)
+        await db.users.update_one(
+            {"id": user["id"]},
             {
                 "$set": {
-                    "status": "active",
-                    "stripe_subscription_id": sub_id,
-                    "stripe_customer_id": session.get("customer"),
-                    "plan": plan,
+                    "is_premium": True,
+                    "premium_until": premium_until.isoformat(),
+                    "plan": status.metadata.get("plan") or tx.get("plan"),
+                }
+            },
+        )
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {
+                "$set": {
+                    "status": status.status,
+                    "payment_status": status.payment_status,
+                    "amount_total": status.amount_total,
+                    "premium_until": premium_until.isoformat(),
                     "updated_at": datetime.now(timezone.utc).isoformat(),
                 }
             },
-            upsert=True,
         )
-        await db.users.update_one({"id": user["id"]}, {"$set": {"is_premium": True}})
-        return {"active": True, "plan": plan}
-    return {"active": False, "status": session.get("payment_status")}
+
+    return {
+        "active": paid,
+        "status": status.status,
+        "payment_status": status.payment_status,
+        "plan": status.metadata.get("plan"),
+    }
 
 
 @api.get("/subscription/status")
 async def subscription_status(user: dict = Depends(get_current_user)):
-    sub = await db.subscriptions.find_one({"user_id": user["id"]}, {"_id": 0})
-    if not sub:
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    if not fresh:
         return {"active": False, "plan": None}
-    return {
-        "active": sub.get("status") == "active",
-        "plan": sub.get("plan"),
-        "status": sub.get("status"),
-    }
+    active = bool(fresh.get("is_premium"))
+    premium_until = fresh.get("premium_until")
+    if premium_until:
+        try:
+            if datetime.fromisoformat(premium_until) < datetime.now(timezone.utc):
+                active = False
+                await db.users.update_one(
+                    {"id": user["id"]}, {"$set": {"is_premium": False}}
+                )
+        except Exception:
+            pass
+    return {"active": active, "plan": fresh.get("plan"), "premium_until": premium_until}
 
 
 # ------------------- Wire router + middleware -------------------

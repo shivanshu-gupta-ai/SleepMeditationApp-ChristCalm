@@ -1,0 +1,42 @@
+{
+  "summary": "Stripe integration retest PASSED. Backend now uses emergentintegrations.payments.stripe.checkout.StripeCheckout (server.py:19-22, :395-434) with amount-based one-time payments. All 10 Stripe/health tests pass (5 in backend_test.py::TestStripe/TestHealth + 5 new in test_stripe_verify.py::TestStripeRetest). Verified: (1) POST /api/stripe/checkout plan=monthly returns 200 with url starting with 'https://checkout.stripe.com/...' and a session_id, (2) POST /api/stripe/checkout plan=annual returns 200 with checkout.stripe.com URL, (3) POST /api/stripe/checkout plan=invalid returns 400 'Invalid plan', (4) GET /api/stripe/verify/{session_id} for an un-paid session returns 200 with {active:false, status, payment_status:'unpaid', plan}, (5) GET /api/subscription/status returns {active:false, plan:null, premium_until:null} for a fresh user. Frontend paywall retest (mobile viewport 390x844): signed in as test@christcalm.app, navigated to /paywall, monthly plan selected, subscribe button label shows 'Subscribe · $9.99 / month'. Tapping paywall-subscribe-btn: POST /api/stripe/checkout observed with 200 response, URL 'https://checkout.stripe.com/c/pay/cs_test_...' returned, and expo-web-browser.openBrowserAsync opened that URL (window.open intercept captured it). No paywall-error banner shown (correct — success path). Loading state resolves cleanly. Previous blocker (raw stripe SDK rejecting sk_test_emergent) is FIXED.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "StyleSheet shadow* props", "issue": "Console still warns: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Seen on onboarding/home/paywall. Non-blocking. Reference: shared theme shadows in /app/frontend/src/theme (used by hero/cards)."},
+      {"component": "props.pointerEvents", "issue": "Console warns: 'props.pointerEvents is deprecated. Use style.pointerEvents'. Non-blocking, from a nested RN component."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_stripe_verify.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL (LOW): Migrate deprecated shadow* StyleSheet props to boxShadow across shared theme/shadow presets (paywall hero, plan cards, home cards). Non-blocking, cosmetic warning only.",
+    "OPTIONAL (LOW): Replace remaining props.pointerEvents with style.pointerEvents where applicable."
+  ],
+  "critical_code_review_comments": [
+    "Stripe integration correctly switched to emergentintegrations.payments.stripe.checkout with idempotent payment_transactions upsert on session creation (server.py:415-432). Good.",
+    "GET /api/stripe/verify/{session_id} idempotently grants premium only once via `already_granted = tx.get('payment_status') == 'paid'` check (server.py:453). Good.",
+    "Frontend paywall.tsx correctly surfaces errors via testID='paywall-error' with try/catch around api.createCheckout — verified via code review (paywall.tsx:38-53, 152-157).",
+    "expo-web-browser used to open checkout URL — appropriate for mobile; on web it delegates to window.open (verified in the browser console)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_stripe_verify.py (new — 5 focused Stripe retest cases)",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/iteration_2.json"
+  ],
+  "success_rate": {"backend": "100% (10/10 Stripe+health tests pass)", "frontend": "100% (paywall subscribe end-to-end verified)"},
+  "seed_data_creation": "Created TEST_ prefixed users via /api/auth/signup during the Stripe retest run. Created 3 unpaid Stripe checkout sessions (payment_transactions collection). No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Stripe blocker from iteration_1 is fully resolved. Backend URL comes from /app/frontend/.env EXPO_PUBLIC_BACKEND_URL. Seeded test user: test@christcalm.app / password123. To retest Stripe end-to-end: pytest /app/backend/tests/test_stripe_verify.py -v. Paywall testIDs: paywall-subscribe-btn, plan-monthly, plan-annual, paywall-error, paywall-close-btn, paywall-active-banner. Un-paid verify returns payment_status='unpaid' (Stripe status), not 'pending' — the DB row keeps 'pending' but the API returns the Stripe live status.",
+  "rca_of_issue": "Previous iteration_1 RCA (raw stripe SDK + sk_test_emergent) confirmed fixed. Root cause was calling api.stripe.com directly with a placeholder key; the emergentintegrations module proxies through Emergent's Stripe-managed test account, which is why checkout.stripe.com URLs are now returned successfully. No new RCA needed for this iteration."
+}

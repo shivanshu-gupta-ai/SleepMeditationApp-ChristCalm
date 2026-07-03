@@ -33,9 +33,11 @@ export default function Paywall() {
   const [plan, setPlan] = useState<"monthly" | "annual">("annual");
   const [loading, setLoading] = useState(false);
   const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const start = async () => {
     setLoading(true);
+    setError(null);
     try {
       const origin =
         process.env.EXPO_PUBLIC_BACKEND_URL ||
@@ -44,7 +46,7 @@ export default function Paywall() {
       setCheckoutSessionId(res.session_id);
       await WebBrowser.openBrowserAsync(res.url);
     } catch (e: any) {
-      console.warn(e);
+      setError(e.message || "Unable to start checkout. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -146,21 +148,29 @@ export default function Paywall() {
         </TouchableOpacity>
 
         {!user?.is_premium && (
-          <TouchableOpacity
-            style={[styles.cta, loading && styles.ctaDisabled]}
-            onPress={start}
-            disabled={loading}
-            testID="paywall-subscribe-btn"
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <>
-                <Text style={styles.ctaText}>Subscribe · {priceLabel}</Text>
-                <Ionicons name="arrow-forward" size={20} color={colors.white} />
-              </>
+          <>
+            {error && (
+              <View style={styles.errorBox} testID="paywall-error">
+                <Ionicons name="alert-circle" size={18} color={colors.accentSOSDark} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
             )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cta, loading && styles.ctaDisabled]}
+              onPress={start}
+              disabled={loading}
+              testID="paywall-subscribe-btn"
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <>
+                  <Text style={styles.ctaText}>Subscribe · {priceLabel}</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.white} />
+                </>
+              )}
+            </TouchableOpacity>
+          </>
         )}
 
         <Text style={styles.finePrint}>
@@ -289,6 +299,16 @@ const styles = StyleSheet.create({
   },
   ctaDisabled: { opacity: 0.6 },
   ctaText: { color: colors.white, fontFamily: fonts.bodyBold, fontSize: 15 },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FCEDEB",
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginTop: spacing.md,
+  },
+  errorText: { color: colors.accentSOSDark, fontFamily: fonts.body, fontSize: 13, flex: 1 },
   finePrint: {
     textAlign: "center",
     fontFamily: fonts.body,
