@@ -1,0 +1,103 @@
+{
+  "app_name": "ChristCalm",
+  "theme": "LIGHT",
+  "archetype": "1 (Organic & Earthy)",
+  "design_philosophy": "A warm, sacred-yet-modern design that feels calming and trustworthy. Reverent, spiritually grounded, but contemporary. Avoiding 'churchy/kitschy' tropes.",
+  "colors": {
+    "background": "#F9F7F1",
+    "surface": "#FFFFFF",
+    "primary": "#5B9BA5",
+    "primary_hover": "#4A828C",
+    "secondary": "#8FA99A",
+    "text_primary": "#1F2937",
+    "text_secondary": "#6B7280",
+    "accent_sos": "#D27D78",
+    "accent_sos_hover": "#BC6964",
+    "border": "#E5E7EB",
+    "paywall_premium": "#D4AF37"
+  },
+  "typography": {
+    "import_instruction": "Import Outfit, Figtree, and Cormorant Garamond from Google Fonts.",
+    "heading_font": "'Outfit', sans-serif",
+    "body_font": "'Figtree', sans-serif",
+    "scripture_font": "'Cormorant Garamond', serif",
+    "scales": {
+      "h1": "text-4xl sm:text-5xl tracking-tight",
+      "h2": "text-2xl sm:text-3xl tracking-tight",
+      "h3": "text-xl sm:text-2xl",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm text-gray-500",
+      "overline": "text-xs uppercase tracking-[0.2em]",
+      "scripture_quote": "text-2xl sm:text-3xl font-serif italic leading-relaxed"
+    }
+  },
+  "layout_and_spacing": {
+    "spacing_philosophy": "Generous Spacing: p-6, p-8, p-12. Airy layouts to reduce cognitive load, crucial for anxiety relief.",
+    "border_radius": "rounded-2xl or rounded-3xl for cards/buttons to avoid sharp, stressful edges.",
+    "shadows": "Soft, diffuse ambient shadow. shadow-[0_8px_32px_rgba(0,0,0,0.04)]",
+    "glassmorphism": "Use backdrop-blur-xl bg-white/70 for sticky headers and audio player controls to feel premium and light."
+  },
+  "components": {
+    "buttons": "Generous padding (py-4 px-8), fully rounded (rounded-full), soft transitions.",
+    "cards": "Flat background, 1px subtle border (border-border), rounded-3xl, soft hover lift.",
+    "sos_button": "Prominent, circular, pulsing animation, using accent_sos color. Safe, non-alarming.",
+    "emotion_selector": "Horizontal scrollable chips, rounded-full, soft pastels based on emotion (e.g., soft blue for calm, soft amber for anxious).",
+    "bottom_nav": "Fixed to bottom, bg-white/80 backdrop-blur-md, border-t border-gray-100, flex justify-around py-4."
+  },
+  "screens": {
+    "auth": "Clean JWT auth screens (Sign In, Sign Up, Welcome). Minimalist, calming background image or soft gradient. Clear inputs.",
+    "onboarding": "Smooth multi-step flow (Welcome -> Name -> Faith Journey -> Concerns -> Notification -> Paywall). Use framer-motion for cross-fades. Minimal text per screen.",
+    "home": "Greeting with name. Big 'How are you feeling?' horizontal scrollable emotion chips. Large SOS panic button in center or top right. Daily devotional card. Bottom tab navigation.",
+    "audio_player": "Full screen, abstract soft pastel blur background (image or CSS), rotating album art or soft pulsing circle, play/pause controls, progress bar.",
+    "prayer_library": "Categorized grid (Morning, Evening, Anxiety). Floating Action Button or banner for AI Prayer Generator.",
+    "ai_prayer_generator": "Simple chat-like or form UI where user inputs feeling and receives a custom scripture-based prayer. Output displayed in serif font.",
+    "journal": "Simple text input area, mood tags, list of past entries with soft dates.",
+    "profile": "Stats grid (streak, minutes meditated, prayers completed), clean and un-cluttered.",
+    "paywall": "Premium features list with checkmarks, annual vs monthly toggle, high-contrast primary CTA using 'paywall_premium' accent."
+  },
+  "motion": {
+    "page_transitions": "Soft fade and gentle slide up (duration: 0.4s) using framer-motion.",
+    "interactions": "Scale down slightly on press (scale: 0.98), hover lift for cards (-translate-y-1).",
+    "breathing_exercise": "Pulsing circle scaling up and down to match 4-7-8 breathing pattern (inhale 4s, hold 7s, exhale 8s). Includes textual cues."
+  },
+  "media": {
+    "images": [
+      {
+        "category": "audio_player_background",
+        "url": "https://images.unsplash.com/photo-1743657166982-9e3ff272122b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzR8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHNvZnQlMjBwYXN0ZWwlMjBibHVyJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODMwODE0MzB8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract, pastel colors and flowing shapes."
+      },
+      {
+        "category": "meditation_cover_ocean",
+        "url": "https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwyfHxjYWxtJTIwb2NlYW4lMjBzdW5zZXR8ZW58MHx8fHwxNzgzMDgxNDMwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Sea under white clouds at golden hour. Use for peace/calm categories."
+      },
+      {
+        "category": "prayer_category_morning",
+        "url": "https://images.unsplash.com/photo-1600340053706-32d1278206ef?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwxfHxiZWF1dGlmdWwlMjBmb3Jlc3QlMjBwYXRoJTIwbW9ybmluZyUyMHN1bnxlbnwwfHx8fDE3ODMwODE0MzB8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Green trees in forest during morning. Use for morning prayer/meditation."
+      },
+      {
+        "category": "prayer_category_evening",
+        "url": "https://images.unsplash.com/photo-1450558415837-1f5e21a17709?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwxfHxjaHJpc3RpYW4lMjBjcm9zcyUyMHN1bnNldCUyMHNpbGhvdWV0dGV8ZW58MHx8fHwxNzgzMDgxNDMwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Silhouette of cross under orange sky. Use for evening/deep faith categories."
+      },
+      {
+        "category": "devotional_card_bg",
+        "url": "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwcmF5aW5nJTIwc2lsaG91ZXR0ZSUyMHN1bnJpc2V8ZW58MHx8fHwxNzgzMDgxNDMwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Silhouette photo of person praying during sunrise. Use for daily devotional."
+      }
+    ],
+    "icons_library": "lucide-react"
+  },
+  "instructions_to_main_agent": [
+    "You are building a mobile web app interface using React and Tailwind. Use a max-w-md mx-auto container with min-h-screen to simulate a mobile app frame if viewing on desktop.",
+    "Implement bottom tab navigation (Home, Prayers, Meditate, Journal, Profile) fixed to the bottom of the screen.",
+    "Ensure all interactive elements have data-testid attributes (e.g., data-testid='sos-button', data-testid='emotion-chip-anxious').",
+    "Use framer-motion for the breathing exercise (SOS panic button), creating a smooth expanding and contracting circle. Include visual text instructions (Inhale, Hold, Exhale).",
+    "For the scripture text in daily devotionals, use the 'Cormorant Garamond' serif font to give a reverent, Bible-like aesthetic, contrasting with the clean sans-serif UI.",
+    "Never use pure black; use text-primary (#1F2937) for main text. Ensure contrast ratios meet APCA standards.",
+    "Mock the authentication and paywall flows using state transitions. Make sure the paywall looks premium with subtle gold accents.",
+    "The UI should feel extremely light, airy, and unburdening. Avoid harsh lines, deep shadows, or cluttered information."
+  ]
+}
