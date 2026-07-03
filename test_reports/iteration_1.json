@@ -1,0 +1,78 @@
+{
+  "summary": "Backend: 25/26 pytest passing against public preview URL. 1 failure — Stripe checkout returns 400 'Invalid API Key provided: sk_test_****gent' because backend uses raw `stripe` SDK; the `sk_test_emergent` key only works through `emergentintegrations.payments.stripe` (module is installed at /root/.venv/.../emergentintegrations/payments/stripe/). All other endpoints work: JWT signup/signin/me, onboarding (persistence verified via GET /auth/me), emotions/meditations (all + filter + by id + 404), prayers (list + filter), devotional, mood log+history, journal create+list, meditation completion (minutes_meditated increments correctly), AI prayer (GPT-5.2 via emergentintegrations produced full ~140-word scripture-anchored prayer ending in 'Amen'), subscription/status returns active=false for fresh user, checkout invalid-plan returns 400. Auth guards work (401 without token). Frontend: All 15 flows PASS on mobile viewport (390x844) — onboarding shell + skip-to-signin, JWT sign-in with token persistence, home (greeting/SOS/emotion chips/devotional/AI CTA/upgrade), SOS breathing screen with scripture, emotion chip → /meditate?emotion=anxious filter, meditation player, prayers tab with category chips + cards, journal (created 'TEST journal entry from playwright' and it appears in Past Entries), profile with stats grid + menu, AI Prayer end-to-end (generated real prayer via LLM in ~15s), paywall UI (plan toggle + subscribe), sign-out returns to /sign-in. Paywall subscribe click triggers the Stripe 400 above and silently fails on frontend (no user-facing error toast/banner shown). No React Native red screens, no deprecated expo-av/expo-barcode-scanner/expo-background-fetch usage detected.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/stripe/checkout",
+        "issue": "Returns 400 'Invalid API Key provided: sk_test_****gent'. Backend uses raw `stripe` SDK (import stripe; stripe.api_key=...; stripe.checkout.Session.create) but `sk_test_emergent` is an Emergent-managed placeholder that only routes through the `emergentintegrations.payments.stripe` module. Migrate the checkout endpoint (and /api/stripe/verify/{session_id}) to use `from emergentintegrations.payments.stripe import ...` instead of the raw stripe SDK. Reference: /app/backend/server.py:391-411 and :435.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/auth/signup",
+        "issue": "Backend lowercases email server-side (correct) but does not document this in the response schema. User client-side may still show original case; consider echoing back the normalized email so UI matches. Not a bug, purely informational."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "app/paywall.tsx",
+        "issue": "When Stripe checkout returns 400, the frontend silently stays on the paywall with no error banner/toast. User has no feedback that subscription failed. Add try/catch with visible error state on paywall-subscribe-btn.",
+        "testID": "paywall-subscribe-btn",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Paywall → Stripe checkout",
+        "issue": "Blocked by backend Stripe integration (see backend critical). Frontend correctly posts {plan, origin_url} and expects {url}. Once backend is migrated to emergentintegrations, frontend should redirect to `data.url` via Linking.openURL (verify implementation in app/paywall.tsx).",
+        "affected_testIDs": ["paywall-subscribe-btn", "plan-monthly", "plan-annual"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "app/(tabs)/journal.tsx",
+        "issues": [
+          "Mood chip testIDs include emoji + label (e.g., `mood-chip-😊 Grateful`). Prefer stable slug like `mood-chip-grateful` for reliable automated tests. Reference: /app/frontend/app/(tabs)/journal.tsx (mood chip render)."
+        ]
+      }
+    ],
+    "react_native_issues": [
+      {
+        "component": "StyleSheet shadow* props",
+        "issue": "Console warns: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Two occurrences on onboarding/home. Migrate `shadowColor/shadowOffset/shadowOpacity/shadowRadius` to a single `boxShadow` string per RN 0.76+ guidance (or keep `elevation` for Android)."
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "CRITICAL: Rewrite /api/stripe/checkout and /api/stripe/verify/{session_id} in /app/backend/server.py to use `emergentintegrations.payments.stripe` instead of the raw stripe SDK (module is already installed at /root/.venv/lib/python3.11/site-packages/emergentintegrations/payments/stripe/). The `sk_test_emergent` placeholder only authenticates via the emergent proxy.",
+    "HIGH: In /app/frontend/app/paywall.tsx, surface backend errors from POST /api/stripe/checkout to the user (Alert.alert or inline error text) instead of silently staying on the screen.",
+    "MEDIUM: Replace deprecated `shadow*` StyleSheet props with `boxShadow` in shared components (home card, devotional card).",
+    "LOW: Normalize journal mood chip testIDs to slugs (e.g., `mood-chip-grateful`) instead of emoji+label.",
+    "LOW: Consider echoing the normalized (lowercased) email back to the client on signup/signin so any UI showing the entered value stays consistent."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 488 lines — acceptable but approaching split threshold; consider splitting auth, content, activity, ai, stripe into modules if it grows.",
+    "MongoDB `_id` correctly excluded in all reads via projection `{_id: 0}`. Good.",
+    "All secrets from env vars — no hardcoding. Good.",
+    "get_current_user correctly returns 401 for missing/invalid tokens. Good.",
+    "stripe.error.StripeError is caught and re-raised as HTTPException — good, but the underlying integration approach is wrong (see critical action item)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (new pytest suite, 26 tests)",
+    "/app/test_reports/pytest/pytest_results.xml (JUnit output)",
+    "/app/test_reports/iteration_1.json"
+  ],
+  "success_rate": {"backend": "96%", "frontend": "100% (paywall subscribe blocked by backend bug)"},
+  "seed_data_creation": "Created several TEST_ prefixed users via /api/auth/signup during test runs. Journal entry 'TEST journal entry from playwright' persisted for the seeded test@christcalm.app user. No production data touched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend base URL comes from /app/frontend/.env EXPO_PUBLIC_BACKEND_URL. Seeded user: test@christcalm.app / password123 (already onboarded server-side but AsyncStorage flag `cc_onboarding_done` is per-browser — use testID `onboarding-skip-signin` to jump straight to /sign-in). All screens expose testIDs: `signin-email-input`, `signin-password-input`, `signin-submit-btn`, `home-sos-btn`, `emotion-chip-{id}`, `home-ai-prayer-btn`, `home-upgrade-btn`, `tab-{home|meditate|prayers|journal|profile}`, `meditation-card-{id}`, `prayer-card-{id}`, `journal-content-input`, `journal-save-btn`, `menu-signout`, `ai-feeling-input`, `ai-context-input`, `ai-generate-btn`, `paywall-subscribe-btn`, `plan-monthly`, `plan-annual`. Once Stripe is migrated to emergentintegrations, re-run tests/backend_test.py::TestStripe and re-verify paywall subscribe UI.",
+  "rca_of_issue": "Stripe 400: server.py imports the raw `stripe` python SDK and calls `stripe.checkout.Session.create(...)` directly against api.stripe.com using STRIPE_API_KEY=sk_test_emergent. Stripe's real API rejects this key as invalid. The `sk_test_emergent` string is not a real Stripe secret — it is an Emergent-provided placeholder that is only recognized by the internal `emergentintegrations.payments.stripe` module (already installed in the venv). Fix: replace direct `stripe.checkout.Session.create` calls with the emergent stripe module's checkout session builder (same signature — mode/line_items/success_url/cancel_url/metadata/customer_email — but routed through the Emergent proxy). Reproduction: `curl -X POST $EXPO_PUBLIC_BACKEND_URL/api/stripe/checkout -H 'Authorization: Bearer <jwt>' -H 'Content-Type: application/json' -d '{\"plan\":\"monthly\",\"origin_url\":\"https://calm-faith-app-2.preview.emergentagent.com\"}'` → returns 400 with body `{\"detail\":\"Invalid API Key provided: sk_test_****gent\"}`."
+}
