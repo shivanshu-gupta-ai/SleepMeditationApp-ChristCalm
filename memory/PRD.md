@@ -15,9 +15,10 @@ People of faith (or exploring it) who experience anxiety, panic, grief, loneline
 - Concerns picker (anxiety, panic, stress, sleep, grief, loneliness, purpose, gratitude)
 - Ready state → account creation
 
-### 2. JWT Auth (email + password)
+### 2. JWT Auth (email + password) + Google OAuth
 - Sign up (name, email, 6+ char password)
 - Sign in
+- **"Sign in with Google" / "Sign up with Google"** button on both auth screens (Emergent-managed Google OAuth via `auth.emergentagent.com`). Backend exchanges the returned `session_id` for our own JWT and upserts the user in the same `users` collection — Google and password users share the same downstream identity.
 - Token persisted via `expo-secure-store` (30-day expiry)
 
 ### 3. Home dashboard

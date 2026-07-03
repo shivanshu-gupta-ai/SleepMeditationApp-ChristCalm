@@ -49,6 +49,8 @@ export const api = {
   me: () => request("/auth/me"),
   saveOnboarding: (faith_journey: string | null, concerns: string[]) =>
     request("/auth/onboarding", { method: "POST", body: { faith_journey, concerns } }),
+  googleAuth: (session_id: string) =>
+    request("/auth/google", { method: "POST", body: { session_id }, auth: false }),
 
   emotions: () => request("/emotions", { auth: false }),
   meditations: (emotion?: string) =>

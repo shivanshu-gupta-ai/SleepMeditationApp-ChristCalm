@@ -15,6 +15,7 @@ import { useRouter, Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts, spacing, radius } from "@/src/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import GoogleSignInButton, { AuthDivider } from "@/src/components/GoogleSignInButton";
 
 export default function SignIn() {
   const router = useRouter();
@@ -56,6 +57,11 @@ export default function SignIn() {
           <Text style={styles.overline}>WELCOME BACK</Text>
           <Text style={styles.title}>Peace is waiting.</Text>
           <Text style={styles.sub}>Sign in to continue your journey.</Text>
+
+          <View style={{ marginTop: spacing.md, marginBottom: spacing.sm }}>
+            <GoogleSignInButton label="Sign in with Google" onError={setError} />
+          </View>
+          <AuthDivider text="OR CONTINUE WITH EMAIL" />
 
           {error && (
             <View style={styles.errorBox} testID="signin-error">

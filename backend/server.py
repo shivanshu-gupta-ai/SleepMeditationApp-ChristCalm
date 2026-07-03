@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional, List
 
 import bcrypt
+import httpx
 import jwt as pyjwt
 from dotenv import load_dotenv
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Header
@@ -76,6 +77,10 @@ class AuthOut(BaseModel):
 class OnboardingIn(BaseModel):
     faith_journey: Optional[str] = None
     concerns: List[str] = []
+
+
+class GoogleAuthIn(BaseModel):
+    session_id: str
 
 
 class MoodLogIn(BaseModel):
@@ -221,6 +226,73 @@ async def save_onboarding(body: OnboardingIn, user: dict = Depends(get_current_u
     await db.users.update_one({"id": user["id"]}, {"$set": updates})
     user.update(updates)
     return user_to_out(user)
+
+
+EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
+
+@api.post("/auth/google", response_model=AuthOut)
+async def google_auth(body: GoogleAuthIn):
+    """Exchange an Emergent Google-auth session_id for a ChristCalm JWT.
+
+    Verifies the session_id with Emergent's session-data endpoint, upserts the
+    user in our `users` collection (by email), and returns our normal JWT so the
+    rest of the app treats them identically to email/password users.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client_http:
+            r = await client_http.get(
+                EMERGENT_SESSION_URL,
+                headers={"X-Session-ID": body.session_id},
+            )
+    except Exception as e:
+        logger.error(f"Emergent session-data request failed: {e}")
+        raise HTTPException(status_code=502, detail="Auth provider unreachable")
+
+    if r.status_code != 200:
+        logger.warning(f"Emergent session-data non-200: {r.status_code} {r.text[:200]}")
+        raise HTTPException(status_code=401, detail="Invalid Google session")
+
+    data = r.json()
+    email = (data.get("email") or "").lower().strip()
+    name = (data.get("name") or "").strip() or (email.split("@")[0] if email else "Friend")
+    picture = data.get("picture")
+    if not email:
+        raise HTTPException(status_code=400, detail="Missing email from Google")
+
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        # Update name/picture on subsequent logins if changed
+        updates = {"last_login_at": datetime.now(timezone.utc).isoformat()}
+        if picture and existing.get("picture") != picture:
+            updates["picture"] = picture
+        if name and existing.get("name") != name and not existing.get("password_hash"):
+            # Only overwrite name for Google-only users (no password set)
+            updates["name"] = name
+        await db.users.update_one({"id": existing["id"]}, {"$set": updates})
+        existing.update(updates)
+        user_doc = existing
+    else:
+        user_doc = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "email": email,
+            "picture": picture,
+            "password_hash": None,  # Google-only account
+            "provider": "google",
+            "is_premium": False,
+            "faith_journey": None,
+            "concerns": [],
+            "streak": 0,
+            "minutes_meditated": 0,
+            "prayers_completed": 0,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "last_login_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.users.insert_one(user_doc)
+
+    token = create_token(user_doc["id"])
+    return AuthOut(token=token, user=user_to_out(user_doc))
 
 
 # ------------------- Content -------------------

@@ -1,0 +1,35 @@
+{
+  "summary": "Google Auth (Emergent-managed OAuth) integration verified end-to-end. Backend: 6/6 pytest tests pass in /app/backend/tests/test_google_auth.py — POST /api/auth/google with an invalid session_id returns 401 with detail 'Invalid Google session' (verified against real https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data host), missing session_id returns 422, empty string is rejected, endpoint requires no Bearer auth, and email/password regression (signup + signin + /me for test@christcalm.app) still works. Frontend (390x844 web preview): sign-in screen renders Google button with testID='google-signin-btn' and label 'Sign in with Google' above 'OR CONTINUE WITH EMAIL' divider; sign-up screen renders 'Sign up with Google' above 'OR SIGN UP WITH EMAIL' divider. Clicking the Google button on web sets window.location.href to EXACTLY https://auth.emergentagent.com/?redirect=https%3A%2F%2Fcalm-faith-app-2.preview.emergentagent.com%2F — matches spec character-for-character. URL-hash handling: loading the app with '#session_id=invalid-abc-xyz' triggered AuthContext to POST /api/auth/google on mount, backend correctly returned 401 'Invalid Google session', AuthContext caught the error (console: 'Google session exchange failed Error: Invalid Google session'), cleaned the URL (no session_id in final URL), and routed to /sign-in with no crash and no user session — exactly the expected behavior. Deprecated packages detected: none new (only pre-existing shadow* / pointerEvents warnings from iteration_2, non-blocking).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "StyleSheet shadow* props", "issue": "Pre-existing (iteration_2). Console still warns: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Non-blocking. Reference: /app/frontend/src/theme shadow presets."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_google_auth.py",
+    "/app/test_reports/pytest/pytest_google_auth.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:234-295 — /api/auth/google flow is correct: httpx GET to EMERGENT_SESSION_URL with X-Session-ID header, non-200 => 401 'Invalid Google session', upsert by email into users collection, mints normal JWT via create_token(user_id). Google-only users have password_hash=None, provider='google'. On subsequent logins, name is only overwritten for Google-only users (not for hybrid users with a password) — good.",
+    "AuthContext.tsx:59-75 — loginWithGoogleSessionId is idempotent via processedSessionIds ref set, preventing double-submit if the URL is re-processed.",
+    "AuthContext.tsx:84-99 — On web mount, extractSessionId reads from window.location.hash first then search; URL is cleaned via history.replaceState BEFORE the exchange call (so a failed exchange doesn't leave the session_id in the URL). Verified working end-to-end.",
+    "GoogleSignInButton.tsx:42-47 — Web navigation URL construction uses window.location.origin + '/' as the redirect target and URL-encodes it correctly. Verified: outbound URL was 'https://auth.emergentagent.com/?redirect=https%3A%2F%2Fcalm-faith-app-2.preview.emergentagent.com%2F'.",
+    "api/client.ts:52-53 — googleAuth() correctly uses auth:false so no Bearer header is sent; body is {session_id}."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_google_auth.py (new — 6 tests: 4 Google-auth structural + 2 email/password regression)",
+    "/app/test_reports/pytest/pytest_google_auth.xml (new)",
+    "/app/test_reports/iteration_3.json"
+  ],
+  "success_rate": {"backend": "100% (6/6 Google auth + regression tests pass)", "frontend": "100% (Google button + divider on both screens, correct outbound redirect URL, invalid session_id handled gracefully with no crash)"},
+  "seed_data_creation": "Created a few TEST_ prefixed users via /api/auth/signup during regression test. No production data touched. No real Google user could be created because the OAuth callback cannot be automated without a Google account.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Google Auth is verified structurally. The one thing NOT covered (and cannot be from an automated test) is the happy path of a real Google account → session_id → POST /api/auth/google → 200 with token+user. To manually verify: open https://calm-faith-app-2.preview.emergentagent.com in a real browser, complete onboarding or click 'Sign in', tap 'Sign in with Google', complete Google OAuth on auth.emergentagent.com; on redirect back you should see a brief loading state and land in /(tabs)/home. Backend URL: /app/frontend/.env EXPO_PUBLIC_BACKEND_URL. Test files: /app/backend/tests/test_google_auth.py (Google) + /app/backend/tests/backend_test.py (full API) + /app/backend/tests/test_stripe_verify.py (Stripe). Seeded test user still: test@christcalm.app / password123.",
+  "rca_of_issue": "No bug in this iteration — feature added and works as specified."
+}

@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts, spacing, radius } from "@/src/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api/client";
+import GoogleSignInButton, { AuthDivider } from "@/src/components/GoogleSignInButton";
 
 export default function SignUp() {
   const router = useRouter();
@@ -68,6 +69,11 @@ export default function SignUp() {
           <Text style={styles.overline}>CREATE ACCOUNT</Text>
           <Text style={styles.title}>Begin your journey.</Text>
           <Text style={styles.sub}>A tender space for your heart, rooted in Christ.</Text>
+
+          <View style={{ marginTop: spacing.md, marginBottom: spacing.sm }}>
+            <GoogleSignInButton label="Sign up with Google" onError={setError} />
+          </View>
+          <AuthDivider text="OR SIGN UP WITH EMAIL" />
 
           {error && (
             <View style={styles.errorBox} testID="signup-error">
