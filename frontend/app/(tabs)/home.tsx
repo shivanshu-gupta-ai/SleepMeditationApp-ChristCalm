@@ -1,40 +1,55 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  RefreshControl,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { View, Text } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors, fonts, spacing, radius, shadows } from "@/src/theme";
+import { useTheme } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/context/AuthContext";
+import { usePremium } from "@/src/hooks/use-premium";
+import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
+import { layout } from "@/src/theme/layout";
+import {
+  Screen,
+  LoadingState,
+  ErrorState,
+  PremiumBadge,
+  PageHeader,
+  Surface,
+  FadeIn,
+  PressableScale,
+  FirstStepsChecklist,
+  markFirstStep,
+} from "@/src/components/ui";
+import { TodaysPath } from "@/src/components/ui/TodaysPath";
+import { emotionIcon } from "@/src/constants/emotion-icons";
+import { iconSize } from "@/src/theme/primitives";
+import { track } from "@/src/utils/analytics";
+import { storage } from "@/src/utils/storage";
 
-type Emotion = { id: string; label: string; color: string; emoji: string };
+type Emotion = { id: string; label: string; color: string; emoji?: string };
 type Devotional = { verse: string; reference: string; reflection: string };
 
 export default function Home() {
   const router = useRouter();
+  const { width, pagePadding } = useResponsive();
   const { user, refreshUser } = useAuth();
+  const { isPremium } = usePremium();
+  const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [devotional, setDevotional] = useState<Devotional | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
+      setError(null);
       const [e, d] = await Promise.all([api.emotions(), api.devotional()]);
       setEmotions(e.emotions || []);
       setDevotional(d);
-    } catch (err) {
-      console.warn(err);
+    } catch (err: any) {
+      setError(err?.message || "Unable to load your home feed.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,11 +66,6 @@ export default function Home() {
     }, [refreshUser])
   );
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    load();
-  };
-
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
@@ -67,280 +77,343 @@ export default function Home() {
     try {
       await api.logMood(em.id);
     } catch {
-      // silent
+      // non-blocking
     }
+    void storage.setItem("cc_last_emotion", em.id);
+    void markFirstStep("emotion");
+    void track("emotion_selected", { emotion: em.id });
     router.push({ pathname: "/(tabs)/meditate", params: { emotion: em.id } });
   };
 
-  if (loading) {
+  // 2 compact columns — FadeIn wrappers must own width or each tile becomes a full row
+  const cols = 2;
+  const gap = 10;
+  const contentW = Math.max(width - pagePadding * 2, 280);
+  const cardW = (contentW - gap * (cols - 1)) / cols;
+
+  if (loading) return <LoadingState message="Gathering calm…" />;
+
+  if (error && !emotions.length) {
     return (
-      <View style={styles.loadingWrap}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <ErrorState
+        title="Home is resting"
+        message={error}
+        onRetry={() => {
+          setLoading(true);
+          load();
+        }}
+      />
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greetingSmall}>{greeting()},</Text>
-            <Text style={styles.greetingName} testID="home-greeting">
-              {user?.name || "friend"}
-            </Text>
-          </View>
-          {user?.is_premium ? (
-            <View style={styles.premiumBadge}>
-              <Ionicons name="star" size={14} color={colors.premium} />
-              <Text style={styles.premiumBadgeText}>Premium</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.upgradeBtn}
-              onPress={() => router.push("/paywall")}
+    <Screen
+      scroll
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true);
+        load();
+      }}
+      contentStyle={{ paddingTop: layout.pageTop, paddingBottom: layout.pageBottom }}
+    >
+      <FadeIn>
+        <PageHeader
+          overline={greeting()}
+          title={user?.name || "Friend"}
+          testID="home-greeting"
+          right={
+            <PremiumBadge
+              isPremium={isPremium}
+              onPressUpgrade={() => router.push("/paywall")}
               testID="home-upgrade-btn"
-            >
-              <Ionicons name="star-outline" size={16} color={colors.premium} />
-              <Text style={styles.upgradeBtnText}>Upgrade</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+              compact
+            />
+          }
+        />
+      </FadeIn>
 
-        {/* SOS Panic Button */}
-        <TouchableOpacity
-          style={styles.sosCard}
-          onPress={() => router.push("/sos")}
-          testID="home-sos-btn"
-          activeOpacity={0.85}
+      <FirstStepsChecklist />
+
+      <TodaysPath emotions={emotions} />
+
+      {/* KEY: Emotion grid — same visual DNA as Meditate filters */}
+      <FadeIn delay={40}>
+        <Text
+          style={{
+            fontFamily: fonts.headingBold,
+            fontSize: 22,
+            color: colors.textPrimary,
+            letterSpacing: -0.4,
+            marginBottom: 6,
+          }}
         >
-          <LinearGradient
-            colors={[colors.accentSOS, colors.accentSOSDark]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.sosGradient}
+          How are you feeling?
+        </Text>
+        <Text
+          style={{
+            fontFamily: fonts.body,
+            fontSize: layout.subtitleSize,
+            lineHeight: layout.subtitleLineHeight,
+            color: colors.textSecondary,
+            marginBottom: spacing.lg,
+            maxWidth: 360,
+          }}
+        >
+          Choose an emotion for Scripture-guided meditation — your session continues on Meditate.
+        </Text>
+
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap,
+            marginBottom: layout.sectionGap,
+            // Keep row width stable so 2-col math holds
+            width: contentW,
+            alignSelf: "center",
+          }}
+        >
+          {emotions.map((em, index) => {
+            const tint = isDark ? "28" : "30";
+            const icon = emotionIcon(em.id);
+            return (
+              <FadeIn
+                key={em.id}
+                delay={40 + index * 24}
+                style={{ width: cardW }}
+              >
+                <PressableScale
+                  scaleTo={0.97}
+                  haptic="light"
+                  onPress={() => selectEmotion(em)}
+                  testID={`emotion-chip-${em.id}`}
+                  accessibilityLabel={`${em.label}. Open meditations for this feeling`}
+                  style={{
+                    width: "100%",
+                    minHeight: 64,
+                    borderRadius: layout.surfaceRadius,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderSoft,
+                    paddingVertical: 12,
+                    paddingHorizontal: 12,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    ...shadows.soft,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      backgroundColor: em.color + tint,
+                      borderWidth: 1,
+                      borderColor: em.color + "55",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Ionicons name={icon} size={iconSize.md} color={em.color} />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      flex: 1,
+                      fontFamily: fonts.headingBold,
+                      fontSize: 15,
+                      color: colors.textPrimary,
+                      letterSpacing: -0.2,
+                      paddingRight: 2,
+                    }}
+                  >
+                    {em.label}
+                  </Text>
+                </PressableScale>
+              </FadeIn>
+            );
+          })}
+        </View>
+      </FadeIn>
+
+      <FadeIn delay={180}>
+        <Text
+          style={{
+            fontFamily: fonts.body,
+            fontSize: layout.overlineSize,
+            letterSpacing: layout.overlineTracking,
+            textTransform: "uppercase",
+            color: colors.textMuted,
+            marginBottom: spacing.md,
+          }}
+        >
+          More support
+        </Text>
+
+        <View style={{ gap: layout.listGap, marginBottom: layout.sectionGap }}>
+          <PressableScale
+            haptic="medium"
+            onPress={() => {
+              void markFirstStep("sos");
+              router.push("/sos");
+            }}
+            testID="home-sos-btn"
+            accessibilityLabel="Need calm now. Open SOS breathing"
+            style={{ borderRadius: layout.surfaceRadius, overflow: "hidden", ...shadows.soft }}
           >
-            <View style={styles.sosIconWrap}>
-              <Ionicons name="heart" size={28} color={colors.white} />
+            <LinearGradient
+              colors={isDark ? ["#3A2A2A", "#2A2224"] : [colors.accentSOSSoft, colors.surface]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 16,
+                paddingHorizontal: 18,
+                gap: 14,
+                borderWidth: 1,
+                borderColor: isDark ? "rgba(232,160,155,0.25)" : colors.accentSOS + "33",
+                borderRadius: layout.surfaceRadius,
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: colors.accentSOS,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="heart" size={20} color={colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: fonts.headingBold, fontSize: 16, color: colors.textPrimary }}>
+                  Need calm now
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                    marginTop: 2,
+                  }}
+                >
+                  4-7-8 breathing · SOS
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </LinearGradient>
+          </PressableScale>
+
+          <PressableScale
+            haptic="medium"
+            onPress={() => {
+              void markFirstStep("wisdom");
+              router.push("/(tabs)/wisdom");
+            }}
+            testID="home-wisdom-btn"
+            accessibilityLabel="What would Jesus say? Open wisdom chat"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: colors.surface,
+              paddingVertical: 16,
+              paddingHorizontal: 18,
+              borderRadius: layout.surfaceRadius,
+              gap: 14,
+              borderWidth: 1,
+              borderColor: colors.borderSoft,
+              ...shadows.soft,
+            }}
+          >
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                backgroundColor: colors.primarySoft,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.sosTitle}>I need help now</Text>
-              <Text style={styles.sosSub}>
-                One-tap breathing & scripture for panic moments
+              <Text style={{ fontFamily: fonts.headingBold, fontSize: 16, color: colors.textPrimary }}>
+                What would Jesus say?
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: colors.textSecondary,
+                  marginTop: 2,
+                }}
+              >
+                Share a concern · wisdom chat
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={22} color={colors.white} />
-          </LinearGradient>
-        </TouchableOpacity>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </PressableScale>
+        </View>
+      </FadeIn>
 
-        {/* How are you feeling */}
-        <Text style={styles.sectionTitle}>How are you feeling?</Text>
-        <Text style={styles.sectionSub}>We'll tailor scripture-guided meditation for you.</Text>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.emotionsRow}
-        >
-          {emotions.map((em) => (
-            <TouchableOpacity
-              key={em.id}
-              style={[styles.emotionChip, { backgroundColor: em.color + "33" }]}
-              onPress={() => selectEmotion(em)}
-              testID={`emotion-chip-${em.id}`}
-            >
-              <Text style={styles.emotionEmoji}>{em.emoji}</Text>
-              <Text style={styles.emotionLabel}>{em.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Daily Devotional */}
-        <Text style={styles.sectionTitle}>Today's Devotional</Text>
-        {devotional && (
-          <View style={styles.devotionalCard} testID="devotional-card">
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&q=80",
+      {devotional ? (
+        <FadeIn delay={260}>
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: layout.overlineSize,
+              letterSpacing: layout.overlineTracking,
+              textTransform: "uppercase",
+              color: colors.textMuted,
+              marginBottom: spacing.md,
+            }}
+          >
+            Today’s word
+          </Text>
+          <Surface testID="devotional-card" style={{ padding: spacing.xl }}>
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 12,
+                letterSpacing: 2.2,
+                color: colors.primary,
+                marginBottom: spacing.md,
               }}
-              style={styles.devotionalImage}
-            />
-            <View style={styles.devotionalContent}>
-              <Text style={styles.devotionalRef}>{devotional.reference}</Text>
-              <Text style={styles.devotionalVerse}>“{devotional.verse}”</Text>
-              <Text style={styles.devotionalReflection}>{devotional.reflection}</Text>
-            </View>
-          </View>
-        )}
-
-        {/* AI Prayer CTA */}
-        <TouchableOpacity
-          style={styles.aiPrayerCard}
-          onPress={() => router.push("/ai-prayer")}
-          testID="home-ai-prayer-btn"
-        >
-          <View style={styles.aiIconWrap}>
-            <Ionicons name="sparkles" size={22} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.aiPrayerTitle}>Personal Prayer</Text>
-            <Text style={styles.aiPrayerSub}>Tell us how you feel — receive a scripture prayer</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
-    </SafeAreaView>
+            >
+              {devotional.reference}
+            </Text>
+            <Text
+              style={{
+                fontFamily: fonts.scriptureItalic,
+                fontSize: 22,
+                color: colors.textPrimary,
+                lineHeight: 34,
+                marginBottom: spacing.lg,
+              }}
+            >
+              “{devotional.verse}”
+            </Text>
+            {devotional.reflection ? (
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  color: colors.textSecondary,
+                  lineHeight: 24,
+                }}
+              >
+                {devotional.reflection}
+              </Text>
+            ) : null}
+          </Surface>
+        </FadeIn>
+      ) : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  loadingWrap: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.xl,
-  },
-  greetingSmall: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: colors.textSecondary,
-  },
-  greetingName: {
-    fontFamily: fonts.headingBold,
-    fontSize: 28,
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  upgradeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#FDF7E4",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: "#F0DFA0",
-  },
-  upgradeBtnText: { color: colors.premiumDark, fontFamily: fonts.bodyBold, fontSize: 13 },
-  premiumBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.premium,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: radius.full,
-  },
-  premiumBadgeText: { color: colors.white, fontFamily: fonts.bodyBold, fontSize: 12 },
-  sosCard: { borderRadius: radius.lg, overflow: "hidden", marginBottom: spacing.xl, ...shadows.medium },
-  sosGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  sosIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sosTitle: { color: colors.white, fontFamily: fonts.headingBold, fontSize: 20 },
-  sosSub: { color: "rgba(255,255,255,0.9)", fontFamily: fonts.body, fontSize: 13, marginTop: 2 },
-  sectionTitle: {
-    fontFamily: fonts.headingBold,
-    fontSize: 22,
-    color: colors.textPrimary,
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  sectionSub: {
-    fontFamily: fonts.body,
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  emotionsRow: { paddingVertical: 8, paddingRight: spacing.lg, gap: spacing.sm },
-  emotionChip: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: radius.full,
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    flexShrink: 0,
-  },
-  emotionEmoji: { fontSize: 18 },
-  emotionLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.textPrimary },
-  devotionalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    overflow: "hidden",
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    ...shadows.soft,
-  },
-  devotionalImage: { width: "100%", height: 140 },
-  devotionalContent: { padding: spacing.lg },
-  devotionalRef: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    letterSpacing: 2,
-    color: colors.primary,
-    marginBottom: 8,
-  },
-  devotionalVerse: {
-    fontFamily: fonts.scriptureItalic,
-    fontSize: 20,
-    color: colors.textPrimary,
-    lineHeight: 30,
-    marginBottom: spacing.md,
-  },
-  devotionalReflection: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  aiPrayerCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  aiIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#EEF6F7",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  aiPrayerTitle: { fontFamily: fonts.headingBold, fontSize: 17, color: colors.textPrimary },
-  aiPrayerSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-});

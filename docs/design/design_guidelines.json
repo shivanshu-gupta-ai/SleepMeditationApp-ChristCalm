@@ -1,0 +1,112 @@
+{
+  "app_name": "ChristCalm",
+  "theme": "SYSTEM",
+  "archetype": "Premium Wellness + Sacred Modern",
+  "design_philosophy": "A calm, sacred-yet-modern design that feels emotionally safe, trustworthy, and premium. Supports both light and dark modes. Generous spacing and soft aesthetics reduce cognitive load. Reverent and spiritually grounded without kitschy or overly 'churchy' visuals. Prioritizes peace and clarity.",
+
+  "theming": {
+    "default": "system",
+    "supported": ["light", "dark"],
+    "implementation_note": "Use semantic color tokens defined below. Implement with Tailwind dark: variant + theme provider (e.g. next-themes or React Context). All components must adapt automatically."
+  },
+
+  "colors": {
+    "light": {
+      "background": "#F9F7F1",
+      "surface": "#FFFFFF",
+      "primary": "#5B9BA5",
+      "primary_hover": "#4A828C",
+      "secondary": "#8FA99A",
+      "text_primary": "#1F2937",
+      "text_secondary": "#6B7280",
+      "accent_sos": "#D27D78",
+      "accent_sos_hover": "#BC6964",
+      "border": "#E5E7EB",
+      "paywall_premium": "#D4AF37",
+      "success": "#4A9B8C"
+    },
+    "dark": {
+      "background": "#0F1115",
+      "surface": "#1A1D23",
+      "primary": "#6BA8B3",
+      "primary_hover": "#5A919C",
+      "secondary": "#7D9688",
+      "text_primary": "#F3F4F6",
+      "text_secondary": "#9CA3AF",
+      "accent_sos": "#E08A85",
+      "accent_sos_hover": "#D27D78",
+      "border": "#2F343C",
+      "paywall_premium": "#E8C670",
+      "success": "#5AB5A3"
+    }
+  },
+
+  "typography": {
+    "import_instruction": "Import Outfit, Figtree, and Cormorant Garamond from Google Fonts.",
+    "heading_font": "'Outfit', sans-serif",
+    "body_font": "'Figtree', sans-serif",
+    "scripture_font": "'Cormorant Garamond', serif",
+    "scales": {
+      "h1": "text-4xl sm:text-5xl tracking-tight font-semibold",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-semibold",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm",
+      "overline": "text-xs uppercase tracking-[0.2em] font-medium",
+      "scripture_quote": "text-2xl sm:text-3xl font-serif italic leading-relaxed"
+    }
+  },
+
+  "layout_and_spacing": {
+    "spacing_philosophy": "Generous, airy spacing (p-6, p-8, p-12). Critical for reducing anxiety and cognitive load. Prioritize white space over density.",
+    "border_radius": "rounded-2xl or rounded-3xl for cards and buttons",
+    "shadows": {
+      "light": "shadow-[0_8px_32px_rgba(0,0,0,0.04)]",
+      "dark": "shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+    },
+    "glassmorphism": "backdrop-blur-xl bg-white/70 dark:bg-black/40 border border-white/20 dark:border-white/10"
+  },
+
+  "components": {
+    "buttons": {
+      "primary": "py-4 px-8 rounded-full font-medium transition-all active:scale-[0.985]",
+      "secondary": "py-3 px-6 rounded-full border border-border",
+      "sos": "w-20 h-20 rounded-full shadow-lg flex items-center justify-center text-white font-semibold"
+    },
+    "cards": "rounded-3xl border border-border bg-surface p-6 shadow-sm",
+    "emotion_chips": "rounded-full px-5 py-2.5 text-sm border border-border hover:bg-primary/5 transition-colors",
+    "bottom_nav": "fixed bottom-0 w-full bg-surface/95 backdrop-blur-md border-t border-border py-3"
+  },
+
+  "screens": {
+    "onboarding": "11-step personalized flow with mascot 'Grace'. Soft transitions using framer-motion. Focus on emotional safety and personalization.",
+    "home": "Contextual greeting, horizontal emotion chips, prominent SOS button, daily devotional card, quick actions. Clean and breathing-friendly.",
+    "meditate": "Filterable scripture-guided meditations with emotion tags. Premium tag on locked content.",
+    "prayer_library": "Categorized prayers + AI Prayer Generator entry point.",
+    "journal": "Simple composer with mood tags. Clean list view of past entries.",
+    "paywall": "Premium features checklist, monthly/annual toggle, high-contrast primary CTA using paywall_premium color. Soft and invitational tone."
+  },
+
+  "motion": {
+    "page_transitions": "Soft fade + gentle slide-up (duration: 0.35s) using framer-motion",
+    "interactions": "Subtle scale on press (scale: 0.985), hover lift on cards",
+    "breathing_exercise": "Smooth pulsing circle synced to 4-7-8 breathing pattern with text cues"
+  },
+
+  "media": {
+    "icons": "lucide-react",
+    "images": {
+      "audio_player_background": "Abstract soft pastel blur (use Unsplash or generated)",
+      "devotional": "Peaceful, reverent imagery (sunrise, nature, soft light)"
+    }
+  },
+
+  "instructions_to_developers": [
+    "All color usage must come from the semantic tokens in this file (never hardcode hex values in components).",
+    "Every screen must feel light, airy, and emotionally safe. Avoid dense layouts.",
+    "Scripture text must always use 'Cormorant Garamond' for a reverent feel.",
+    "The mascot 'Grace' (brain holding Bible + cross) should appear consistently during onboarding with gentle expression changes.",
+    "Paywall must feel invitational and value-first — never aggressive or urgent.",
+    "Support both light and dark modes from day one using Tailwind dark: variant."
+  ]
+}

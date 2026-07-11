@@ -1,0 +1,308 @@
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/src/context/ThemeContext";
+import OnboardingProgress from "@/src/components/onboarding/OnboardingProgress";
+import { TOTAL_ONBOARDING_STEPS, ONBOARDING_STEP_LABELS } from "@/src/constants/onboarding";
+
+type Props = {
+  step: number;
+  onBack: () => void;
+  showProgress?: boolean;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  scrollable?: boolean;
+};
+
+export function useObStyles() {
+  const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
+
+  return useMemo(
+    () =>
+      StyleSheet.create({
+        heroRing: {
+          padding: 6,
+          borderRadius: 120,
+          backgroundColor: isDark ? colors.surface : colors.cardGlass,
+          borderWidth: 1,
+          borderColor: colors.borderSoft,
+          marginBottom: spacing.lg,
+          ...shadows.soft,
+        },
+        heroImage: { width: 180, height: 180, borderRadius: 90 },
+        overline: {
+          fontFamily: fonts.body,
+          fontSize: 11,
+          letterSpacing: 2.6,
+          color: colors.primary,
+          marginBottom: spacing.sm,
+          textAlign: "center",
+          textTransform: "uppercase",
+        },
+        title: {
+          fontFamily: fonts.headingBold,
+          fontSize: 26,
+          fontWeight: "700",
+          color: colors.textPrimary,
+          marginBottom: spacing.sm,
+          letterSpacing: -0.5,
+          textAlign: "center",
+          lineHeight: 34,
+        },
+        titleLeft: { textAlign: "left" },
+        sub: {
+          fontFamily: fonts.body,
+          fontSize: 16,
+          color: colors.textSecondary,
+          lineHeight: 24,
+          marginBottom: spacing.lg,
+          textAlign: "center",
+        },
+        subLeft: { textAlign: "left" },
+        scripture: {
+          fontFamily: fonts.scriptureItalic,
+          fontStyle: "italic",
+          fontSize: 21,
+          textAlign: "center",
+          color: colors.textPrimary,
+          lineHeight: 32,
+        },
+        scriptureRef: {
+          fontFamily: fonts.body,
+          fontSize: 13,
+          color: colors.primary,
+          marginTop: spacing.sm,
+          textAlign: "center",
+          letterSpacing: 0.5,
+        },
+        card: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          borderWidth: 1,
+          borderColor: colors.borderSoft,
+          ...shadows.soft,
+        },
+        previewCard: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          borderWidth: 1,
+          borderColor: colors.borderSoft,
+          marginTop: spacing.lg,
+          ...shadows.soft,
+        },
+        previewTitle: {
+          fontFamily: fonts.bodyBold,
+          fontSize: 12,
+          color: colors.textMuted,
+          letterSpacing: 1.5,
+          marginBottom: spacing.md,
+          textTransform: "uppercase",
+        },
+        previewRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.sm,
+          marginBottom: spacing.sm,
+          paddingVertical: 4,
+        },
+        previewDay: {
+          fontFamily: fonts.bodyBold,
+          fontSize: 13,
+          color: colors.primary,
+          width: 52,
+        },
+        previewLabel: {
+          fontFamily: fonts.body,
+          fontSize: 15,
+          color: colors.textPrimary,
+          flex: 1,
+        },
+        input: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          padding: spacing.lg,
+          fontSize: 18,
+          fontFamily: fonts.body,
+          color: colors.textPrimary,
+          borderWidth: 1.5,
+          borderColor: colors.borderSoft,
+        },
+        optionCard: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          padding: spacing.lg,
+          marginBottom: spacing.sm,
+          borderWidth: 1.5,
+          borderColor: colors.borderSoft,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        },
+        optionActive: {
+          borderColor: colors.primary,
+          backgroundColor: colors.primarySoft,
+        },
+        chip: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.full,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          borderWidth: 1.5,
+          borderColor: colors.borderSoft,
+          marginBottom: spacing.sm,
+          marginRight: spacing.sm,
+        },
+        chipActive: {
+          borderColor: colors.primary,
+          backgroundColor: colors.primarySoft,
+        },
+        chipText: { fontFamily: fonts.body, fontSize: 14, color: colors.textPrimary },
+        chipTextActive: { color: colors.primary, fontFamily: fonts.bodyBold },
+        cta: {
+          backgroundColor: colors.primary,
+          borderRadius: radius.full,
+          paddingVertical: 18,
+          paddingHorizontal: spacing.xl,
+          flexDirection: "row",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: spacing.sm,
+          ...shadows.glow,
+        },
+        ctaDisabled: { opacity: 0.4 },
+        ctaText: {
+          color: colors.white,
+          fontFamily: fonts.bodyBold,
+          fontWeight: "700",
+          fontSize: 17,
+        },
+        link: {
+          textAlign: "center",
+          fontFamily: fonts.body,
+          color: colors.textSecondary,
+          fontSize: 14,
+          paddingVertical: spacing.sm,
+        },
+        center: {
+          flex: 1,
+          padding: spacing.xl,
+          justifyContent: "center",
+          alignItems: "center",
+        },
+        content: {
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.md,
+        },
+      }),
+    [colors, fonts, spacing, radius, shadows, isDark]
+  );
+}
+
+export default function OnboardingStepLayout({
+  step,
+  onBack,
+  showProgress = true,
+  children,
+  footer,
+  scrollable = true,
+}: Props) {
+  const { colors, fonts, spacing, radius, isDark } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        gradient: { flex: 1 },
+        safe: { flex: 1 },
+        topBar: {
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.md,
+        },
+        backBtn: {
+          width: 40,
+          height: 40,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.surface,
+          borderRadius: radius.full,
+          borderWidth: 1,
+          borderColor: colors.borderSoft,
+        },
+        stepLabel: {
+          textAlign: "center",
+          fontFamily: fonts.body,
+          fontSize: 12,
+          color: colors.textMuted,
+          marginTop: spacing.sm,
+          marginBottom: 4,
+        },
+        scroll: { flexGrow: 1, paddingBottom: spacing.md },
+        footer: {
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.sm,
+          gap: spacing.sm,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.borderSoft,
+          backgroundColor: isDark ? colors.backgroundElevated : colors.background,
+        },
+      }),
+    [colors, fonts, spacing, radius, isDark]
+  );
+
+  const body = scrollable ? (
+    <ScrollView
+      contentContainerStyle={styles.scroll}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={styles.scroll}>{children}</View>
+  );
+
+  return (
+    <LinearGradient colors={colors.gradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={onBack} style={styles.backBtn} testID="onboarding-back">
+              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+            </TouchableOpacity>
+            {showProgress ? (
+              <OnboardingProgress step={step} total={TOTAL_ONBOARDING_STEPS} />
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
+          </View>
+          {showProgress && step > 0 ? (
+            <Text style={styles.stepLabel}>
+              Step {step + 1} of {TOTAL_ONBOARDING_STEPS} · {ONBOARDING_STEP_LABELS[step]}
+            </Text>
+          ) : null}
+          {body}
+          {footer ? <View style={styles.footer}>{footer}</View> : null}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+}

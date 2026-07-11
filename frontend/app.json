@@ -6,11 +6,14 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emergent.calmfaithapp.wkvaa1"
+      "bundleIdentifier": "com.christcalm.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "ChristCalm uses the microphone so you can speak a concern and convert it to text for Wisdom."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +21,8 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.emergent.calmfaithapp.wkvaa1"
+      "package": "com.christcalm.app",
+      "permissions": ["RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",
@@ -33,12 +37,17 @@
           "image": "./assets/images/splash-image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#F7F4ED"
         }
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "ChristCalm uses the microphone so you can speak a concern and convert it to text for Wisdom."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,21 +1,28 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { View, Text, FlatList, Image } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts, spacing, radius, shadows } from "@/src/theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/src/context/ThemeContext";
+import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
+import { layout } from "@/src/theme/layout";
+import {
+  Screen,
+  LoadingState,
+  ErrorState,
+  EmptyState,
+  PremiumTag,
+  PageHeader,
+  EmotionFilter,
+  PressableScale,
+  FadeIn,
+} from "@/src/components/ui";
+import { emotionIcon } from "@/src/constants/emotion-icons";
+import { track } from "@/src/utils/analytics";
+import { storage } from "@/src/utils/storage";
 
-type Emotion = { id: string; label: string; color: string; emoji: string };
+type Emotion = { id: string; label: string; color: string; emoji?: string };
 type Meditation = {
   id: string;
   emotion: string;
@@ -31,208 +38,290 @@ type Meditation = {
 export default function Meditate() {
   const router = useRouter();
   const params = useLocalSearchParams<{ emotion?: string }>();
+  const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
+  const { pagePadding } = useResponsive();
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [meds, setMeds] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const loadEmotions = useCallback(async () => {
-    const e = await api.emotions();
-    setEmotions(e.emotions || []);
-  }, []);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadEmotions();
-  }, [loadEmotions]);
+    api
+      .emotions()
+      .then((e) => setEmotions(e.emotions || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (params.emotion && typeof params.emotion === "string") {
       setSelected(params.emotion);
+      void storage.setItem("cc_last_emotion", params.emotion);
+      void track("meditate_open", { emotion: params.emotion, from: "home" });
+    } else {
+      void track("meditate_open", { from: "tab" });
     }
   }, [params.emotion]);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const r = await api.meditations(selected || undefined);
-        setMeds(r.meditations || []);
-      } catch (err) {
-        console.warn(err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const loadMeds = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await api.meditations(selected || undefined);
+      setMeds(r.meditations || []);
+    } catch (err: any) {
+      setError(err?.message || "Could not load meditations.");
+    } finally {
+      setLoading(false);
+    }
   }, [selected]);
 
+  useEffect(() => {
+    loadMeds();
+  }, [loadMeds]);
+
+  const activeEmotion = useMemo(
+    () => emotions.find((e) => e.id === selected) || null,
+    [emotions, selected]
+  );
+
+  const headerTitle = activeEmotion ? activeEmotion.label : "Meditations";
+  const headerSubtitle = activeEmotion
+    ? "Same feeling you chose on Home — Scripture-guided rest for this moment."
+    : "Scripture-guided calm for every emotion. Filter to find your moment.";
+
+  const onSelectEmotion = (id: string | null) => {
+    setSelected(id);
+    if (id) {
+      void storage.setItem("cc_last_emotion", id);
+      void track("emotion_selected", { emotion: id, surface: "meditate_filter" });
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Meditations</Text>
-        <Text style={styles.sub}>Scripture-guided calm for every emotion.</Text>
+    <Screen
+      edges={["top"]}
+      // Avoid clipping horizontal emotion row (overflow hidden on constrained parents)
+      contentStyle={{ paddingTop: layout.pageTop, flex: 1, overflow: "visible" }}
+      style={{ overflow: "visible" }}
+    >
+      <FadeIn>
+        <PageHeader
+          overline="Emotion · Scripture · Rest"
+          title={headerTitle}
+          subtitle={headerSubtitle}
+        />
+      </FadeIn>
+
+      {/* Full-bleed filter row so first/last chips aren't cut by page padding */}
+      <View
+        style={{
+          marginHorizontal: -pagePadding,
+          overflow: "visible",
+          zIndex: 2,
+        }}
+      >
+        <EmotionFilter
+          emotions={emotions}
+          selected={selected}
+          onSelect={onSelectEmotion}
+          contentPadding={pagePadding}
+        />
       </View>
 
-      <View style={styles.chipRowWrap}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-        >
-          <TouchableOpacity
-            style={[styles.chip, !selected && styles.chipActive]}
-            onPress={() => setSelected(null)}
-            testID="meditate-chip-all"
+      {activeEmotion ? (
+        <FadeIn key={activeEmotion.id} delay={40}>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: spacing.md,
+              paddingVertical: 12,
+              paddingHorizontal: 14,
+              borderRadius: radius.lg,
+              alignSelf: "stretch",
+              backgroundColor: activeEmotion.color + (isDark ? "22" : "28"),
+              borderWidth: 1.5,
+              borderColor: activeEmotion.color + "55",
+              // Continuity bar — same accent language as Home emotion tiles
+              borderLeftWidth: 4,
+              borderLeftColor: activeEmotion.color,
+            }}
           >
-            <Text style={[styles.chipText, !selected && styles.chipTextActive]}>All</Text>
-          </TouchableOpacity>
-          {emotions.map((em) => (
-            <TouchableOpacity
-              key={em.id}
-              style={[
-                styles.chip,
-                selected === em.id && styles.chipActive,
-                { borderColor: selected === em.id ? em.color : colors.borderSoft },
-              ]}
-              onPress={() => setSelected(em.id)}
-              testID={`meditate-chip-${em.id}`}
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 12,
+                backgroundColor: activeEmotion.color + (isDark ? "33" : "40"),
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <Text style={styles.chipEmoji}>{em.emoji}</Text>
-              <Text style={[styles.chipText, selected === em.id && styles.chipTextActive]}>
-                {em.label}
+              <Ionicons
+                name={emotionIcon(activeEmotion.id)}
+                size={18}
+                color={activeEmotion.color}
+              />
+            </View>
+            <View style={{ flex: 1, minWidth: 120 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary }}>
+                From Home · Showing
               </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: colors.textPrimary }}>
+                {activeEmotion.label}
+              </Text>
+            </View>
+            <PressableScale
+              onPress={() => onSelectEmotion(null)}
+              scaleTo={0.95}
+              haptic="light"
+              accessibilityLabel="Clear emotion filter"
+              hitSlop={8}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: colors.surface,
+              }}
+            >
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 12, color: colors.primary }}>
+                Clear
+              </Text>
+            </PressableScale>
+          </View>
+        </FadeIn>
+      ) : null}
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
+        <LoadingState fullScreen={false} message="Loading sessions…" />
+      ) : error ? (
+        <ErrorState fullScreen={false} message={error} onRetry={loadMeds} />
       ) : (
         <FlatList
           data={meds}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() =>
-                router.push({ pathname: "/meditation/[id]", params: { id: item.id } })
-              }
-              testID={`meditation-card-${item.id}`}
-            >
-              <Image source={{ uri: item.cover }} style={styles.cardImage} />
-              <View style={styles.cardContent}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.cardScripture}>{item.scripture}</Text>
-                  {item.premium && (
-                    <View style={styles.premiumTag}>
-                      <Ionicons name="star" size={11} color={colors.premium} />
-                      <Text style={styles.premiumTagText}>Premium</Text>
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingBottom: layout.pageBottom,
+            gap: layout.listGap,
+            flexGrow: 1,
+          }}
+          renderItem={({ item, index }) => (
+            <FadeIn delay={Math.min(index * 35, 180)}>
+              <PressableScale
+                scaleTo={0.985}
+                onPress={() =>
+                  router.push({ pathname: "/meditation/[id]", params: { id: item.id } })
+                }
+                testID={`meditation-card-${item.id}`}
+                accessibilityLabel={`${item.title}, ${item.duration_min} minutes${item.premium ? ", premium" : ""}`}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: layout.surfaceRadius,
+                  overflow: "hidden",
+                  borderWidth: 1,
+                  borderColor: colors.borderSoft,
+                  ...shadows.soft,
+                }}
+              >
+                <View style={{ height: 128, position: "relative" }}>
+                  <Image
+                    source={{ uri: item.cover }}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                  <LinearGradient
+                    colors={["transparent", isDark ? "rgba(10,12,16,0.85)" : "rgba(26,35,50,0.45)"]}
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 72,
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: 16,
+                      bottom: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                        backgroundColor: "rgba(0,0,0,0.35)",
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 999,
+                      }}
+                    >
+                      <Ionicons name="time-outline" size={12} color="#fff" />
+                      <Text style={{ color: "#fff", fontFamily: fonts.body, fontSize: 12 }}>
+                        {item.duration_min} min
+                      </Text>
                     </View>
-                  )}
+                    {item.premium ? <PremiumTag /> : null}
+                  </View>
                 </View>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSub}>{item.subtitle}</Text>
-                <View style={styles.cardMeta}>
-                  <Ionicons name="time-outline" size={13} color={colors.textSecondary} />
-                  <Text style={styles.cardMetaText}>{item.duration_min} min</Text>
+                <View style={{ padding: layout.cardPad }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 11,
+                      letterSpacing: 2,
+                      color: colors.primary,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {item.scripture}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.headingBold,
+                      fontSize: 18,
+                      color: colors.textPrimary,
+                      letterSpacing: -0.3,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 14,
+                      color: colors.textSecondary,
+                      lineHeight: 20,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {item.subtitle}
+                  </Text>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </PressableScale>
+            </FadeIn>
           )}
           ListEmptyComponent={
-            <Text style={styles.empty}>No meditations found for this emotion.</Text>
+            <EmptyState
+              withGrace
+              title="Grace is resting here"
+              message="No sessions for this feeling yet. Try another emotion — or clear the filter to see everything."
+              actionLabel="Show all sessions"
+              onAction={() => setSelected(null)}
+            />
           }
         />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { padding: spacing.lg, paddingBottom: 4 },
-  title: {
-    fontFamily: fonts.headingBold,
-    fontSize: 28,
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  sub: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginTop: 4 },
-  chipRowWrap: { height: 60 },
-  chipRow: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: 8,
-    alignItems: "center",
-  },
-  chip: {
-    height: 40,
-    flexShrink: 0,
-    paddingHorizontal: 16,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.borderSoft,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  chipActive: { backgroundColor: "#EEF6F7", borderColor: colors.primary },
-  chipEmoji: { fontSize: 15 },
-  chipText: { fontFamily: fonts.body, color: colors.textPrimary, fontSize: 14 },
-  chipTextActive: { fontFamily: fonts.bodyBold, color: colors.primary },
-  list: { padding: spacing.lg, paddingTop: 8, gap: spacing.md },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    marginBottom: spacing.md,
-    ...shadows.soft,
-  },
-  cardImage: { width: "100%", height: 130 },
-  cardContent: { padding: spacing.lg },
-  cardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  cardScripture: {
-    fontFamily: fonts.body,
-    fontSize: 11,
-    letterSpacing: 2,
-    color: colors.primary,
-  },
-  premiumTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#FDF7E4",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.full,
-  },
-  premiumTagText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 10,
-    color: colors.premiumDark,
-  },
-  cardTitle: {
-    fontFamily: fonts.headingBold,
-    fontSize: 19,
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  cardSub: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginBottom: 10 },
-  cardMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
-  cardMetaText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
-  empty: {
-    textAlign: "center",
-    marginTop: spacing.xl,
-    color: colors.textSecondary,
-    fontFamily: fonts.body,
-  },
-});

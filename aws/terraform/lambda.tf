@@ -1,0 +1,146 @@
+resource "aws_iam_role" "lambda" {
+  name = "${local.name_prefix}-lambda"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_basic" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "lambda_ssm" {
+  name = "${local.name_prefix}-ssm-read"
+  role = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
+      Resource = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_prefix}/*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda_dynamodb" {
+  name = "${local.name_prefix}-dynamodb"
+  role = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem",
+        "dynamodb:Query", "dynamodb:Scan", "dynamodb:DescribeTable",
+      ]
+      Resource = [
+        aws_dynamodb_table.users.arn,
+        "${aws_dynamodb_table.users.arn}/index/*",
+        aws_dynamodb_table.mood_logs.arn,
+        aws_dynamodb_table.journal_entries.arn,
+        aws_dynamodb_table.ai_prayers.arn,
+        aws_dynamodb_table.payment_transactions.arn,
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda_bedrock" {
+  name = "${local.name_prefix}-bedrock"
+  role = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+        Resource = [
+          "arn:aws:bedrock:${var.aws_region}::foundation-model/*",
+          "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:inference-profile/*",
+        ]
+      }
+    ]
+  })
+}
+
+data "archive_file" "lambda_stub" {
+  type        = "zip"
+  source_file = "${path.module}/lambda_stub/handler.py"
+  output_path = "${path.module}/.terraform/lambda_stub.zip"
+}
+
+resource "aws_lambda_function" "api" {
+  function_name = "${local.name_prefix}-api"
+  role          = aws_iam_role.lambda.arn
+  handler       = "handler.handler"
+  runtime       = "python3.11"
+  # Transcribe poll + Bedrock wisdom can exceed 30s
+  timeout       = 90
+  memory_size   = 1024
+
+  filename         = data.archive_file.lambda_stub.output_path
+  source_code_hash = data.archive_file.lambda_stub.output_base64sha256
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE_PREFIX = var.dynamodb_table_prefix
+      SSM_PREFIX            = local.ssm_prefix
+      VOICE_BUCKET          = aws_s3_bucket.voice.bucket
+    }
+  }
+
+  tags = local.common_tags
+
+  # Real code is deployed via AWS CodeBuild — don't revert on terraform apply.
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
+}
+
+resource "aws_apigatewayv2_api" "http" {
+  name          = "${local.name_prefix}-api"
+  protocol_type = "HTTP"
+  tags          = local.common_tags
+}
+
+resource "aws_apigatewayv2_integration" "lambda" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.api.invoke_arn
+  integration_method     = "POST"
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "default" {
+  api_id    = aws_apigatewayv2_api.http.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_stage" "default" {
+  api_id      = aws_apigatewayv2_api.http.id
+  name        = "$default"
+  auto_deploy = true
+  tags        = local.common_tags
+
+  # Edge-ish throttle (per-stage). App also enforces per-user AI/auth limits.
+  default_route_settings {
+    throttling_burst_limit = 50
+    throttling_rate_limit  = 100
+  }
+}
+
+resource "aws_lambda_permission" "apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}

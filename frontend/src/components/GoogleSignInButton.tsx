@@ -1,69 +1,50 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts, radius, spacing } from "@/src/theme";
+import { useTheme } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/context/AuthContext";
 
-const AUTH_HOST = "https://auth.emergentagent.com";
+const BACKEND_URL = (process.env.EXPO_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 
 type Props = {
   label?: string;
   onError?: (message: string) => void;
 };
 
-/**
- * Sign in with Google (Emergent-managed OAuth).
- *
- * Web: does a full-page navigation to the auth host; the app remounts at
- * `/#session_id=...` and AuthContext detects and processes it.
- * Mobile: opens `WebBrowser.openAuthSessionAsync`, reads `result.url`, then
- * hands the session_id to AuthContext.loginWithGoogleSessionId.
- */
 export default function GoogleSignInButton({ label = "Continue with Google", onError }: Props) {
   const router = useRouter();
-  const { loginWithGoogleSessionId, googleAuthPending } = useAuth();
+  const { loginWithGoogleToken, googleAuthPending } = useAuth();
+  const { colors, fonts, radius, spacing } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const startAuth = async () => {
+    if (!BACKEND_URL) {
+      onError?.("Backend URL is not configured");
+      return;
+    }
+
     setLoading(true);
     try {
-      let redirectUrl: string;
-
-      if (Platform.OS === "web" && typeof window !== "undefined") {
-        redirectUrl = window.location.origin + "/";
-        const authUrl = `${AUTH_HOST}/?redirect=${encodeURIComponent(redirectUrl)}`;
-        window.location.href = authUrl;
-        return; // page will unload
-      }
-
-      redirectUrl = Linking.createURL("auth");
-      const authUrl = `${AUTH_HOST}/?redirect=${encodeURIComponent(redirectUrl)}`;
+      const redirectUrl = Linking.createURL("auth");
+      const authUrl = `${BACKEND_URL}/api/auth/google/start?redirect_uri=${encodeURIComponent(redirectUrl)}`;
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
       if (result.type !== "success" || !result.url) {
         setLoading(false);
-        return; // user cancelled
+        return;
       }
 
-      const match = result.url.match(/[#?&]session_id=([^&]+)/);
-      const sessionId = match ? decodeURIComponent(match[1]) : null;
-      if (!sessionId) {
-        onError?.("No session returned from Google");
+      const match = result.url.match(/[#?&]cc_token=([^&]+)/);
+      const token = match ? decodeURIComponent(match[1]) : null;
+      if (!token) {
+        onError?.("No token returned from Google sign-in");
         setLoading(false);
         return;
       }
 
-      await loginWithGoogleSessionId(sessionId);
+      await loginWithGoogleToken(token);
       router.replace("/(tabs)/home");
     } catch (e: any) {
       onError?.(e?.message || "Google sign-in failed. Please try again.");
@@ -76,20 +57,60 @@ export default function GoogleSignInButton({ label = "Continue with Google", onE
 
   return (
     <TouchableOpacity
-      style={styles.btn}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: colors.surface,
+        borderRadius: radius.full,
+        paddingVertical: 14,
+        paddingHorizontal: 18,
+        borderWidth: 1.5,
+        borderColor: colors.borderSoft,
+      }}
       onPress={startAuth}
       disabled={isBusy}
       testID="google-signin-btn"
       activeOpacity={0.85}
     >
       {isBusy ? (
-        <ActivityIndicator color={colors.textPrimary} />
+        <ActivityIndicator color={colors.textPrimary} style={{ flex: 1 }} />
       ) : (
         <>
-          <View style={styles.gIconWrap}>
-            <Text style={styles.gIcon}>G</Text>
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.white,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.headingBold,
+                fontWeight: "700",
+                fontSize: 16,
+                color: "#4285F4",
+                lineHeight: 20,
+              }}
+            >
+              G
+            </Text>
           </View>
-          <Text style={styles.label}>{label}</Text>
+          <Text
+            style={{
+              fontFamily: fonts.bodyBold,
+              fontWeight: "600",
+              fontSize: 15,
+              color: colors.textPrimary,
+              textAlign: "center",
+              flex: 1,
+            }}
+          >
+            {label}
+          </Text>
           <View style={{ width: 22 }} />
         </>
       )}
@@ -98,56 +119,28 @@ export default function GoogleSignInButton({ label = "Continue with Google", onE
 }
 
 export function AuthDivider({ text = "or" }: { text?: string }) {
+  const { colors, fonts, spacing } = useTheme();
   return (
-    <View style={styles.dividerRow}>
-      <View style={styles.dividerLine} />
-      <Text style={styles.dividerText}>{text}</Text>
-      <View style={styles.dividerLine} />
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.md,
+        marginVertical: spacing.md,
+      }}
+    >
+      <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSoft }} />
+      <Text
+        style={{
+          fontFamily: fonts.body,
+          fontSize: 12,
+          color: colors.textMuted,
+          letterSpacing: 1,
+        }}
+      >
+        {text}
+      </Text>
+      <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSoft }} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderWidth: 1.5,
-    borderColor: colors.borderSoft,
-  },
-  gIconWrap: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  gIcon: {
-    fontFamily: fonts.headingBold,
-    fontWeight: "700",
-    fontSize: 16,
-    color: "#4285F4",
-    lineHeight: 20,
-  },
-  label: {
-    fontFamily: fonts.bodyBold,
-    fontWeight: "600",
-    fontSize: 15,
-    color: colors.textPrimary,
-    textAlign: "center",
-    flex: 1,
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    marginVertical: spacing.md,
-  },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.borderSoft },
-  dividerText: { fontFamily: fonts.body, fontSize: 12, color: colors.textMuted, letterSpacing: 1 },
-});

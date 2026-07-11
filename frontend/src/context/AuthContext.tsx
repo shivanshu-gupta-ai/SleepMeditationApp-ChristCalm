@@ -26,15 +26,14 @@ type AuthState = {
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
   markOnboardingComplete: () => Promise<void>;
-  loginWithGoogleSessionId: (sessionId: string) => Promise<void>;
+  loginWithGoogleToken: (token: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-function extractSessionId(url: string | null): string | null {
+function extractGoogleToken(url: string | null): string | null {
   if (!url) return null;
-  // Look in hash or query
-  const hashMatch = url.match(/[#?&]session_id=([^&]+)/);
+  const hashMatch = url.match(/[#?&]cc_token=([^&]+)/);
   if (hashMatch) return decodeURIComponent(hashMatch[1]);
   return null;
 }
@@ -44,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [googleAuthPending, setGoogleAuthPending] = useState(false);
-  const processedSessionIds = useRef<Set<string>>(new Set());
+  const processedGoogleTokens = useRef<Set<string>>(new Set());
 
   const refreshUser = useCallback(async () => {
     try {
@@ -56,37 +55,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loginWithGoogleSessionId = useCallback(
-    async (sessionId: string) => {
-      if (processedSessionIds.current.has(sessionId)) return;
-      processedSessionIds.current.add(sessionId);
-      setGoogleAuthPending(true);
-      try {
-        const res = await api.googleAuth(sessionId);
-        await storage.secureSet("cc_token", res.token);
-        setUser(res.user);
-        await storage.setItem("cc_onboarding_done", true);
-        setOnboardingComplete(true);
-      } finally {
-        setGoogleAuthPending(false);
-      }
-    },
-    []
-  );
+  const loginWithGoogleToken = useCallback(async (token: string) => {
+    if (processedGoogleTokens.current.has(token)) return;
+    processedGoogleTokens.current.add(token);
+    setGoogleAuthPending(true);
+    try {
+      await storage.secureSet("cc_token", token);
+      const u = await api.me();
+      setUser(u);
+      await storage.setItem("cc_onboarding_done", true);
+      setOnboardingComplete(true);
+    } finally {
+      setGoogleAuthPending(false);
+    }
+  }, []);
 
-  // Initial mount: check for session_id (web URL / mobile deep link), then fall back to stored token
+  // Initial mount: check for Google OAuth token (web URL / mobile deep link), then stored JWT
   useEffect(() => {
     let mounted = true;
 
     (async () => {
-      let sessionId: string | null = null;
+      let googleToken: string | null = null;
 
       if (Platform.OS === "web" && typeof window !== "undefined") {
-        sessionId =
-          extractSessionId(window.location.hash) ||
-          extractSessionId(window.location.search);
-        if (sessionId) {
-          // Clean the URL
+        googleToken =
+          extractGoogleToken(window.location.hash) ||
+          extractGoogleToken(window.location.search);
+        if (googleToken) {
           try {
             window.history.replaceState(null, "", window.location.pathname);
           } catch {}
@@ -94,15 +89,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         try {
           const initialUrl = await Linking.getInitialURL();
-          sessionId = extractSessionId(initialUrl);
+          googleToken = extractGoogleToken(initialUrl);
         } catch {}
       }
 
-      if (sessionId) {
+      if (googleToken) {
         try {
-          await loginWithGoogleSessionId(sessionId);
+          await loginWithGoogleToken(googleToken);
         } catch (e) {
-          console.warn("Google session exchange failed", e);
+          console.warn("Google token login failed", e);
         }
         if (mounted) {
           const ob = await storage.getItem("cc_onboarding_done", false);
@@ -123,9 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Mobile: listen for hot links (app already running when redirect happens)
     const sub = Linking.addEventListener("url", ({ url }) => {
-      const sid = extractSessionId(url);
-      if (sid) {
-        loginWithGoogleSessionId(sid).catch((e) => console.warn(e));
+      const token = extractGoogleToken(url);
+      if (token) {
+        loginWithGoogleToken(token).catch((e) => console.warn(e));
       }
     });
 
@@ -133,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       sub.remove();
     };
-  }, [refreshUser, loginWithGoogleSessionId]);
+  }, [refreshUser, loginWithGoogleToken]);
 
   const signIn = async (email: string, password: string) => {
     const res = await api.signIn(email, password);
@@ -169,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         refreshUser,
         markOnboardingComplete,
-        loginWithGoogleSessionId,
+        loginWithGoogleToken,
       }}
     >
       {children}

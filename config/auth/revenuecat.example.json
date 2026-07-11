@@ -1,0 +1,36 @@
+{
+  "framework": "expo",
+  "ios": {
+    "bundle_id": "com.christcalm.app",
+    "public_api_key": "appl_xxxxxxxx"
+  },
+  "android": {
+    "package": "com.christcalm.app",
+    "public_api_key": "goog_xxxxxxxx"
+  },
+  "entitlement": {
+    "id": "christcalm_premium",
+    "description": "Unlocks all premium meditations, prayers, and AI features"
+  },
+  "offering": {
+    "id": "default",
+    "packages": ["monthly", "annual"]
+  },
+  "products": {
+    "monthly": {
+      "store_product_id_ios": "christcalm_monthly",
+      "store_product_id_android": "christcalm_monthly",
+      "billing_period": "P1M"
+    },
+    "annual": {
+      "store_product_id_ios": "christcalm_annual",
+      "store_product_id_android": "christcalm_annual",
+      "billing_period": "P1Y"
+    }
+  },
+  "webhook": {
+    "url": "https://YOUR_API_GATEWAY_URL/api/revenuecat/webhook",
+    "authorization_header": "Bearer YOUR_WEBHOOK_SECRET"
+  },
+  "notes": "Give your agent: iOS public key, Android public key, entitlement ID, offering ID, monthly/annual product IDs, and webhook authorization secret."
+}

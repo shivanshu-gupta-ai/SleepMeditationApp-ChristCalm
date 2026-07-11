@@ -1,36 +1,65 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, TextInput, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts, spacing, radius, shadows } from "@/src/theme";
+import { useRouter } from "expo-router";
+import { useTheme } from "@/src/context/ThemeContext";
 import { api } from "@/src/api/client";
+import { layout } from "@/src/theme/layout";
+import { emotionIcon, type IonIconName } from "@/src/constants/emotion-icons";
+import {
+  Screen,
+  LoadingState,
+  ErrorState,
+  EmptyState,
+  markFirstStep,
+  ErrorBanner,
+  Button,
+  PageHeader,
+  Surface,
+  PressableScale,
+  FadeIn,
+} from "@/src/components/ui";
+import { track } from "@/src/utils/analytics";
+import { storage } from "@/src/utils/storage";
 
 type Entry = { id: string; mood?: string; content: string; created_at: string };
-const MOODS = ["😊 Grateful", "😔 Sad", "😰 Anxious", "😌 Peaceful", "😤 Overwhelmed", "🙏 Hopeful"];
+
+/** Structured moods — vector icons + stable slug testIDs (no emoji as icons). */
+const MOODS: { id: string; label: string; icon: IonIconName }[] = [
+  { id: "grateful", label: "Grateful", icon: emotionIcon("grateful") },
+  { id: "sad", label: "Sad", icon: emotionIcon("sad") },
+  { id: "anxious", label: "Anxious", icon: emotionIcon("anxious") },
+  { id: "peaceful", label: "Peaceful", icon: emotionIcon("peaceful") },
+  { id: "overwhelmed", label: "Overwhelmed", icon: emotionIcon("overwhelmed") },
+  { id: "hopeful", label: "Hopeful", icon: emotionIcon("hopeful") },
+];
 
 export default function Journal() {
+  const router = useRouter();
+  const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [content, setContent] = useState("");
   const [mood, setMood] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const shareWithWisdom = async (text: string) => {
+    const trimmed = text.trim().slice(0, 1800);
+    if (!trimmed) return;
+    await storage.setItem("cc_wisdom_draft", trimmed);
+    void track("journal_to_wisdom");
+    router.push("/(tabs)/wisdom");
+  };
 
   const load = useCallback(async () => {
     try {
+      setError(null);
       const r = await api.listJournal();
       setEntries(r.entries || []);
-    } catch (e) {
-      console.warn(e);
+    } catch (e: any) {
+      setError(e?.message || "Could not load journal entries.");
     } finally {
       setLoading(false);
     }
@@ -43,178 +72,248 @@ export default function Journal() {
   const save = async () => {
     if (!content.trim()) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      await api.createJournal(content.trim(), mood || undefined);
+      const saved = content.trim();
+      await api.createJournal(saved, mood || undefined);
+      void markFirstStep("journal");
+      void track("journal_save", { has_mood: Boolean(mood) });
       setContent("");
       setMood(null);
       await load();
+    } catch (e: any) {
+      setSaveError(e?.message || "Could not save entry.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Journal</Text>
-          <Text style={styles.sub}>Cast your cares. He cares for you.</Text>
+    <Screen
+      scroll
+      keyboard
+      contentStyle={{ paddingTop: layout.pageTop, paddingBottom: layout.pageBottom }}
+    >
+      <FadeIn>
+        <PageHeader
+          overline="Private · Safe"
+          title="Journal"
+          subtitle="Cast your cares on Him. Write freely — this space is yours."
+        />
+      </FadeIn>
 
-          {/* Composer */}
-          <View style={styles.composer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.moodRow}
-            >
-              {MOODS.map((m) => (
-                <TouchableOpacity
-                  key={m}
-                  style={[styles.moodChip, mood === m && styles.moodChipActive]}
-                  onPress={() => setMood(mood === m ? null : m)}
-                  testID={`mood-chip-${m}`}
+      <FadeIn delay={40}>
+        <Surface style={{ marginBottom: layout.sectionGap }}>
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: layout.overlineSize,
+              letterSpacing: layout.overlineTracking,
+              textTransform: "uppercase",
+              color: colors.textMuted,
+              marginBottom: spacing.sm,
+            }}
+          >
+            Mood
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingRight: 16, marginBottom: spacing.md }}
+          >
+            {MOODS.map((m) => {
+              const active = mood === m.label;
+              return (
+                <PressableScale
+                  key={m.id}
+                  scaleTo={0.97}
+                  onPress={() => setMood(mood === m.label ? null : m.label)}
+                  testID={`mood-chip-${m.id}`}
+                  accessibilityLabel={`Mood ${m.label}${active ? ", selected" : ""}`}
+                  style={{
+                    minHeight: layout.filterHeight,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: 999,
+                    backgroundColor: active ? colors.primarySoft : colors.surfaceAlt,
+                    borderWidth: 1.5,
+                    borderColor: active ? colors.primary : colors.borderSoft,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
                 >
-                  <Text style={[styles.moodText, mood === m && styles.moodTextActive]}>{m}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <TextInput
-              style={styles.textArea}
-              placeholder="What is on your heart today?"
-              placeholderTextColor={colors.textMuted}
-              value={content}
-              onChangeText={setContent}
-              multiline
-              testID="journal-content-input"
-            />
-
-            <TouchableOpacity
-              style={[styles.saveBtn, (!content.trim() || saving) && styles.saveBtnDisabled]}
-              onPress={save}
-              disabled={!content.trim() || saving}
-              testID="journal-save-btn"
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <>
-                  <Ionicons name="checkmark" size={18} color={colors.white} />
-                  <Text style={styles.saveBtnText}>Save Entry</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.sectionTitle}>Past Entries</Text>
-          {loading ? (
-            <ActivityIndicator style={{ marginTop: 20 }} color={colors.primary} />
-          ) : entries.length === 0 ? (
-            <Text style={styles.empty}>No entries yet. Start your journey above.</Text>
-          ) : (
-            entries.map((e) => (
-              <View key={e.id} style={styles.entryCard}>
-                <View style={styles.entryHeader}>
-                  {e.mood && <Text style={styles.entryMood}>{e.mood}</Text>}
-                  <Text style={styles.entryDate}>
-                    {new Date(e.created_at).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                  <Ionicons
+                    name={m.icon}
+                    size={16}
+                    color={active ? colors.primary : colors.textSecondary}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: active ? fonts.bodyBold : fonts.body,
+                      fontSize: 13,
+                      color: active ? colors.primary : colors.textPrimary,
+                    }}
+                  >
+                    {m.label}
                   </Text>
-                </View>
-                <Text style={styles.entryContent}>{e.content}</Text>
+                </PressableScale>
+              );
+            })}
+          </ScrollView>
+
+          <TextInput
+            style={{
+              minHeight: 120,
+              backgroundColor: isDark ? colors.inputFill : colors.background,
+              borderRadius: radius.md,
+              padding: spacing.md,
+              fontFamily: fonts.body,
+              fontSize: 15,
+              color: colors.textPrimary,
+              textAlignVertical: "top",
+              borderWidth: 1,
+              borderColor: colors.borderSoft,
+              lineHeight: 22,
+            }}
+            placeholder="What is on your heart today?"
+            placeholderTextColor={colors.textMuted}
+            value={content}
+            onChangeText={setContent}
+            multiline
+            testID="journal-content-input"
+          />
+
+          {saveError ? (
+            <View style={{ marginTop: spacing.md }}>
+              <ErrorBanner message={saveError} onDismiss={() => setSaveError(null)} />
+            </View>
+          ) : null}
+
+          <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+            <Button
+              label="Save entry"
+              icon="checkmark"
+              onPress={save}
+              loading={saving}
+              disabled={!content.trim()}
+              testID="journal-save-btn"
+            />
+            <Button
+              label="Share with Wisdom"
+              icon="chatbubbles-outline"
+              variant="secondary"
+              onPress={() => shareWithWisdom(content)}
+              disabled={!content.trim() || saving}
+              testID="journal-to-wisdom-btn"
+            />
+          </View>
+        </Surface>
+      </FadeIn>
+
+      <FadeIn delay={80}>
+        <Text
+          style={{
+            fontFamily: fonts.body,
+            fontSize: layout.overlineSize,
+            letterSpacing: layout.overlineTracking,
+            textTransform: "uppercase",
+            color: colors.textMuted,
+            marginBottom: spacing.md,
+          }}
+        >
+          Past entries
+        </Text>
+
+        {loading ? (
+          <LoadingState fullScreen={false} message="Opening your pages…" />
+        ) : error ? (
+          <ErrorState
+            fullScreen={false}
+            message={error}
+            onRetry={() => {
+              setLoading(true);
+              load();
+            }}
+          />
+        ) : entries.length === 0 ? (
+          <EmptyState
+            withGrace
+            title="Grace is listening"
+            message="Nothing written yet — cast one care here. This is a safe place for whatever you're carrying."
+          />
+        ) : (
+          entries.map((e) => (
+            <Surface
+              key={e.id}
+              elevated={false}
+              style={{
+                marginBottom: layout.listGap,
+                padding: spacing.md,
+                ...shadows.soft,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                }}
+              >
+                {e.mood ? (
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: colors.primary }}>
+                    {e.mood}
+                  </Text>
+                ) : (
+                  <View />
+                )}
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.textMuted }}>
+                  {new Date(e.created_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </Text>
               </View>
-            ))
-          )}
-          <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  color: colors.textPrimary,
+                  lineHeight: 22,
+                }}
+              >
+                {e.content}
+              </Text>
+              <PressableScale
+                haptic="light"
+                onPress={() => shareWithWisdom(e.content)}
+                style={{
+                  marginTop: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  alignSelf: "flex-start",
+                  paddingVertical: 6,
+                }}
+                testID={`journal-share-wisdom-${e.id}`}
+              >
+                <Ionicons name="chatbubbles-outline" size={16} color={colors.primary} />
+                <Text
+                  style={{
+                    fontFamily: fonts.bodyBold,
+                    fontSize: 13,
+                    color: colors.primary,
+                  }}
+                >
+                  Share with Wisdom
+                </Text>
+              </PressableScale>
+            </Surface>
+          ))
+        )}
+      </FadeIn>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  title: {
-    fontFamily: fonts.headingBold,
-    fontSize: 28,
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  sub: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginTop: 4 },
-  composer: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    ...shadows.soft,
-  },
-  moodRow: { gap: 8, paddingRight: spacing.md },
-  moodChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-    flexShrink: 0,
-  },
-  moodChipActive: { backgroundColor: colors.primary },
-  moodText: { fontFamily: fonts.body, fontSize: 13, color: colors.textPrimary },
-  moodTextActive: { color: colors.white, fontFamily: fonts.bodyBold },
-  textArea: {
-    marginTop: spacing.md,
-    minHeight: 120,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: colors.textPrimary,
-    textAlignVertical: "top",
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  saveBtn: {
-    marginTop: spacing.md,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: 14,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-  },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { color: colors.white, fontFamily: fonts.bodyBold, fontSize: 15 },
-  sectionTitle: {
-    fontFamily: fonts.headingBold,
-    fontSize: 20,
-    color: colors.textPrimary,
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  empty: { textAlign: "center", color: colors.textSecondary, fontFamily: fonts.body, marginTop: 20 },
-  entryCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    marginBottom: spacing.sm,
-  },
-  entryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  entryMood: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.primary },
-  entryDate: { fontFamily: fonts.body, fontSize: 12, color: colors.textMuted },
-  entryContent: { fontFamily: fonts.body, fontSize: 15, color: colors.textPrimary, lineHeight: 22 },
-});

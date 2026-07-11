@@ -2,9 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Animated,
   Easing,
   ImageBackground,
@@ -12,11 +10,21 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import BackButton from "@/src/components/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
-import { colors, fonts, spacing, radius } from "@/src/theme";
+import { useTheme } from "@/src/context/ThemeContext";
+import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
-import { useAuth } from "@/src/context/AuthContext";
+import { usePremium } from "@/src/hooks/use-premium";
+import { markSoftPaywallShown, shouldShowSoftPaywall } from "@/src/utils/soft-paywall";
+import {
+  recordMeditationComplete,
+  shouldOfferPaywallAfterCompletes,
+} from "@/src/utils/session-progress";
+import { track } from "@/src/utils/analytics";
+import { playHaptic } from "@/src/utils/haptics";
+import { LoadingState, ErrorState, Button } from "@/src/components/ui";
 
 type Meditation = {
   id: string;
@@ -33,30 +41,41 @@ type Meditation = {
 export default function MeditationPlayer() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
+  const { isPremium } = usePremium();
+  const { colors, fonts, spacing } = useTheme();
+  const { scale } = useResponsive();
   const [med, setMed] = useState<Meditation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
   const pulse = useRef(new Animated.Value(1)).current;
+  const celebrateOpacity = useRef(new Animated.Value(0)).current;
 
   const player = useAudioPlayer(med?.audio_url ? { uri: med.audio_url } : null);
   const status = useAudioPlayerStatus(player);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const m = await api.meditationById(id as string);
-        setMed(m);
-        if (m.premium && !user?.is_premium) {
-          router.replace("/paywall");
-        }
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setLoading(false);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const m = await api.meditationById(id as string);
+      setMed(m);
+      if (m.premium && !isPremium) {
+        router.replace("/paywall");
       }
-    })();
-  }, [id, user?.is_premium, router]);
+    } catch (e: any) {
+      setError(e?.message || "Could not load this meditation.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isPremium]);
 
   useEffect(() => {
     if (status?.playing) {
@@ -91,13 +110,44 @@ export default function MeditationPlayer() {
     ) {
       setCompleted(true);
       api.completeMeditation(med.id, med.duration_min).catch(() => {});
+      void track("meditation_complete", {
+        id: med.id,
+        minutes: med.duration_min,
+      });
+      void playHaptic("success");
+
+      recordMeditationComplete().then(({ completedCount, streak: s, isFirstComplete }) => {
+        setStreak(s);
+        setShowCelebration(true);
+        Animated.timing(celebrateOpacity, {
+          toValue: 1,
+          duration: 320,
+          useNativeDriver: true,
+        }).start();
+
+        // Soft paywall after first complete (and every 3rd) — after user sees celebration
+        if (shouldOfferPaywallAfterCompletes(completedCount, isPremium)) {
+          shouldShowSoftPaywall().then((show) => {
+            if (show || isFirstComplete) {
+              setTimeout(() => {
+                void markSoftPaywallShown();
+                void track("paywall_shown", { after_completes: completedCount });
+                router.push("/paywall");
+              }, 2800);
+            }
+          });
+        }
+      });
     }
-  }, [status?.currentTime, status?.duration, med, completed]);
+  }, [status?.currentTime, status?.duration, med, completed, isPremium, router, celebrateOpacity]);
 
   const togglePlay = () => {
     if (!player) return;
     if (status?.playing) player.pause();
-    else player.play();
+    else {
+      void track("meditation_start", { id: med?.id });
+      player.play();
+    }
   };
 
   const formatTime = (s: number) => {
@@ -107,61 +157,226 @@ export default function MeditationPlayer() {
     return `${m}:${sec < 10 ? "0" : ""}${sec}`;
   };
 
-  if (loading || !med) {
+  if (loading) {
+    return <LoadingState message="Preparing your session…" />;
+  }
+
+  if (error || !med) {
     return (
-      <View style={styles.loadingWrap}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <ErrorState
+        title="Session unavailable"
+        message={error || "This meditation could not be found."}
+        onRetry={load}
+      />
     );
   }
 
   const progress = status?.duration ? status.currentTime / status.duration : 0;
+  const artSize = scale(250);
 
   return (
     <ImageBackground source={{ uri: med.cover }} style={{ flex: 1 }} blurRadius={30}>
-      <LinearGradient
-        colors={["rgba(31,41,55,0.35)", "rgba(31,41,55,0.75)"]}
-        style={{ flex: 1 }}
-      >
-        <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} testID="med-close-btn">
-              <Ionicons name="chevron-down" size={30} color={colors.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerLabel}>Now Playing</Text>
+      <LinearGradient colors={[colors.scrim, "rgba(11,13,18,0.88)"]} style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: spacing.md,
+            }}
+          >
+            <BackButton
+              fallback="/(tabs)/meditate"
+              icon="chevron-down"
+              size={30}
+              color={colors.white}
+              testID="med-close-btn"
+            />
+            <Text
+              style={{
+                color: colors.white,
+                fontFamily: fonts.body,
+                fontSize: 12,
+                letterSpacing: 2,
+              }}
+            >
+              Now Playing
+            </Text>
             <View style={{ width: 30 }} />
           </View>
 
-          <View style={styles.body}>
-            <Animated.View style={[styles.artWrap, { transform: [{ scale: pulse }] }]}>
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              paddingHorizontal: spacing.xl,
+            }}
+          >
+            <Animated.View
+              style={{
+                width: artSize,
+                height: artSize,
+                borderRadius: artSize / 2,
+                overflow: "hidden",
+                marginBottom: spacing.xl,
+                transform: [{ scale: pulse }],
+              }}
+            >
               <ImageBackground
                 source={{ uri: med.cover }}
-                style={styles.art}
-                imageStyle={{ borderRadius: 140 }}
+                style={{ width: "100%", height: "100%" }}
+                imageStyle={{ borderRadius: artSize / 2 }}
               />
             </Animated.View>
 
-            <Text style={styles.title}>{med.title}</Text>
-            <Text style={styles.subtitle}>{med.subtitle}</Text>
+            <Text
+              style={{
+                fontFamily: fonts.headingBold,
+                fontSize: 28,
+                color: colors.white,
+                textAlign: "center",
+                letterSpacing: -0.5,
+              }}
+            >
+              {med.title}
+            </Text>
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 15,
+                color: "rgba(255,255,255,0.85)",
+                marginTop: 6,
+                textAlign: "center",
+              }}
+            >
+              {med.subtitle}
+            </Text>
 
-            <View style={styles.verseWrap}>
-              <Text style={styles.verse}>"{med.verse}"</Text>
-              <Text style={styles.verseRef}>— {med.scripture}</Text>
+            <View style={{ marginTop: spacing.xl, paddingHorizontal: spacing.md, alignItems: "center" }}>
+              <Text
+                style={{
+                  fontFamily: fonts.scriptureItalic,
+                  fontSize: 18,
+                  color: colors.white,
+                  textAlign: "center",
+                  lineHeight: 28,
+                }}
+              >
+                “{med.verse}”
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: "rgba(255,255,255,0.75)",
+                  marginTop: 6,
+                }}
+              >
+                — {med.scripture}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.controls}>
-            <View style={styles.progressWrap}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          {showCelebration ? (
+            <Animated.View
+              style={{
+                opacity: celebrateOpacity,
+                marginHorizontal: spacing.lg,
+                marginBottom: spacing.md,
+                padding: spacing.lg,
+                borderRadius: 20,
+                backgroundColor: "rgba(255,255,255,0.12)",
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.22)",
+                alignItems: "center",
+              }}
+              testID="meditation-complete-banner"
+            >
+              <Ionicons name="checkmark-circle" size={36} color={colors.white} />
+              <Text
+                style={{
+                  fontFamily: fonts.headingBold,
+                  fontSize: 20,
+                  color: colors.white,
+                  marginTop: 10,
+                  textAlign: "center",
+                }}
+              >
+                Well done
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 14,
+                  color: "rgba(255,255,255,0.85)",
+                  marginTop: 6,
+                  textAlign: "center",
+                  lineHeight: 20,
+                }}
+              >
+                You finished this session.
+                {streak > 1 ? ` ${streak}-day rhythm of rest.` : " Peace is a practice."}
+              </Text>
+              <View style={{ marginTop: spacing.md, width: "100%" }}>
+                <Button
+                  label="Back to Meditate"
+                  variant="secondary"
+                  onPress={() => router.replace("/(tabs)/meditate")}
+                  fullWidth
+                  style={{ backgroundColor: colors.white }}
+                />
               </View>
-              <View style={styles.timeRow}>
-                <Text style={styles.timeText}>{formatTime(status?.currentTime || 0)}</Text>
-                <Text style={styles.timeText}>{formatTime(status?.duration || 0)}</Text>
+            </Animated.View>
+          ) : null}
+
+          <View style={{ padding: spacing.lg, alignItems: "center" }}>
+            <View style={{ width: "100%", marginBottom: spacing.lg }}>
+              <View
+                style={{
+                  height: 3,
+                  backgroundColor: "rgba(255,255,255,0.25)",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                }}
+              >
+                <View
+                  style={{
+                    height: "100%",
+                    width: `${progress * 100}%`,
+                    backgroundColor: colors.white,
+                  }}
+                />
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginTop: 6,
+                }}
+              >
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontFamily: fonts.body, fontSize: 12 }}>
+                  {formatTime(status?.currentTime || 0)}
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontFamily: fonts.body, fontSize: 12 }}>
+                  {formatTime(status?.duration || 0)}
+                </Text>
               </View>
             </View>
 
-            <TouchableOpacity style={styles.playBtn} onPress={togglePlay} testID="med-play-btn">
+            <TouchableOpacity
+              style={{
+                width: 78,
+                height: 78,
+                borderRadius: 39,
+                backgroundColor: colors.white,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              onPress={togglePlay}
+              testID="med-play-btn"
+            >
               <Ionicons
                 name={status?.playing ? "pause" : "play"}
                 size={38}
@@ -169,97 +384,22 @@ export default function MeditationPlayer() {
               />
             </TouchableOpacity>
 
-            {completed && (
-              <Text style={styles.completedText} testID="med-completed">
+            {completed ? (
+              <Text
+                style={{
+                  color: colors.white,
+                  fontFamily: fonts.bodyBold,
+                  marginTop: spacing.md,
+                  fontSize: 13,
+                }}
+                testID="med-completed"
+              >
                 ✓ Session complete
               </Text>
-            )}
+            ) : null}
           </View>
         </SafeAreaView>
       </LinearGradient>
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingWrap: { flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center" },
-  safe: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: spacing.md,
-  },
-  headerLabel: {
-    color: colors.white,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    letterSpacing: 2,
-  },
-  body: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.xl },
-  artWrap: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    overflow: "hidden",
-    marginBottom: spacing.xl,
-  },
-  art: { width: "100%", height: "100%" },
-  title: {
-    fontFamily: fonts.headingBold,
-    fontSize: 28,
-    color: colors.white,
-    textAlign: "center",
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: "rgba(255,255,255,0.85)",
-    marginTop: 6,
-    textAlign: "center",
-  },
-  verseWrap: {
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.md,
-    alignItems: "center",
-  },
-  verse: {
-    fontFamily: fonts.scriptureItalic,
-    fontSize: 18,
-    color: colors.white,
-    textAlign: "center",
-    lineHeight: 28,
-  },
-  verseRef: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: "rgba(255,255,255,0.75)",
-    marginTop: 6,
-  },
-  controls: { padding: spacing.lg, alignItems: "center" },
-  progressWrap: { width: "100%", marginBottom: spacing.lg },
-  progressBar: {
-    height: 3,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressFill: { height: "100%", backgroundColor: colors.white },
-  timeRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  timeText: { color: "rgba(255,255,255,0.75)", fontFamily: fonts.body, fontSize: 12 },
-  playBtn: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  completedText: {
-    color: colors.white,
-    fontFamily: fonts.bodyBold,
-    marginTop: spacing.md,
-    fontSize: 13,
-  },
-});

@@ -1,0 +1,46 @@
+name: Deploy Serverless API
+
+on:
+  push:
+    branches: [main, develop]
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements-lambda.txt pytest requests python-dotenv
+      - name: Import check
+        env:
+          JWT_SECRET: test
+          STRIPE_API_KEY: sk_test_x
+          AWS_REGION: us-east-1
+          DYNAMODB_TABLE_PREFIX: christcalm-preview
+        run: python -c "from handler import handler; print('OK')"
+        working-directory: backend
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - run: aws sts get-caller-identity
+
+      - name: Deploy via AWS CodeBuild
+        run: ./scripts/deploy-aws.sh code

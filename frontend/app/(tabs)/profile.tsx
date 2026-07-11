@@ -1,68 +1,180 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts, spacing, radius, shadows } from "@/src/theme";
+import { useTheme, type ThemePreference } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/context/AuthContext";
+import { usePremium } from "@/src/hooks/use-premium";
+import { layout } from "@/src/theme/layout";
+import { Screen, PageHeader, Button, Surface, FadeIn } from "@/src/components/ui";
+
+const THEME_LABELS: Record<ThemePreference, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
+
+const THEME_ICONS: Record<ThemePreference, keyof typeof Ionicons.glyphMap> = {
+  system: "phone-portrait-outline",
+  light: "sunny-outline",
+  dark: "moon-outline",
+};
 
 export default function Profile() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { isPremium } = usePremium();
+  const { colors, fonts, spacing, radius, shadows, preference, setPreference, isDark } =
+    useTheme();
+
+  const cycleTheme = () => {
+    const order: ThemePreference[] = ["dark", "light", "system"];
+    const idx = order.indexOf(preference);
+    setPreference(order[(idx + 1) % order.length]);
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(user?.name || "?").charAt(0).toUpperCase()}</Text>
+    <Screen
+      scroll
+      contentStyle={{ paddingTop: layout.pageTop, paddingBottom: layout.pageBottom }}
+    >
+      <FadeIn>
+        <PageHeader overline="Your space" title="Profile" subtitle={user?.email || undefined} />
+      </FadeIn>
+
+      <FadeIn delay={40}>
+        <View style={{ alignItems: "center", marginBottom: layout.sectionGap }}>
+          <View
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              backgroundColor: colors.primary,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: spacing.md,
+              ...shadows.glow,
+            }}
+          >
+            <Text style={{ fontFamily: fonts.headingBold, fontSize: 34, color: colors.white }}>
+              {(user?.name || "?").charAt(0).toUpperCase()}
+            </Text>
           </View>
-          <Text style={styles.name} testID="profile-name">
+          <Text
+            style={{
+              fontFamily: fonts.headingBold,
+              fontSize: 24,
+              color: colors.textPrimary,
+              letterSpacing: -0.4,
+            }}
+            testID="profile-name"
+          >
             {user?.name}
           </Text>
-          <Text style={styles.email}>{user?.email}</Text>
-          {user?.is_premium ? (
-            <View style={styles.premiumChip}>
+
+          {isPremium ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                backgroundColor: colors.premium,
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+                borderRadius: radius.full,
+                marginTop: spacing.md,
+              }}
+            >
               <Ionicons name="star" size={14} color={colors.white} />
-              <Text style={styles.premiumChipText}>Premium Member</Text>
+              <Text style={{ color: colors.white, fontFamily: fonts.bodyBold, fontSize: 13 }}>
+                Premium Member
+              </Text>
             </View>
           ) : (
-            <TouchableOpacity
-              style={styles.upgradeBanner}
-              onPress={() => router.push("/paywall")}
-              testID="profile-upgrade-btn"
-            >
-              <Ionicons name="star" size={16} color={colors.white} />
-              <Text style={styles.upgradeBannerText}>Unlock Premium</Text>
-            </TouchableOpacity>
+            <View style={{ marginTop: spacing.md, width: "72%" }}>
+              <Button
+                label="Unlock Premium"
+                variant="premium"
+                icon="star"
+                onPress={() => router.push("/paywall")}
+                testID="profile-upgrade-btn"
+              />
+            </View>
           )}
         </View>
+      </FadeIn>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user?.streak ?? 0}</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user?.minutes_meditated ?? 0}</Text>
-            <Text style={styles.statLabel}>Minutes</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user?.prayers_completed ?? 0}</Text>
-            <Text style={styles.statLabel}>Sessions</Text>
-          </View>
+      <FadeIn delay={80}>
+        <View style={{ flexDirection: "row", gap: spacing.sm, marginBottom: layout.sectionGap }}>
+          {[
+            { value: user?.streak ?? 0, label: "Day streak" },
+            { value: user?.minutes_meditated ?? 0, label: "Minutes" },
+            { value: user?.prayers_completed ?? 0, label: "Sessions" },
+          ].map((s) => (
+            <Surface
+              key={s.label}
+              elevated={false}
+              style={{
+                flex: 1,
+                paddingVertical: spacing.md,
+                alignItems: "center",
+                ...shadows.soft,
+              }}
+            >
+              <Text style={{ fontFamily: fonts.headingBold, fontSize: 24, color: colors.primary }}>
+                {s.value}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                  marginTop: 4,
+                }}
+              >
+                {s.label}
+              </Text>
+            </Surface>
+          ))}
         </View>
+      </FadeIn>
 
-        {/* Menu */}
-        <View style={styles.menu}>
+      <FadeIn delay={120}>
+        <Text
+          style={{
+            fontFamily: fonts.body,
+            fontSize: layout.overlineSize,
+            letterSpacing: layout.overlineTracking,
+            textTransform: "uppercase",
+            color: colors.textMuted,
+            marginBottom: spacing.md,
+          }}
+        >
+          Preferences
+        </Text>
+        <Surface padded={false} style={{ marginBottom: spacing.lg, overflow: "hidden" }}>
+          <MenuItem
+            icon={THEME_ICONS[preference]}
+            label="Appearance"
+            value={THEME_LABELS[preference]}
+            onPress={cycleTheme}
+            testID="menu-theme"
+          />
+        </Surface>
+
+        <Text
+          style={{
+            fontFamily: fonts.body,
+            fontSize: layout.overlineSize,
+            letterSpacing: layout.overlineTracking,
+            textTransform: "uppercase",
+            color: colors.textMuted,
+            marginBottom: spacing.md,
+          }}
+        >
+          Journey
+        </Text>
+        <Surface padded={false} style={{ overflow: "hidden" }}>
           <MenuItem
             icon="heart-outline"
             label="Panic Relief (SOS)"
@@ -70,10 +182,10 @@ export default function Profile() {
             testID="menu-sos"
           />
           <MenuItem
-            icon="sparkles-outline"
-            label="AI Prayer Generator"
-            onPress={() => router.push("/ai-prayer")}
-            testID="menu-ai-prayer"
+            icon="chatbubbles-outline"
+            label="What would Jesus say?"
+            onPress={() => router.push("/(tabs)/wisdom")}
+            testID="menu-wisdom"
           />
           <MenuItem
             icon="star-outline"
@@ -90,130 +202,87 @@ export default function Profile() {
             }}
             danger
             testID="menu-signout"
+            last
           />
-        </View>
+        </Surface>
+      </FadeIn>
 
-        <Text style={styles.footerText}>
-          "The Lord is close to the brokenhearted." — Psalm 34:18
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+      <Text
+        style={{
+          textAlign: "center",
+          fontFamily: fonts.scriptureItalic,
+          fontSize: 15,
+          color: colors.textSecondary,
+          marginTop: layout.sectionGap,
+          lineHeight: 22,
+        }}
+      >
+        “The Lord is close to the brokenhearted.” — Psalm 34:18
+      </Text>
+      <Text
+        style={{
+          textAlign: "center",
+          fontFamily: fonts.body,
+          fontSize: 12,
+          color: colors.textMuted,
+          marginTop: spacing.sm,
+        }}
+      >
+        {isDark ? "Dark" : "Light"} calm · ChristCalm
+      </Text>
+    </Screen>
   );
 }
 
 function MenuItem({
   icon,
   label,
+  value,
   onPress,
   danger,
+  last,
   testID,
 }: {
-  icon: any;
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  value?: string;
   onPress: () => void;
   danger?: boolean;
+  last?: boolean;
   testID?: string;
 }) {
+  const { colors, fonts, spacing } = useTheme();
   return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress} testID={testID}>
-      <Ionicons name={icon} size={22} color={danger ? colors.accentSOSDark : colors.textPrimary} />
-      <Text style={[styles.menuLabel, danger && { color: colors.accentSOSDark }]}>{label}</Text>
+    <TouchableOpacity
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        padding: spacing.md + 2,
+        gap: spacing.md,
+        borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+        borderBottomColor: colors.borderSoft,
+      }}
+      onPress={onPress}
+      testID={testID}
+      activeOpacity={0.7}
+    >
+      <Ionicons name={icon} size={22} color={danger ? colors.danger : colors.textPrimary} />
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: fonts.body,
+          fontSize: 16,
+          color: danger ? colors.danger : colors.textPrimary,
+        }}
+      >
+        {label}
+      </Text>
+      {value ? (
+        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary }}>
+          {value}
+        </Text>
+      ) : null}
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  header: { alignItems: "center", paddingTop: spacing.md },
-  avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  avatarText: { fontFamily: fonts.headingBold, fontSize: 34, color: colors.white },
-  name: {
-    fontFamily: fonts.headingBold,
-    fontSize: 24,
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
-  email: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginTop: 4 },
-  premiumChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.premium,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    marginTop: spacing.md,
-  },
-  premiumChipText: { color: colors.white, fontFamily: fonts.bodyBold, fontSize: 13 },
-  upgradeBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.premium,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: radius.full,
-    marginTop: spacing.md,
-    ...shadows.soft,
-  },
-  upgradeBannerText: { color: colors.white, fontFamily: fonts.bodyBold, fontSize: 14 },
-  statsRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  statValue: {
-    fontFamily: fonts.headingBold,
-    fontSize: 26,
-    color: colors.primary,
-  },
-  statLabel: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  menu: {
-    marginTop: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    overflow: "hidden",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: spacing.md,
-    gap: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSoft,
-  },
-  menuLabel: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.textPrimary },
-  footerText: {
-    textAlign: "center",
-    fontFamily: fonts.scriptureItalic,
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginTop: spacing.xl,
-  },
-});

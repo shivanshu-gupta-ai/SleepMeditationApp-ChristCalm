@@ -1,48 +1,88 @@
-"""ChristCalm — FastAPI backend
-JWT auth + emotion-based meditations + AI prayer generator (GPT-5.2) + Stripe subscription paywall
-"""
+"""ChristCalm — FastAPI backend (Lambda + API Gateway + DynamoDB)."""
 import os
+import time
 import uuid
 import logging
+import hashlib
+import secrets
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, List
+from urllib.parse import quote
 
-import bcrypt
-import httpx
+from services.config import bootstrap, require_jwt_secret
+
+bootstrap()
+
 import jwt as pyjwt
-from dotenv import load_dotenv
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionRequest,
-)
 
 from seed_data import EMOTIONS, MEDITATIONS, PRAYERS, DEVOTIONALS, PRAYER_CATEGORIES
+from services import google_oauth
+from services.dynamodb import db
+from services.llm import generate_wisdom_reply, generate_prayer, LLMError
+from services.wisdom_rag import corpus_stats
+from services.voice_transcribe import (
+    VoiceError,
+    create_upload_url,
+    start_and_wait_transcript,
+)
+from services.rate_limit import (
+    limiter,
+    AUTH_LIMIT,
+    AUTH_WINDOW,
+    AI_LIMIT,
+    AI_WINDOW,
+    AI_MONTHLY_LIMIT,
+)
+from services.wisdom_guardrails import enforce_wisdom_scope
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
+JWT_SECRET = require_jwt_secret()
+REVENUECAT_WEBHOOK_AUTHORIZATION = os.environ.get("REVENUECAT_WEBHOOK_AUTHORIZATION", "")
+REVENUECAT_ENTITLEMENT_ID = os.environ.get("REVENUECAT_ENTITLEMENT_ID", "christcalm_premium")
 
-MONGO_URL = os.environ["MONGO_URL"]
-DB_NAME = os.environ["DB_NAME"]
-JWT_SECRET = os.environ["JWT_SECRET"]
-EMERGENT_LLM_KEY = os.environ["EMERGENT_LLM_KEY"]
-STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
-
-client = AsyncIOMotorClient(MONGO_URL)
-db = client[DB_NAME]
-
-app = FastAPI(title="ChristCalm API")
+app = FastAPI(title="ChristCalm API", version="1.1.0")
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("christcalm")
 
 security = HTTPBearer(auto_error=False)
+
+
+class TimingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        ms = (time.perf_counter() - start) * 1000
+        response.headers["X-Response-Time-Ms"] = f"{ms:.1f}"
+        if ms > 3000:
+            logger.warning("slow_request path=%s ms=%.1f", request.url.path, ms)
+        return response
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for") or request.headers.get("x-real-ip")
+    if forwarded:
+        return forwarded.split(",")[0].strip()[:64]
+    if request.client:
+        return (request.client.host or "unknown")[:64]
+    return "unknown"
+
+
+def _enforce_rate_limit(key: str, limit: int, window: int) -> None:
+    allowed, remaining, retry = limiter.check(key, limit, window)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please wait and try again.",
+            headers={"Retry-After": str(retry), "X-RateLimit-Remaining": "0"},
+        )
 
 
 # ------------------- Models -------------------
@@ -77,6 +117,13 @@ class AuthOut(BaseModel):
 class OnboardingIn(BaseModel):
     faith_journey: Optional[str] = None
     concerns: List[str] = []
+    emotional_state: Optional[str] = None
+    desired_support: List[str] = []
+    preferred_time: Optional[str] = None
+    commitment_accepted: bool = False
+    commitment_date: Optional[str] = None
+    first_practices_done: List[bool] = []
+    display_name: Optional[str] = None
 
 
 class GoogleAuthIn(BaseModel):
@@ -94,8 +141,26 @@ class JournalIn(BaseModel):
 
 
 class AIPrayerIn(BaseModel):
-    feeling: str
-    context: Optional[str] = None
+    feeling: str = Field(..., min_length=2, max_length=200)
+    context: Optional[str] = Field(None, max_length=1000)
+
+
+class WisdomChatIn(BaseModel):
+    message: str = Field(..., min_length=2, max_length=2000)
+    conversation_id: Optional[str] = None
+
+
+class VoicePresignIn(BaseModel):
+    """Request a presigned S3 PUT for a short voice note."""
+    media_ext: str = Field(default="m4a", max_length=8)
+    content_type: str = Field(default="audio/mp4", max_length=64)
+
+
+class VoiceTranscribeIn(BaseModel):
+    """Transcribe an uploaded voice note via Amazon Transcribe."""
+    s3_key: str = Field(..., min_length=8, max_length=512)
+    media_format: Optional[str] = Field(default=None, max_length=16)
+    language_code: str = Field(default="en-US", max_length=16)
 
 
 class MeditationCompleteIn(BaseModel):
@@ -103,18 +168,29 @@ class MeditationCompleteIn(BaseModel):
     minutes: int
 
 
-class CheckoutIn(BaseModel):
-    plan: str  # "monthly" or "annual"
-    origin_url: str
+class SubscriptionSyncIn(BaseModel):
+    active: bool
+    plan: Optional[str] = None
 
 
 # ------------------- Auth helpers -------------------
 def hash_password(pw: str) -> str:
-    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", pw.encode(), salt.encode(), 100_000).hex()
+    return f"pbkdf2${salt}${digest}"
 
 
 def verify_password(pw: str, hashed: str) -> bool:
-    return bcrypt.checkpw(pw.encode(), hashed.encode())
+    if hashed.startswith("pbkdf2$"):
+        _, salt, digest = hashed.split("$", 2)
+        check = hashlib.pbkdf2_hmac("sha256", pw.encode(), salt.encode(), 100_000).hex()
+        return secrets.compare_digest(check, digest)
+    # Legacy bcrypt hashes (local dev)
+    try:
+        import bcrypt
+        return bcrypt.checkpw(pw.encode(), hashed.encode())
+    except Exception:
+        return False
 
 
 def create_token(user_id: str) -> str:
@@ -137,7 +213,7 @@ async def get_current_user(
     except pyjwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    user = await db.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
@@ -157,22 +233,40 @@ def user_to_out(u: dict) -> UserOut:
     )
 
 
-# ------------------- Health -------------------
 @api.get("/")
 async def root():
-    return {"message": "ChristCalm API", "status": "ok"}
+    return {
+        "message": "ChristCalm API",
+        "status": "ok",
+        "database": "dynamodb",
+        "llm_provider": os.environ.get("LLM_PROVIDER", "bedrock"),
+    }
 
 
-# ------------------- Auth -------------------
+@api.get("/health")
+async def health():
+    """Liveness + light readiness (no secrets)."""
+    return {
+        "status": "ok",
+        "database": "dynamodb",
+        "llm_provider": os.environ.get("LLM_PROVIDER", "bedrock"),
+        "time": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @api.post("/auth/signup", response_model=AuthOut)
-async def signup(body: SignUpIn):
+async def signup(body: SignUpIn, request: Request):
+    _enforce_rate_limit(f"auth:signup:{_client_ip(request)}", AUTH_LIMIT, AUTH_WINDOW)
     email = body.email.lower().strip()
-    existing = await db.users.find_one({"email": email})
+    existing = await db.get_user_by_email(email)
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
-
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if len(body.password) > 128:
+        raise HTTPException(status_code=400, detail="Password is too long")
+    if len(body.name.strip()) < 1 or len(body.name) > 80:
+        raise HTTPException(status_code=400, detail="Please provide a valid name")
 
     user_id = str(uuid.uuid4())
     user = {
@@ -188,30 +282,28 @@ async def signup(body: SignUpIn):
         "prayers_completed": 0,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    await db.users.insert_one(user)
-    token = create_token(user_id)
-    return AuthOut(token=token, user=user_to_out(user))
+    await db.create_user(user)
+    return AuthOut(token=create_token(user_id), user=user_to_out(user))
 
 
 @api.post("/auth/signin", response_model=AuthOut)
-async def signin(body: SignInIn):
+async def signin(body: SignInIn, request: Request):
+    _enforce_rate_limit(f"auth:signin:{_client_ip(request)}", AUTH_LIMIT, AUTH_WINDOW)
     email = body.email.lower().strip()
-    user = await db.users.find_one({"email": email})
-    if not user or not verify_password(body.password, user["password_hash"]):
+    user = await db.get_user_by_email(email)
+    if not user or not user.get("password_hash") or not verify_password(body.password, user["password_hash"]):
+        # Constant-ish response — do not reveal whether email exists
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_token(user["id"])
-    return AuthOut(token=token, user=user_to_out(user))
+    return AuthOut(token=create_token(user["id"]), user=user_to_out(user))
 
 
 @api.get("/auth/me", response_model=UserOut)
 async def me(user: dict = Depends(get_current_user)):
-    # Expire premium if premium_until is in the past
     premium_until = user.get("premium_until")
     if premium_until and user.get("is_premium"):
         try:
             if datetime.fromisoformat(premium_until) < datetime.now(timezone.utc):
-                await db.users.update_one({"id": user["id"]}, {"$set": {"is_premium": False}})
-                user["is_premium"] = False
+                user = await db.update_user(user["id"], {"is_premium": False})
         except Exception:
             pass
     return user_to_out(user)
@@ -219,83 +311,91 @@ async def me(user: dict = Depends(get_current_user)):
 
 @api.post("/auth/onboarding", response_model=UserOut)
 async def save_onboarding(body: OnboardingIn, user: dict = Depends(get_current_user)):
-    updates = {
+    updates: dict = {
         "faith_journey": body.faith_journey,
         "concerns": body.concerns,
+        "emotional_state": body.emotional_state,
+        "desired_support": body.desired_support,
+        "preferred_time": body.preferred_time,
+        "commitment_accepted": body.commitment_accepted,
+        "commitment_date": body.commitment_date,
+        "first_practices_done": body.first_practices_done,
     }
-    await db.users.update_one({"id": user["id"]}, {"$set": updates})
-    user.update(updates)
-    return user_to_out(user)
+    if body.display_name and body.display_name.strip():
+        updates["name"] = body.display_name.strip()
+    updated = await db.update_user(user["id"], updates)
+    return user_to_out(updated)
 
 
-EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
-
-
-@api.post("/auth/google", response_model=AuthOut)
-async def google_auth(body: GoogleAuthIn):
-    """Exchange an Emergent Google-auth session_id for a ChristCalm JWT.
-
-    Verifies the session_id with Emergent's session-data endpoint, upserts the
-    user in our `users` collection (by email), and returns our normal JWT so the
-    rest of the app treats them identically to email/password users.
-    """
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client_http:
-            r = await client_http.get(
-                EMERGENT_SESSION_URL,
-                headers={"X-Session-ID": body.session_id},
-            )
-    except Exception as e:
-        logger.error(f"Emergent session-data request failed: {e}")
-        raise HTTPException(status_code=502, detail="Auth provider unreachable")
-
-    if r.status_code != 200:
-        logger.warning(f"Emergent session-data non-200: {r.status_code} {r.text[:200]}")
-        raise HTTPException(status_code=401, detail="Invalid Google session")
-
-    data = r.json()
-    email = (data.get("email") or "").lower().strip()
-    name = (data.get("name") or "").strip() or (email.split("@")[0] if email else "Friend")
-    picture = data.get("picture")
-    if not email:
-        raise HTTPException(status_code=400, detail="Missing email from Google")
-
-    existing = await db.users.find_one({"email": email})
+async def _upsert_google_user(profile: dict) -> dict:
+    email = profile["email"]
+    name = profile["name"]
+    picture = profile.get("picture")
+    existing = await db.get_user_by_email(email)
     if existing:
-        # Update name/picture on subsequent logins if changed
-        updates = {"last_login_at": datetime.now(timezone.utc).isoformat()}
+        updates: dict = {"last_login_at": datetime.now(timezone.utc).isoformat()}
         if picture and existing.get("picture") != picture:
             updates["picture"] = picture
         if name and existing.get("name") != name and not existing.get("password_hash"):
-            # Only overwrite name for Google-only users (no password set)
             updates["name"] = name
-        await db.users.update_one({"id": existing["id"]}, {"$set": updates})
-        existing.update(updates)
-        user_doc = existing
-    else:
-        user_doc = {
-            "id": str(uuid.uuid4()),
-            "name": name,
-            "email": email,
-            "picture": picture,
-            "password_hash": None,  # Google-only account
-            "provider": "google",
-            "is_premium": False,
-            "faith_journey": None,
-            "concerns": [],
-            "streak": 0,
-            "minutes_meditated": 0,
-            "prayers_completed": 0,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "last_login_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.users.insert_one(user_doc)
+        return await db.update_user(existing["id"], updates)
 
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "email": email,
+        "picture": picture,
+        "provider": "google",
+        "is_premium": False,
+        "faith_journey": None,
+        "concerns": [],
+        "streak": 0,
+        "minutes_meditated": 0,
+        "prayers_completed": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_login_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.create_user(user_doc)
+    return user_doc
+
+
+@api.get("/auth/google/start")
+async def google_auth_start(redirect_uri: str = Query(...)):
+    if not google_oauth.google_oauth_configured():
+        raise HTTPException(status_code=503, detail="Google OAuth is not configured")
+    try:
+        auth_url = google_oauth.build_authorization_url(redirect_uri)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return RedirectResponse(auth_url)
+
+
+@api.get("/auth/google/callback")
+async def google_auth_callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+):
+    if error:
+        raise HTTPException(status_code=400, detail=f"Google OAuth error: {error}")
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Missing code or state")
+    try:
+        frontend_redirect = google_oauth.decode_state(state)
+        profile = await google_oauth.exchange_code_for_profile(code)
+    except ValueError as e:
+        logger.warning(f"Google OAuth callback failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid Google session")
+    user_doc = await _upsert_google_user(profile)
     token = create_token(user_doc["id"])
-    return AuthOut(token=token, user=user_to_out(user_doc))
+    return RedirectResponse(f"{frontend_redirect}#cc_token={quote(token)}")
 
 
-# ------------------- Content -------------------
+@api.post("/auth/google", response_model=AuthOut)
+async def google_auth_legacy(body: GoogleAuthIn):
+    raise HTTPException(status_code=410, detail="Use GET /api/auth/google/start")
+
+
 @api.get("/emotions")
 async def get_emotions():
     return {"emotions": EMOTIONS}
@@ -303,9 +403,7 @@ async def get_emotions():
 
 @api.get("/meditations")
 async def list_meditations(emotion: Optional[str] = None):
-    items = MEDITATIONS
-    if emotion:
-        items = [m for m in items if m["emotion"] == emotion]
+    items = MEDITATIONS if not emotion else [m for m in MEDITATIONS if m["emotion"] == emotion]
     return {"meditations": items}
 
 
@@ -319,20 +417,16 @@ async def get_meditation(med_id: str):
 
 @api.get("/prayers")
 async def list_prayers(category: Optional[str] = None):
-    items = PRAYERS
-    if category:
-        items = [p for p in items if p["category"] == category]
+    items = PRAYERS if not category else [p for p in PRAYERS if p["category"] == category]
     return {"prayers": items, "categories": PRAYER_CATEGORIES}
 
 
 @api.get("/devotional/today")
 async def daily_devotional():
-    # Rotate by day-of-year
     idx = datetime.now(timezone.utc).timetuple().tm_yday % len(DEVOTIONALS)
     return DEVOTIONALS[idx]
 
 
-# ------------------- User activity -------------------
 @api.post("/mood/log")
 async def log_mood(body: MoodLogIn, user: dict = Depends(get_current_user)):
     entry = {
@@ -342,19 +436,13 @@ async def log_mood(body: MoodLogIn, user: dict = Depends(get_current_user)):
         "note": body.note,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    await db.mood_logs.insert_one(entry)
-    entry.pop("_id", None)
+    await db.insert_mood_log(entry)
     return {"ok": True, "entry": entry}
 
 
 @api.get("/mood/history")
 async def mood_history(user: dict = Depends(get_current_user)):
-    docs = (
-        await db.mood_logs.find({"user_id": user["id"]}, {"_id": 0})
-        .sort("created_at", -1)
-        .to_list(100)
-    )
-    return {"logs": docs}
+    return {"logs": await db.list_mood_logs(user["id"], limit=100)}
 
 
 @api.post("/journal")
@@ -366,200 +454,332 @@ async def create_journal(body: JournalIn, user: dict = Depends(get_current_user)
         "content": body.content,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    await db.journal_entries.insert_one(entry)
-    entry.pop("_id", None)
+    await db.insert_journal_entry(entry)
     return {"ok": True, "entry": entry}
 
 
 @api.get("/journal")
 async def list_journal(user: dict = Depends(get_current_user)):
-    docs = (
-        await db.journal_entries.find({"user_id": user["id"]}, {"_id": 0})
-        .sort("created_at", -1)
-        .to_list(200)
-    )
-    return {"entries": docs}
+    return {"entries": await db.list_journal_entries(user["id"], limit=200)}
 
 
 @api.post("/meditations/complete")
 async def complete_meditation(body: MeditationCompleteIn, user: dict = Depends(get_current_user)):
-    await db.users.update_one(
-        {"id": user["id"]},
-        {
-            "$inc": {"minutes_meditated": body.minutes, "prayers_completed": 1},
-            "$set": {"last_activity": datetime.now(timezone.utc).isoformat()},
-        },
-    )
-    # simple streak: check if last log was yesterday or today
-    updated = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    updated = await db.increment_user_stats(user["id"], body.minutes)
     return {"ok": True, "minutes_meditated": updated.get("minutes_meditated", 0)}
 
 
-# ------------------- AI Prayer Generator -------------------
-@api.post("/ai/prayer")
-async def generate_prayer(body: AIPrayerIn, user: dict = Depends(get_current_user)):
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
+@api.get("/wisdom/status")
+async def wisdom_status():
+    """Public diagnostic — no secrets."""
+    stats = corpus_stats()
+    return {
+        "ok": True,
+        "model": os.environ.get("BEDROCK_MODEL_ID", "openai.gpt-oss-20b-1:0"),
+        "provider": os.environ.get("LLM_PROVIDER", "bedrock"),
+        **stats,
+    }
 
-    system_msg = (
-        "You are a compassionate Christian pastoral companion inside a mental wellness app called ChristCalm. "
-        "Given a user's feeling, craft a short, warm, scripture-anchored prayer (80-140 words). "
-        "Structure: (1) A single line of scripture with reference (e.g., 'Psalm 34:18'). "
-        "(2) A prayer beginning with 'Heavenly Father' or 'Lord Jesus' that acknowledges the feeling, "
-        "invites God's presence, and ends with 'Amen.' Keep tone tender, not preachy. No headers or bullets."
-    )
 
-    prompt = f"Feeling: {body.feeling}."
-    if body.context:
-        prompt += f" Context: {body.context}."
+@api.get("/wisdom/quota")
+async def wisdom_quota(user: dict = Depends(get_current_user)):
+    """Monthly AI call budget remaining for this user (100 / month UTC)."""
+    return await db.get_ai_quota(user["id"], limit=AI_MONTHLY_LIMIT)
+
+
+@api.post("/wisdom/chat")
+async def wisdom_chat(
+    body: WisdomChatIn,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """Conversational wisdom: RAG over /wisdom files + Bedrock (GPT-OSS / Mistral).
+
+    Guardrails: emotional / spiritual concerns only.
+    Quota: AI_MONTHLY_LIMIT (default 100) Bedrock calls per user per UTC month.
+    Blocked off-topic messages do not consume quota.
+    """
+    _enforce_rate_limit(f"wisdom:chat:{user['id']}", AI_LIMIT, AI_WINDOW)
+    _enforce_rate_limit(f"wisdom:chat:ip:{_client_ip(request)}", AI_LIMIT * 2, AI_WINDOW)
+
+    conversation_id = (body.conversation_id or "").strip() or str(uuid.uuid4())
+    msg = body.message.strip()
+
+    # Scope check first (no quota, no Bedrock)
+    allowed, blocked_reply = enforce_wisdom_scope(msg)
+    if not allowed:
+        quota = await db.get_ai_quota(user["id"], limit=AI_MONTHLY_LIMIT)
+        return {
+            "conversation_id": conversation_id,
+            "message_id": str(uuid.uuid4()),
+            "reply": blocked_reply,
+            "sources": [],
+            "model": "guardrail",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "blocked": True,
+            "ai_quota": quota,
+        }
+
+    # Monthly quota before expensive Bedrock call
+    quota = await db.consume_ai_quota(user["id"], limit=AI_MONTHLY_LIMIT)
+    if not quota.get("ok"):
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"You've used all {AI_MONTHLY_LIMIT} Wisdom messages for this month. "
+                "Your allowance resets next month. Please return then — we're still here for you."
+            ),
+            headers={"X-AI-Quota-Remaining": "0"},
+        )
+
+    prior = await db.list_wisdom_turns(user["id"], conversation_id=conversation_id, limit=16)
+    # list is newest-first; rebuild chronological history
+    history: list[dict] = []
+    for turn in reversed(prior):
+        if turn.get("user_message"):
+            history.append({"role": "user", "content": turn["user_message"]})
+        if turn.get("assistant_message") or turn.get("prayer"):
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": turn.get("assistant_message") or turn.get("prayer") or "",
+                }
+            )
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"prayer-{user['id']}-{uuid.uuid4()}",
-            system_message=system_msg,
-        ).with_model("openai", "gpt-5.2")
+        result = await generate_wisdom_reply(msg, history=history)
+    except LLMError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        logger.exception("Wisdom chat failure user=%s", user.get("id"))
+        raise HTTPException(
+            status_code=503,
+            detail="Wisdom is temporarily unavailable. Please try again.",
+        )
 
-        response = await chat.send_message(UserMessage(text=prompt))
-        text = response if isinstance(response, str) else str(response)
-    except Exception as e:
-        logger.error(f"AI prayer error: {e}")
-        raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
+    # Second-line guardrail may still block (shouldn't count again — already counted)
+    if result.get("blocked"):
+        return {
+            "conversation_id": conversation_id,
+            "message_id": str(uuid.uuid4()),
+            "reply": result["reply"],
+            "sources": [],
+            "model": "guardrail",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "blocked": True,
+            "ai_quota": quota,
+        }
 
+    now = datetime.now(timezone.utc).isoformat()
     entry = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
+        "kind": "wisdom",
+        "conversation_id": conversation_id,
+        "user_message": msg[:2000],
+        "assistant_message": result["reply"],
+        "prayer": result["reply"],  # legacy field for older clients
+        "sources": result.get("sources") or [],
+        "model": result.get("model"),
+        "created_at": now,
+        "provider": "bedrock",
+    }
+    await db.insert_ai_prayer(entry)
+    return {
+        "conversation_id": conversation_id,
+        "message_id": entry["id"],
+        "reply": result["reply"],
+        "sources": result.get("sources") or [],
+        "model": result.get("model"),
+        "created_at": now,
+        "blocked": False,
+        "ai_quota": quota,
+    }
+
+
+@api.get("/wisdom/history")
+async def wisdom_history(
+    user: dict = Depends(get_current_user),
+    conversation_id: Optional[str] = None,
+):
+    turns = await db.list_wisdom_turns(user["id"], conversation_id=conversation_id, limit=50)
+    return {"turns": turns}
+
+
+@api.post("/wisdom/voice/presign")
+async def wisdom_voice_presign(
+    body: VoicePresignIn,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """Presigned S3 upload for a voice note (Amazon Transcribe input)."""
+    _enforce_rate_limit(f"wisdom:voice:{user['id']}", AI_LIMIT, AI_WINDOW)
+    _enforce_rate_limit(f"wisdom:voice:ip:{_client_ip(request)}", AI_LIMIT * 2, AI_WINDOW)
+    try:
+        return create_upload_url(
+            user["id"],
+            media_ext=body.media_ext,
+            content_type=body.content_type,
+        )
+    except VoiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+@api.post("/wisdom/voice/transcribe")
+async def wisdom_voice_transcribe(
+    body: VoiceTranscribeIn,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Convert an uploaded voice note to text with Amazon Transcribe.
+    Counts as 1 AI call toward the monthly quota (Transcribe is billable).
+    Client uploads via /wisdom/voice/presign first, then posts the s3_key here.
+    User reviews the text in the app and presses Send for wisdom.
+    """
+    _enforce_rate_limit(f"wisdom:transcribe:{user['id']}", max(2, AI_LIMIT // 2), AI_WINDOW)
+    _enforce_rate_limit(
+        f"wisdom:transcribe:ip:{_client_ip(request)}", max(4, AI_LIMIT), AI_WINDOW
+    )
+    quota = await db.consume_ai_quota(user["id"], limit=AI_MONTHLY_LIMIT)
+    if not quota.get("ok"):
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"You've used all {AI_MONTHLY_LIMIT} AI actions for this month "
+                "(including voice notes). Your allowance resets next month."
+            ),
+            headers={"X-AI-Quota-Remaining": "0"},
+        )
+    try:
+        result = start_and_wait_transcript(
+            user["id"],
+            body.s3_key,
+            media_format=body.media_format,
+            language_code=body.language_code or "en-US",
+        )
+        return {
+            "text": result["text"],
+            "language_code": result.get("language_code"),
+            "media_format": result.get("media_format"),
+            "ai_quota": quota,
+        }
+    except VoiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception:
+        logger.exception("Voice transcribe failure user=%s", user.get("id"))
+        raise HTTPException(
+            status_code=503,
+            detail="Speech recognition is temporarily unavailable. Please type instead.",
+        )
+
+
+@api.post("/ai/prayer")
+async def generate_ai_prayer(
+    body: AIPrayerIn,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """Legacy alias → wisdom chat (one-shot)."""
+    msg = body.feeling
+    if body.context:
+        msg = f"{body.feeling}. {body.context}"
+    proxy = WisdomChatIn(message=msg, conversation_id=None)
+    result = await wisdom_chat(proxy, request, user)
+    return {
+        "id": result["message_id"],
         "feeling": body.feeling,
         "context": body.context,
-        "prayer": text.strip(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "prayer": result["reply"],
+        "created_at": result["created_at"],
+        "conversation_id": result["conversation_id"],
     }
-    await db.ai_prayers.insert_one(entry)
-    entry.pop("_id", None)
-    return entry
 
 
 @api.get("/ai/prayers/history")
 async def ai_prayer_history(user: dict = Depends(get_current_user)):
-    docs = (
-        await db.ai_prayers.find({"user_id": user["id"]}, {"_id": 0})
-        .sort("created_at", -1)
-        .to_list(50)
-    )
-    return {"prayers": docs}
+    items = await db.list_ai_prayers(user["id"], limit=50)
+    return {"prayers": items}
 
 
-# ------------------- Stripe Subscription (via emergentintegrations) -------------------
-# NOTE: Emergent-managed Stripe test key supports only one-time payments.
-# We simulate subscriptions by granting premium access for N days per purchase.
-PLAN_PRICES = {
-    "monthly": {"amount": 9.99, "days": 30, "label": "Monthly Premium"},
-    "annual": {"amount": 59.99, "days": 365, "label": "Annual Premium"},
+PREMIUM_GRANT_EVENTS = {
+    "INITIAL_PURCHASE",
+    "RENEWAL",
+    "UNCANCELLATION",
+    "NON_RENEWING_PURCHASE",
+    "PRODUCT_CHANGE",
+    "SUBSCRIPTION_EXTENDED",
 }
+PREMIUM_REVOKE_EVENTS = {"EXPIRATION"}
 
 
-@api.post("/stripe/checkout")
-async def create_checkout(body: CheckoutIn, user: dict = Depends(get_current_user)):
-    if body.plan not in PLAN_PRICES:
-        raise HTTPException(status_code=400, detail="Invalid plan")
-
-    plan_cfg = PLAN_PRICES[body.plan]
-    origin = body.origin_url.rstrip("/")
-    checkout = StripeCheckout(api_key=STRIPE_API_KEY)
-
-    try:
-        session = await checkout.create_checkout_session(
-            CheckoutSessionRequest(
-                amount=float(plan_cfg["amount"]),
-                currency="usd",
-                success_url=f"{origin}/paywall-success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{origin}/paywall-cancel",
-                metadata={
-                    "user_id": user["id"],
-                    "plan": body.plan,
-                    "days": str(plan_cfg["days"]),
-                },
-            )
-        )
-    except Exception as e:
-        logger.error(f"Stripe checkout error: {e}")
-        raise HTTPException(status_code=400, detail=f"Checkout failed: {str(e)}")
-
-    await db.payment_transactions.update_one(
-        {"session_id": session.session_id},
-        {
-            "$set": {
-                "session_id": session.session_id,
-                "user_id": user["id"],
-                "email": user["email"],
-                "plan": body.plan,
-                "amount": plan_cfg["amount"],
-                "currency": "usd",
-                "days": plan_cfg["days"],
-                "status": "initiated",
-                "payment_status": "pending",
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            }
-        },
-        upsert=True,
-    )
-
-    return {"url": session.url, "session_id": session.session_id}
+def _plan_from_product(product_id: Optional[str]) -> Optional[str]:
+    if not product_id:
+        return None
+    pid = product_id.lower()
+    if "annual" in pid or "year" in pid:
+        return "annual"
+    if "month" in pid:
+        return "monthly"
+    return None
 
 
-@api.get("/stripe/verify/{session_id}")
-async def verify_checkout(session_id: str, user: dict = Depends(get_current_user)):
-    """Poll-based confirmation used by the mobile app after redirect."""
-    tx = await db.payment_transactions.find_one({"session_id": session_id})
-    if not tx:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-
-    checkout = StripeCheckout(api_key=STRIPE_API_KEY)
-    try:
-        status = await checkout.get_checkout_status(session_id)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    paid = status.payment_status == "paid"
-
-    # Idempotent grant of premium
-    already_granted = tx.get("payment_status") == "paid"
-    if paid and not already_granted:
-        days = int(status.metadata.get("days") or tx.get("days") or 30)
-        premium_until = datetime.now(timezone.utc) + timedelta(days=days)
-        await db.users.update_one(
-            {"id": user["id"]},
-            {
-                "$set": {
-                    "is_premium": True,
-                    "premium_until": premium_until.isoformat(),
-                    "plan": status.metadata.get("plan") or tx.get("plan"),
-                }
-            },
-        )
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {
-                "$set": {
-                    "status": status.status,
-                    "payment_status": status.payment_status,
-                    "amount_total": status.amount_total,
-                    "premium_until": premium_until.isoformat(),
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }
-            },
-        )
-
-    return {
-        "active": paid,
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "plan": status.metadata.get("plan"),
+async def _set_premium(user_id: str, active: bool, plan: Optional[str] = None, expires_at: Optional[str] = None):
+    payload = {
+        "is_premium": active,
+        "plan": plan if active else None,
+        "premium_until": expires_at if active else None,
+        "subscription_provider": "revenuecat",
     }
+    await db.update_user(user_id, payload)
+
+
+@api.post("/subscription/sync")
+async def subscription_sync(body: SubscriptionSyncIn, user: dict = Depends(get_current_user)):
+    plan = body.plan if body.plan in ("monthly", "annual") else None
+    await _set_premium(user["id"], body.active, plan=plan)
+    return {"ok": True, "active": body.active, "plan": plan}
+
+
+@api.post("/revenuecat/webhook")
+async def revenuecat_webhook(request: Request):
+    if REVENUECAT_WEBHOOK_AUTHORIZATION:
+        auth = request.headers.get("Authorization", "")
+        expected = f"Bearer {REVENUECAT_WEBHOOK_AUTHORIZATION}"
+        if auth != expected and auth != REVENUECAT_WEBHOOK_AUTHORIZATION:
+            raise HTTPException(status_code=401, detail="Unauthorized webhook")
+
+    payload = await request.json()
+    event = payload.get("event") or {}
+    event_type = event.get("type")
+    user_id = event.get("app_user_id")
+    if not user_id or not event_type:
+        return {"ok": True, "ignored": True}
+
+    entitlements = event.get("entitlement_ids") or []
+    has_entitlement = REVENUECAT_ENTITLEMENT_ID in entitlements or bool(entitlements)
+
+    expires_at = event.get("expiration_at_ms")
+    expires_iso = None
+    if expires_at:
+        try:
+            expires_iso = datetime.fromtimestamp(int(expires_at) / 1000, tz=timezone.utc).isoformat()
+        except Exception:
+            expires_iso = None
+
+    plan = _plan_from_product(event.get("product_id"))
+
+    if event_type in PREMIUM_GRANT_EVENTS and has_entitlement:
+        await _set_premium(user_id, True, plan=plan, expires_at=expires_iso)
+    elif event_type in PREMIUM_REVOKE_EVENTS:
+        await _set_premium(user_id, False)
+
+    return {"ok": True, "event_type": event_type}
 
 
 @api.get("/subscription/status")
 async def subscription_status(user: dict = Depends(get_current_user)):
-    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    fresh = await db.get_user_by_id(user["id"])
     if not fresh:
         return {"active": False, "plan": None}
     active = bool(fresh.get("is_premium"))
@@ -568,26 +788,31 @@ async def subscription_status(user: dict = Depends(get_current_user)):
         try:
             if datetime.fromisoformat(premium_until) < datetime.now(timezone.utc):
                 active = False
-                await db.users.update_one(
-                    {"id": user["id"]}, {"$set": {"is_premium": False}}
-                )
+                await db.update_user(user["id"], {"is_premium": False})
         except Exception:
             pass
     return {"active": active, "plan": fresh.get("plan"), "premium_until": premium_until}
 
 
-# ------------------- Wire router + middleware -------------------
 app.include_router(api)
 
+_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+# Expo web preview uses http://localhost — exp:// origins alone break browser fetch.
+_dev_web_origins = [
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+    "http://localhost:19006",
+    "http://127.0.0.1:19006",
+]
+_allow_origins = list(dict.fromkeys(_cors_origins + _dev_web_origins)) or ["*"]
+# Security headers + timing first (outermost last in Starlette reverse order)
+app.add_middleware(TimingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allow_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 
-@app.on_event("shutdown")
-async def shutdown():
-    client.close()

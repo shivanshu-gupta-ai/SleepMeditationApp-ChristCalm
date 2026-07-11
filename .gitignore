@@ -76,7 +76,14 @@ agenthub/agents/youtube/db
 # Build caches
 .cache/
 
-memory/test_credentials.md
+# Local config overrides (templates live in config/)
+config/**/*.local
+config/auth/.env
+
+# Uploaded audio (keep folder via .gitkeep)
+assets/audio/*
+!assets/audio/.gitkeep
+!assets/audio/README.md
 
 # Mobile development
 android-sdk/
@@ -86,3 +93,20 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+
+# Terraform
+aws/terraform/.terraform/
+aws/terraform/*.tfstate
+aws/terraform/*.tfstate.*
+aws/terraform/tfplan
+aws/terraform/*.tfplan
+aws/terraform/terraform.tfvars
+*.tfvars
+!*.tfvars.example
+
+# Local agent/skill caches (keep skill source optional)
+.claude/skills/**/node_modules/
+
+# Video analysis frames can be regenerated with ffmpeg
+# docs/design/video-frames/*.jpg
+# docs/design/video-frames/*.png

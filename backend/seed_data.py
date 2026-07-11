@@ -1,13 +1,18 @@
 """Static seed content for ChristCalm — emotions, meditations, prayers, devotionals."""
 
+from pathlib import Path
+
+# Local audio uploads go in assets/audio/ — replace audio_url with your CDN URL after upload.
+AUDIO_ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets" / "audio"
+
+# Core support set — hard moments first. Removed purely positive "grateful" & "joyful"
+# so the Home grid stays short (product focus: meet people where it hurts).
 EMOTIONS = [
     {"id": "anxious", "label": "Anxious", "color": "#F4C77B", "emoji": "🌊"},
     {"id": "fearful", "label": "Fearful", "color": "#B8A5D9", "emoji": "🕊️"},
     {"id": "sad", "label": "Sad", "color": "#89A9C5", "emoji": "🌧️"},
     {"id": "overwhelmed", "label": "Overwhelmed", "color": "#E29587", "emoji": "🌀"},
     {"id": "lonely", "label": "Lonely", "color": "#A8B5A0", "emoji": "🌙"},
-    {"id": "grateful", "label": "Grateful", "color": "#F0BE8A", "emoji": "🌾"},
-    {"id": "joyful", "label": "Joyful", "color": "#F4D06F", "emoji": "☀️"},
     {"id": "hopeful", "label": "Hopeful", "color": "#8FC0A9", "emoji": "🌱"},
     {"id": "peaceful", "label": "Peaceful", "color": "#B8D4C7", "emoji": "🕯️"},
 ]
@@ -87,7 +92,7 @@ MEDITATIONS = [
     },
     {
         "id": "med-7",
-        "emotion": "grateful",
+        "emotion": "hopeful",
         "title": "A Thankful Heart",
         "subtitle": "Meditation on God's goodness",
         "duration_min": 5,
@@ -99,7 +104,7 @@ MEDITATIONS = [
     },
     {
         "id": "med-8",
-        "emotion": "joyful",
+        "emotion": "peaceful",
         "title": "Joy of the Lord",
         "subtitle": "Celebrating His faithfulness",
         "duration_min": 6,

@@ -10,7 +10,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, shrink-to-fit=no"
         />
         {/*
           Disable body scrolling on web to make ScrollView components work correctly.
@@ -21,9 +21,38 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
+              /* Full viewport root for Expo web */
+              html, body, #root {
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow: hidden !important;
+              }
+              body > div:first-child {
+                position: fixed !important;
+                top: 0; left: 0; right: 0; bottom: 0;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: stretch !important;
+              }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
+
+              /* Mobile-first: no ugly system scrollbars */
+              * {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+              }
+              *::-webkit-scrollbar {
+                width: 0 !important;
+                height: 0 !important;
+                display: none !important;
+                background: transparent !important;
+              }
+
+              /* Prevent accidental horizontal page scroll on desktop */
+              body {
+                overscroll-behavior: none;
+              }
             `,
           }}
         />

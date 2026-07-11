@@ -1,8 +1,7 @@
 import { useEffect } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/src/context/AuthContext";
-import { colors } from "@/src/theme";
+import { LoadingState } from "@/src/components/ui";
 
 export default function Index() {
   const { loading, user, onboardingComplete } = useAuth();
@@ -19,18 +18,5 @@ export default function Index() {
     }
   }, [loading, user, onboardingComplete, router]);
 
-  return (
-    <View style={styles.container} testID="app-loading">
-      <ActivityIndicator size="large" color={colors.primary} />
-    </View>
-  );
+  return <LoadingState message="Preparing your space…" testID="app-loading" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

@@ -3,30 +3,110 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { LogBox, StatusBar } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { useIconFonts } from "@/src/hooks/use-icon-fonts";
-import { AuthProvider } from "@/src/context/AuthContext";
+import { useAppFonts } from "@/src/hooks/use-app-fonts";
+import { AuthProvider, useAuth } from "@/src/context/AuthContext";
+import { RevenueCatProvider } from "@/src/context/RevenueCatContext";
+import { ThemeProvider, useTheme } from "@/src/context/ThemeContext";
+import { ViewportProvider } from "@/src/context/ViewportContext";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [iconsLoaded, iconsError] = useIconFonts();
+  const [fontsReady, fontsError] = useAppFonts();
 
   useEffect(() => {
-    if (iconsLoaded || iconsError) {
+    if (fontsReady || fontsError) {
       SplashScreen.hideAsync();
     }
-  }, [iconsLoaded, iconsError]);
+  }, [fontsReady, fontsError]);
 
-  if (!iconsLoaded && !iconsError) return null;
+  if (!fontsReady && !fontsError) return null;
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="#F9F7F1" />
-      <AuthProvider>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#F9F7F1" } }} />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <ViewportProvider>
+            <AuthenticatedRoot />
+          </ViewportProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function RootNavigator() {
+  const { colors, isDark } = useTheme();
+  const { user } = useAuth();
+
+  return (
+    <>
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
+      <RevenueCatProvider userId={user?.id ?? null}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+            animation: "fade_from_bottom",
+            animationDuration: 280,
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
+          }}
+        >
+          <Stack.Screen name="index" options={{ animation: "fade" }} />
+          <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+          <Stack.Screen name="(auth)" options={{ animation: "fade" }} />
+          <Stack.Screen
+            name="onboarding"
+            options={{ animation: "fade", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="sos"
+            options={{
+              presentation: "modal",
+              animation: "slide_from_bottom",
+              animationDuration: 320,
+            }}
+          />
+          <Stack.Screen
+            name="paywall"
+            options={{
+              presentation: "modal",
+              animation: "slide_from_bottom",
+              animationDuration: 320,
+            }}
+          />
+          <Stack.Screen
+            name="ai-prayer"
+            options={{
+              presentation: "card",
+              animation: "slide_from_right",
+            }}
+          />
+          <Stack.Screen
+            name="meditation/[id]"
+            options={{
+              presentation: "fullScreenModal",
+              animation: "fade",
+              animationDuration: 350,
+            }}
+          />
+        </Stack>
+      </RevenueCatProvider>
+    </>
+  );
+}
+
+function AuthenticatedRoot() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
   );
 }
