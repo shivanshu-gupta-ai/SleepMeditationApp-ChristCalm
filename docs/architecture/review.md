@@ -1,7 +1,9 @@
 # ChristCalm — Code, Security, Performance & Testing Review
 
-**Date:** 2026-07-09  
-**Scope:** Full stack (Expo frontend, FastAPI Lambda backend, DynamoDB, Bedrock AI)
+**Date:** 2026-07-09 (living checklist)  
+**Scope:** Full stack (Expo frontend, FastAPI Lambda backend, DynamoDB, Bedrock AI)  
+
+> **Design note:** UI is Nest dark + Cooper light (Inter type). See [`../design/system.md`](../design/system.md).
 
 ---
 

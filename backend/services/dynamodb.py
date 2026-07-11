@@ -20,6 +20,8 @@ TABLE_SUFFIXES = {
     "journal_entries": "journal-entries",
     "ai_prayers": "ai-prayers",
     "payment_transactions": "payment-transactions",
+    "usage_events": "usage-events",
+    "usage_daily": "usage-daily",
 }
 
 
@@ -436,6 +438,199 @@ class Database:
 
         resp = await _run(_update)
         return _from_dynamo(resp["Attributes"])
+
+    # --- Usage analytics (product monitoring for analysis) ---
+    # Retention: 90 days via DynamoDB TTL
+    USAGE_TTL_DAYS = 90
+
+    async def put_usage_events(
+        self,
+        user_id: str,
+        events: list[dict],
+        platform: str = "unknown",
+        session_id: str | None = None,
+    ) -> dict:
+        """
+        Persist product usage events + daily rollups.
+        events: [{name, props?, ts?}, ...]
+        """
+        import uuid as _uuid
+
+        if not events:
+            return {"accepted": 0}
+
+        now = datetime.now(timezone.utc)
+        ttl_base = int(now.timestamp()) + self.USAGE_TTL_DAYS * 86400
+        accepted = 0
+        table_events = self._table("usage_events")
+        table_daily = self._table("usage_daily")
+
+        def _write_one(ev: dict) -> bool:
+            name = str(ev.get("name") or "").strip()[:64]
+            if not name:
+                return False
+            ts_raw = ev.get("ts") or now.isoformat()
+            try:
+                # normalize
+                if isinstance(ts_raw, (int, float)):
+                    ts_dt = datetime.fromtimestamp(float(ts_raw), tz=timezone.utc)
+                else:
+                    ts_dt = datetime.fromisoformat(str(ts_raw).replace("Z", "+00:00"))
+                    if ts_dt.tzinfo is None:
+                        ts_dt = ts_dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                ts_dt = now
+            ts_iso = ts_dt.astimezone(timezone.utc).isoformat()
+            day = ts_dt.astimezone(timezone.utc).strftime("%Y-%m-%d")
+            event_id = str(ev.get("id") or _uuid.uuid4())[:40]
+            sk = f"{ts_iso}#{event_id}"
+            props = ev.get("props") if isinstance(ev.get("props"), dict) else {}
+            # stringify props values for Dynamo simplicity
+            clean_props: dict[str, Any] = {}
+            for k, v in list(props.items())[:30]:
+                key = str(k)[:40]
+                if v is None or isinstance(v, (str, int, float, bool)):
+                    clean_props[key] = v if not isinstance(v, float) else Decimal(str(v))
+                else:
+                    clean_props[key] = str(v)[:200]
+
+            item = {
+                "user_id": user_id[:80],
+                "sk": sk,
+                "event_id": event_id,
+                "event_name": name,
+                "day": day,
+                "ts": ts_iso,
+                "platform": (platform or "unknown")[:32],
+                "session_id": (session_id or "")[:64] or None,
+                "props": clean_props or None,
+                "ttl": Decimal(str(ttl_base)),
+            }
+            table_events.put_item(Item=_to_dynamo(item))
+
+            # Daily event counter
+            table_daily.update_item(
+                Key={"day": day, "sk": f"event#{name}"},
+                UpdateExpression="ADD #c :one SET event_name = :n",
+                ExpressionAttributeNames={"#c": "count"},
+                ExpressionAttributeValues={
+                    ":one": Decimal("1"),
+                    ":n": name,
+                },
+            )
+            # Unique user presence for the day (first event only)
+            try:
+                table_daily.put_item(
+                    Item=_to_dynamo(
+                        {
+                            "day": day,
+                            "sk": f"user#{user_id[:80]}",
+                            "user_id": user_id[:80],
+                            "first_ts": ts_iso,
+                        }
+                    ),
+                    ConditionExpression="attribute_not_exists(sk)",
+                )
+                table_daily.update_item(
+                    Key={"day": day, "sk": "meta#totals"},
+                    UpdateExpression="ADD dau :one, events :e",
+                    ExpressionAttributeValues={
+                        ":one": Decimal("1"),
+                        ":e": Decimal("1"),
+                    },
+                )
+            except Exception:
+                # already counted as DAU — still bump event total
+                table_daily.update_item(
+                    Key={"day": day, "sk": "meta#totals"},
+                    UpdateExpression="ADD events :e",
+                    ExpressionAttributeValues={":e": Decimal("1")},
+                )
+            return True
+
+        def _batch():
+            n = 0
+            for ev in events[:100]:  # hard cap per request
+                try:
+                    if _write_one(ev):
+                        n += 1
+                except Exception as e:
+                    logger.warning("usage_event_write_failed err=%s", e)
+            return n
+
+        accepted = await _run(_batch)
+        return {"accepted": accepted}
+
+    async def list_user_usage(self, user_id: str, limit: int = 50) -> list[dict]:
+        def _query():
+            resp = self._table("usage_events").query(
+                KeyConditionExpression="user_id = :uid",
+                ExpressionAttributeValues={":uid": user_id},
+                ScanIndexForward=False,
+                Limit=limit,
+            )
+            return [_from_dynamo(i) for i in resp.get("Items", [])]
+
+        return await _run(_query)
+
+    async def usage_summary_for_days(self, days: int = 7) -> dict:
+        """Read daily rollups for the last N days (analysis dashboard)."""
+        days = max(1, min(int(days), 90))
+        from datetime import timedelta
+
+        today = datetime.now(timezone.utc).date()
+        day_list = [
+            (today - timedelta(days=i)).isoformat() for i in range(days)
+        ]
+
+        def _load():
+            out_days = []
+            event_totals: dict[str, int] = {}
+            total_events = 0
+            total_dau = 0
+            for day in day_list:
+                resp = self._table("usage_daily").query(
+                    KeyConditionExpression="#d = :d",
+                    ExpressionAttributeNames={"#d": "day"},
+                    ExpressionAttributeValues={":d": day},
+                )
+                items = [_from_dynamo(i) for i in resp.get("Items", [])]
+                day_events: dict[str, int] = {}
+                dau = 0
+                ev_count = 0
+                for it in items:
+                    sk = it.get("sk") or ""
+                    if sk.startswith("event#"):
+                        name = sk.replace("event#", "", 1)
+                        c = int(it.get("count") or 0)
+                        day_events[name] = c
+                        event_totals[name] = event_totals.get(name, 0) + c
+                        ev_count += c
+                    elif sk == "meta#totals":
+                        dau = int(it.get("dau") or 0)
+                        # prefer meta events if present
+                        if it.get("events") is not None:
+                            ev_count = int(it.get("events") or ev_count)
+                total_events += ev_count
+                total_dau += dau
+                out_days.append(
+                    {
+                        "day": day,
+                        "dau": dau,
+                        "events": ev_count,
+                        "by_event": day_events,
+                    }
+                )
+            return {
+                "days": out_days,
+                "totals": {
+                    "events": total_events,
+                    "dau_sum": total_dau,  # sum of daily uniques (not unique across window)
+                    "by_event": event_totals,
+                },
+            }
+
+        return await _run(_load)
 
 
 db = Database()

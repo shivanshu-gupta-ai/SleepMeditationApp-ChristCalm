@@ -50,7 +50,7 @@ function timeOfDayPath(): { title: string; sub: string; href: string; icon: keyo
 /** Personalized “today’s path” — time of day + last emotion continuity. */
 export function TodaysPath({ emotions }: Props) {
   const router = useRouter();
-  const { colors, fonts, spacing, shadows } = useTheme();
+  const { colors, fonts, spacing, shadows, isDark } = useTheme();
   const [lastEmotionId, setLastEmotionId] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
 
@@ -67,12 +67,11 @@ export function TodaysPath({ emotions }: Props) {
       <View style={{ marginBottom: layout.sectionGap }}>
         <Text
           style={{
-            fontFamily: fonts.body,
-            fontSize: layout.overlineSize,
-            letterSpacing: layout.overlineTracking,
-            textTransform: "uppercase",
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.15,
             color: colors.textMuted,
-            marginBottom: spacing.sm,
+            marginBottom: spacing.md,
           }}
         >
           Today’s path
@@ -90,29 +89,33 @@ export function TodaysPath({ emotions }: Props) {
           style={{
             backgroundColor: colors.surface,
             borderRadius: layout.surfaceRadius,
-            borderWidth: 1,
-            borderColor: colors.borderSoft,
-            padding: spacing.md,
+            // Nest: borderless elevated card
+            borderWidth: isDark ? 0 : 1,
+            borderColor: isDark ? "transparent" : colors.borderSoft,
+            paddingVertical: spacing.lg,
+            paddingHorizontal: spacing.lg,
             flexDirection: "row",
             alignItems: "center",
-            gap: 14,
-            ...shadows.soft,
+            gap: 16,
+            ...(isDark ? null : shadows.soft),
           }}
           testID="todays-path-card"
         >
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
-              backgroundColor: lastEm ? lastEm.color + "33" : colors.primarySoft,
+              width: 52,
+              height: 52,
+              borderRadius: 18,
+              backgroundColor: lastEm
+                ? lastEm.color + (isDark ? "28" : "33")
+                : colors.primarySoft,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             <Ionicons
               name={lastEm ? emotionIcon(lastEm.id) : path.icon}
-              size={22}
+              size={24}
               color={lastEm ? lastEm.color : colors.primary}
             />
           </View>
@@ -120,25 +123,24 @@ export function TodaysPath({ emotions }: Props) {
             <Text
               style={{
                 fontFamily: fonts.headingBold,
-                fontSize: 16,
+                fontSize: 17,
                 color: colors.textPrimary,
+                letterSpacing: -0.3,
               }}
             >
-              {lastEm ? `Continue with ${lastEm.label}` : path.title}
+              {lastEm ? `Continue · ${lastEm.label}` : path.title}
             </Text>
             <Text
               style={{
                 fontFamily: fonts.body,
                 fontSize: 13,
                 color: colors.textSecondary,
-                marginTop: 2,
+                marginTop: 4,
                 lineHeight: 18,
               }}
             >
-              {lastEm
-                ? "Pick up Scripture-guided calm for this feeling"
-                : path.sub}
-              {streak > 1 ? ` · ${streak}-day rhythm` : ""}
+              {lastEm ? "Scripture-guided calm" : path.sub}
+              {streak > 1 ? ` · ${streak}d` : ""}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />

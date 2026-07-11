@@ -32,13 +32,12 @@ export function OnboardingQuestion({
       {overline ? (
         <Text
           style={{
-            fontFamily: fonts.body,
-            fontSize: 11,
-            letterSpacing: 2.4,
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.2,
             color: colors.primary,
             marginBottom: spacing.sm,
             textAlign: align,
-            textTransform: "uppercase",
           }}
         >
           {overline}

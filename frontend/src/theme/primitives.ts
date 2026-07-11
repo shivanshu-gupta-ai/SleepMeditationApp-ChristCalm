@@ -2,10 +2,8 @@ import { type ViewStyle } from "react-native";
 import { fontFamilies } from "@/src/theme/fonts";
 
 /**
- * Semantic font roles used across the app.
- * Always reference these (never hardcode family strings in screens).
- * Pairing: Outfit (heading) + Figtree (body) + Cormorant Garamond (scripture)
- * — calm wellness stack aligned with Soft UI Evolution.
+ * Typography roles — single Nest-like family (Inter).
+ * Weight hierarchy only: Semibold/Bold titles, Regular/Medium body.
  */
 export const fonts = {
   heading: fontFamilies.headingSemiBold,
@@ -18,7 +16,8 @@ export const fonts = {
 };
 
 /**
- * Spacious 8pt rhythm (density dial 2/10 — Soft UI Evolution for wellness).
+ * Nest/Cooper spacing — roomy 8pt grid.
+ * Prefer lg/xl gaps between sections (emptiness = premium).
  */
 export const spacing = {
   xs: 4,
@@ -31,13 +30,13 @@ export const spacing = {
 } as const;
 
 /**
- * Soft UI Evolution radii — 10–24pt organic curves, never sharp corners.
+ * Nest uses large soft radii (~20–28) on cards.
  */
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
+  sm: 12,
+  md: 16,
+  lg: 24,
+  xl: 28,
   full: 999,
 } as const;
 
@@ -48,31 +47,34 @@ export type ShadowTokens = {
 };
 
 /**
- * Soft UI Evolution shadows: multi-layer soft depth, clearer hierarchy than
- * pure neumorphism, WCAG-friendly. No harsh black blobs.
+ * Elevation:
+ * Dark Nest → almost no shadow noise; cards float via fill contrast.
+ * Light Cooper → soft cool lavender shadow.
  */
 export function createShadows(isDark: boolean): ShadowTokens {
   if (isDark) {
     return {
       soft: {
+        // Subtle depth only — Nest cards are mostly fill, not drop-shadows
         shadowColor: "#000000",
-        shadowOpacity: 0.28,
-        shadowRadius: 14,
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },
-        elevation: 3,
+        elevation: 2,
       },
       medium: {
         shadowColor: "#000000",
-        shadowOpacity: 0.38,
-        shadowRadius: 22,
+        shadowOpacity: 0.45,
+        shadowRadius: 20,
         shadowOffset: { width: 0, height: 8 },
         elevation: 6,
       },
       glow: {
-        shadowColor: "#7EC4CE",
+        // Rare purple ambient (empty states / premium moments)
+        shadowColor: "#8B6FE0",
         shadowOpacity: 0.28,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 0 },
         elevation: 4,
       },
     };
@@ -80,25 +82,25 @@ export function createShadows(isDark: boolean): ShadowTokens {
 
   return {
     soft: {
-      shadowColor: "#1A2332",
-      shadowOpacity: 0.07,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 2,
+      shadowColor: "#3D2E6B",
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 3,
     },
     medium: {
-      shadowColor: "#1A2332",
-      shadowOpacity: 0.1,
-      shadowRadius: 20,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 5,
+      shadowColor: "#3D2E6B",
+      shadowOpacity: 0.12,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 6,
     },
     glow: {
-      shadowColor: "#5B9BA5",
-      shadowOpacity: 0.2,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 3,
+      shadowColor: "#7C6FE0",
+      shadowOpacity: 0.22,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
   };
 }
@@ -106,10 +108,6 @@ export function createShadows(isDark: boolean): ShadowTokens {
 /** @deprecated Prefer theme.shadows from useTheme() */
 export const shadows = createShadows(false);
 
-/**
- * Motion tokens — subtle tier (dial 3/10).
- * Micro-interactions 150–300ms; spring press; respect reduced-motion in components.
- */
 export const motion = {
   pressScale: 0.97,
   pressSpring: { damping: 20, stiffness: 340, mass: 0.55 },
@@ -118,7 +116,6 @@ export const motion = {
   microMs: 200,
 } as const;
 
-/** Icon size scale (stroke-consistent Ionicons) */
 export const iconSize = {
   sm: 18,
   md: 22,
@@ -126,5 +123,4 @@ export const iconSize = {
   xl: 36,
 } as const;
 
-/** Minimum touch target (Apple HIG 44pt) */
 export const touchTarget = 44;

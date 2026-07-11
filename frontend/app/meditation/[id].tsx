@@ -25,13 +25,15 @@ import {
 import { track } from "@/src/utils/analytics";
 import { playHaptic } from "@/src/utils/haptics";
 import { LoadingState, ErrorState, Button } from "@/src/components/ui";
+import { meditationCoverSource } from "@/src/constants/meditation-covers";
 
 type Meditation = {
   id: string;
   title: string;
   subtitle: string;
   duration_min: number;
-  cover: string;
+  cover?: string;
+  cover_file?: string;
   scripture: string;
   verse: string;
   audio_url: string;
@@ -175,7 +177,11 @@ export default function MeditationPlayer() {
   const artSize = scale(250);
 
   return (
-    <ImageBackground source={{ uri: med.cover }} style={{ flex: 1 }} blurRadius={30}>
+    <ImageBackground
+      source={meditationCoverSource(med.id, med.cover)}
+      style={{ flex: 1 }}
+      blurRadius={30}
+    >
       <LinearGradient colors={[colors.scrim, "rgba(11,13,18,0.88)"]} style={{ flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
           <View
@@ -225,7 +231,7 @@ export default function MeditationPlayer() {
               }}
             >
               <ImageBackground
-                source={{ uri: med.cover }}
+                source={meditationCoverSource(med.id, med.cover)}
                 style={{ width: "100%", height: "100%" }}
                 imageStyle={{ borderRadius: artSize / 2 }}
               />
@@ -257,7 +263,7 @@ export default function MeditationPlayer() {
             <View style={{ marginTop: spacing.xl, paddingHorizontal: spacing.md, alignItems: "center" }}>
               <Text
                 style={{
-                  fontFamily: fonts.scriptureItalic,
+                  fontFamily: fonts.scripture,
                   fontSize: 18,
                   color: colors.white,
                   textAlign: "center",

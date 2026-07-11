@@ -22,15 +22,14 @@ export function Card({
   testID,
   onPress,
 }: Props) {
-  const { colors, spacing, radius, shadows } = useTheme();
+  const { colors, spacing, radius, shadows, isDark } = useTheme();
 
   const cardStyle: StyleProp<ViewStyle> = [
     {
       backgroundColor: glass ? colors.cardGlass : colors.surface,
       borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      // No overflow:hidden — rounded corners were clipping labels/body text
+      borderWidth: isDark ? 0 : 1,
+      borderColor: isDark ? "transparent" : colors.borderSoft,
       ...(elevated ? shadows.soft : null),
     },
     padded ? { padding: spacing.lg } : null,

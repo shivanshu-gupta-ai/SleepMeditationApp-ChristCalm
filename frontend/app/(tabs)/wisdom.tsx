@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,12 +29,14 @@ import {
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
 } from "expo-audio";
+import { useFocusEffect } from "expo-router";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
 import { layout } from "@/src/theme/layout";
-import { Button, ErrorBanner, PressableScale, PageHeader } from "@/src/components/ui";
+import { Button, ErrorBanner, PressableScale } from "@/src/components/ui";
 import { markFirstStep } from "@/src/components/ui/FirstStepsChecklist";
+import { ListeningWave } from "@/src/components/ui/ListeningWave";
 import { playHaptic } from "@/src/utils/haptics";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
@@ -44,13 +47,21 @@ type ChatMessage = {
   content: string;
 };
 
-const STARTERS = [
-  "I feel anxious and can't rest",
-  "I'm grieving and feel alone",
-  "I keep failing and feel ashamed",
-  "I'm angry at someone I love",
-  "I doubt God is near",
-];
+/** Short prompt chips — only shown before the first real reply */
+const STARTERS = ["Anxious", "Grieving", "Ashamed", "Angry", "Doubt"];
+
+const STARTER_PROMPTS: Record<string, string> = {
+  Anxious: "I feel anxious and can't rest",
+  Grieving: "I'm grieving and feel alone",
+  Ashamed: "I keep failing and feel ashamed",
+  Angry: "I'm angry at someone I love",
+  Doubt: "I doubt God is near",
+};
+
+const WELCOME =
+  "What's on your heart? Type or speak — spiritual concerns only.";
+
+const WELCOME_NEW = "New chat. Share what's weighing on you.";
 
 function mediaMetaFromUri(uri: string): { ext: string; contentType: string; format: string } {
   const lower = (uri || "").toLowerCase();
@@ -68,14 +79,9 @@ function mediaMetaFromUri(uri: string): { ext: string; contentType: string; form
 
 export default function WisdomTab() {
   const { colors, fonts, spacing, shadows } = useTheme();
-  const { pagePadding } = useResponsive();
+  const { pagePadding, bottomClearance } = useResponsive();
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Share what’s on your heart — type or tap the mic to speak. I’m here for emotional and spiritual concerns only (not coding or other tasks). You have 100 Wisdom messages per month.",
-    },
+    { id: "welcome", role: "assistant", content: WELCOME },
   ]);
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -124,11 +130,23 @@ export default function WisdomTab() {
     transform: [{ scale: micScale.value }],
   }));
 
-  useEffect(() => {
+  const refreshQuota = useCallback(() => {
     api
       .wisdomQuota()
       .then((q) => setQuota({ used: q.used, limit: q.limit, remaining: q.remaining }))
-      .catch(() => {});
+      .catch(() => {
+        // Keep last known quota if fetch fails
+      });
+  }, []);
+
+  // Always show fresh remaining count when tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      refreshQuota();
+    }, [refreshQuota])
+  );
+
+  useEffect(() => {
     // Prefill from journal "Share with Wisdom"
     storage.getItem<string>("cc_wisdom_draft", "").then((draft) => {
       if (draft) {
@@ -161,9 +179,7 @@ export default function WisdomTab() {
       const message = (text ?? input).trim();
       if (!message || loading || transcribing) return;
       if (quotaExhausted) {
-        setError(
-          "You've used all Wisdom messages for this month. Your allowance resets next month."
-        );
+        setError("Monthly limit reached. Resets next month.");
         return;
       }
       setError(null);
@@ -289,15 +305,15 @@ export default function WisdomTab() {
     setConversationId(null);
     setError(null);
     setInput("");
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content:
-          "New conversation. What’s weighing on you? Type or speak — this is a safe place.",
-      },
-    ]);
+    setMessages([{ id: "welcome", role: "assistant", content: WELCOME_NEW }]);
   };
+
+  // Only show starter chips before the user has sent anything
+  const showStarters =
+    !isRecording &&
+    !transcribing &&
+    messages.length <= 1 &&
+    messages.every((m) => m.role === "assistant");
 
   const renderItem = ({ item }: { item: ChatMessage }) => {
     const mine = item.role === "user";
@@ -305,37 +321,24 @@ export default function WisdomTab() {
       <View
         style={{
           alignSelf: mine ? "flex-end" : "flex-start",
-          maxWidth: "88%",
-          backgroundColor: mine ? colors.primary : colors.surface,
-          borderRadius: layout.surfaceRadius,
+          maxWidth: "86%",
+          backgroundColor: mine ? colors.primarySoft : colors.surface,
+          borderRadius: 20,
           paddingVertical: 14,
           paddingHorizontal: 16,
-          marginBottom: spacing.sm,
-          borderWidth: mine ? 0 : 1,
-          borderColor: colors.borderSoft,
+          marginBottom: 12,
+          // Nest dark: borderless bubbles
+          borderWidth: 0,
+          borderColor: "transparent",
           ...(mine ? null : shadows.soft),
         }}
       >
-        {!mine ? (
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 11,
-              letterSpacing: 1.4,
-              color: colors.primary,
-              marginBottom: 6,
-              textTransform: "uppercase",
-            }}
-          >
-            Wisdom
-          </Text>
-        ) : null}
         <Text
           style={{
             fontFamily: fonts.body,
             fontSize: 15,
-            lineHeight: 23,
-            color: mine ? colors.textOnPrimary : colors.textPrimary,
+            lineHeight: 22,
+            color: colors.textPrimary,
           }}
         >
           {item.content}
@@ -351,37 +354,141 @@ export default function WisdomTab() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={8}
       >
-        <View style={{ paddingHorizontal: pagePadding, paddingTop: layout.pageTop }}>
-          <PageHeader
-            overline="Conversational · Scripture-rooted"
-            title="Wisdom"
-            subtitle="Emotional concerns only — not code or other tasks. Type or speak from the heart."
-            right={
-              <Button
-                label="New"
-                variant="secondary"
-                fullWidth={false}
-                onPress={newChat}
-                style={{ minHeight: 40, paddingHorizontal: 14 }}
-              />
-            }
-          />
-          {quota ? (
+        {/* Header — title + always-visible remaining messages */}
+        <View
+          style={{
+            paddingHorizontal: pagePadding,
+            paddingTop: layout.pageTop,
+            paddingBottom: spacing.sm,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{
+                fontFamily: fonts.headingBold,
+                fontSize: 28,
+                letterSpacing: -0.6,
+                color: colors.textPrimary,
+              }}
+            >
+              Wisdom
+            </Text>
             <Text
               style={{
                 fontFamily: fonts.body,
                 fontSize: 12,
-                color: quotaExhausted ? colors.accentSOS : colors.textMuted,
-                marginTop: -spacing.sm,
-                marginBottom: spacing.sm,
+                color: colors.textMuted,
+                marginTop: 2,
               }}
-              testID="wisdom-quota"
+            >
+              Scripture-rooted guidance
+            </Text>
+          </View>
+          <PressableScale
+            onPress={newChat}
+            haptic="light"
+            accessibilityLabel="New chat"
+            testID="wisdom-new-chat"
+            style={{
+              minHeight: 36,
+              paddingHorizontal: 14,
+              borderRadius: 999,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.borderSoft,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.bodyBold,
+                fontSize: 13,
+                color: colors.textPrimary,
+              }}
+            >
+              New
+            </Text>
+          </PressableScale>
+        </View>
+
+        {/* Always show how many messages are left this month */}
+        <View
+          testID="wisdom-quota"
+          style={{
+            marginHorizontal: pagePadding,
+            marginBottom: spacing.sm,
+            paddingVertical: 12,
+            paddingHorizontal: 14,
+            borderRadius: 16,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: quotaExhausted ? colors.accentSOS + "55" : colors.borderSoft,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.bodyBold,
+                fontSize: 14,
+                color: quotaExhausted
+                  ? colors.accentSOS
+                  : quota
+                    ? colors.textPrimary
+                    : colors.textMuted,
+              }}
             >
               {quotaExhausted
-                ? `Monthly limit reached (${quota.used}/${quota.limit})`
-                : `${quota.remaining} of ${quota.limit} messages left this month`}
+                ? "No messages left this month"
+                : quota
+                  ? `${quota.remaining} message${quota.remaining === 1 ? "" : "s"} left`
+                  : "Checking messages…"}
             </Text>
-          ) : null}
+            {quota ? (
+              <Text
+                style={{
+                  fontFamily: fonts.bodyMedium,
+                  fontSize: 13,
+                  color: colors.textMuted,
+                }}
+              >
+                {quota.used}/{quota.limit}
+              </Text>
+            ) : null}
+          </View>
+          <View
+            style={{
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: colors.surfaceAlt,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                height: "100%",
+                width: quota
+                  ? `${Math.min(100, (quota.used / Math.max(1, quota.limit)) * 100)}%`
+                  : "0%",
+                borderRadius: 3,
+                backgroundColor: quotaExhausted
+                  ? colors.accentSOS
+                  : quota && quota.remaining <= 15
+                    ? colors.premium
+                    : colors.primary,
+              }}
+            />
+          </View>
         </View>
 
         <FlatList
@@ -394,105 +501,124 @@ export default function WisdomTab() {
           contentContainerStyle={{
             paddingHorizontal: pagePadding,
             paddingBottom: spacing.md,
+            paddingTop: 4,
             flexGrow: 1,
           }}
           ListFooterComponent={
-            loading || transcribing ? (
+            loading ? (
               <View
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 8,
-                  marginVertical: 8,
+                  marginVertical: 6,
                 }}
               >
                 <ActivityIndicator color={colors.primary} />
-                <Text style={{ color: colors.textSecondary, fontFamily: fonts.body, fontSize: 13 }}>
-                  {transcribing ? "Turning your voice into text…" : "Listening with you…"}
+                <Text style={{ color: colors.textMuted, fontFamily: fonts.body, fontSize: 13 }}>
+                  Reflecting…
                 </Text>
               </View>
             ) : null
           }
         />
 
+        {/*
+          Sticky composer — must clear the floating tab bar fully.
+          Do NOT subtract from bottomClearance (that caused overlap with nav).
+        */}
         <View
           style={{
             paddingHorizontal: pagePadding,
-            paddingBottom: spacing.md,
-            borderTopWidth: 1,
+            paddingBottom: bottomClearance,
+            borderTopWidth: StyleSheet.hairlineWidth,
             borderTopColor: colors.borderSoft,
-            paddingTop: spacing.sm,
+            paddingTop: 10,
             backgroundColor: colors.background,
+            width: "100%",
+            maxWidth: "100%",
           }}
         >
           {error ? (
-            <View style={{ marginBottom: spacing.sm }}>
+            <View style={{ marginBottom: 8 }}>
               <ErrorBanner message={error} onDismiss={() => setError(null)} />
             </View>
           ) : null}
 
+          {/* Single listening strip — avoid double “Listening” chrome */}
           {isRecording ? (
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: spacing.sm,
-                paddingHorizontal: 4,
+                marginBottom: 8,
+                borderRadius: 16,
+                backgroundColor: colors.primarySoft,
+                borderWidth: 1,
+                borderColor: colors.primary + "44",
+                overflow: "hidden",
               }}
+              testID="wisdom-listening-panel"
             >
-              <View
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: colors.accentSOS,
-                }}
-              />
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary }}>
-                Listening… tap the mic when you’re done
-              </Text>
+              <ListeningWave active label="Listening" compact />
             </View>
           ) : null}
 
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 8,
-              marginBottom: spacing.sm,
-            }}
-          >
-            {STARTERS.map((s) => (
-              <PressableScale
-                key={s}
-                scaleTo={0.97}
-                haptic="light"
-                onPress={() => send(s)}
-                disabled={loading || transcribing || isRecording}
-                style={{
-                  height: 36,
-                  paddingHorizontal: 12,
-                  borderRadius: 999,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.borderSoft,
-                  justifyContent: "center",
-                }}
-              >
-                <Text
+          {transcribing && !isRecording ? (
+            <View
+              style={{
+                marginBottom: 8,
+                borderRadius: 16,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.borderSoft,
+                overflow: "hidden",
+              }}
+              testID="wisdom-transcribing-panel"
+            >
+              <ListeningWave active label="Transcribing…" compact />
+            </View>
+          ) : null}
+
+          {/* Compact starter chips — only on empty chat */}
+          {showStarters ? (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              {STARTERS.map((label) => (
+                <PressableScale
+                  key={label}
+                  scaleTo={0.97}
+                  haptic="light"
+                  onPress={() => send(STARTER_PROMPTS[label] ?? label)}
+                  disabled={loading}
                   style={{
-                    fontFamily: fonts.body,
-                    fontSize: 12,
-                    color: colors.textSecondary,
+                    height: 32,
+                    paddingHorizontal: 12,
+                    borderRadius: 999,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderSoft,
+                    justifyContent: "center",
                   }}
-                  numberOfLines={1}
                 >
-                  {s}
-                </Text>
-              </PressableScale>
-            ))}
-          </View>
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodyMedium,
+                      fontSize: 12,
+                      color: colors.textSecondary,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                </PressableScale>
+              ))}
+            </View>
+          ) : null}
 
           <View
             style={{
@@ -500,10 +626,14 @@ export default function WisdomTab() {
               alignItems: "flex-end",
               gap: 8,
               backgroundColor: colors.surface,
-              borderRadius: layout.surfaceRadius,
+              borderRadius: 20,
               borderWidth: 1,
-              borderColor: isRecording ? colors.accentSOS : colors.borderSoft,
-              padding: 8,
+              borderColor: isRecording
+                ? colors.primary
+                : transcribing
+                  ? colors.primary + "66"
+                  : colors.borderSoft,
+              padding: 6,
             }}
           >
             <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
@@ -516,7 +646,7 @@ export default function WisdomTab() {
                       width: 44,
                       height: 44,
                       borderRadius: 22,
-                      backgroundColor: colors.accentSOS,
+                      backgroundColor: colors.primary,
                     },
                     pulseStyle,
                   ]}
@@ -526,11 +656,7 @@ export default function WisdomTab() {
                 onPress={onMicPress}
                 disabled={loading || transcribing}
                 haptic="none"
-                accessibilityLabel={
-                  isRecording
-                    ? "Stop recording and convert to text"
-                    : "Record voice note of your concern"
-                }
+                accessibilityLabel={isRecording ? "Stop recording" : "Record voice"}
                 testID="wisdom-mic"
                 hitSlop={6}
                 style={{
@@ -539,52 +665,59 @@ export default function WisdomTab() {
                   borderRadius: 22,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: isRecording
-                    ? colors.accentSOS
-                    : transcribing
-                      ? colors.surfaceAlt
-                      : colors.primarySoft,
+                  backgroundColor: isRecording ? colors.primary : colors.primarySoft,
                 }}
               >
                 <Animated.View style={micAnimStyle}>
-                  {transcribing ? (
-                    <ActivityIndicator color={colors.primary} size="small" />
-                  ) : (
-                    <Ionicons
-                      name={isRecording ? "stop" : "mic"}
-                      size={22}
-                      color={isRecording ? colors.white : colors.primary}
-                    />
-                  )}
+                  <Ionicons
+                    name={isRecording ? "stop" : "mic"}
+                    size={20}
+                    color={isRecording ? colors.textOnPrimary : colors.primary}
+                  />
                 </Animated.View>
               </PressableScale>
             </View>
 
-            <TextInput
-              style={{
-                flex: 1,
-                minHeight: 44,
-                maxHeight: 120,
-                paddingHorizontal: 10,
-                paddingVertical: 10,
-                fontFamily: fonts.body,
-                fontSize: 15,
-                color: colors.textPrimary,
-              }}
-              placeholder={
-                isRecording
-                  ? "Listening…"
-                  : transcribing
-                    ? "Converting speech…"
-                    : "What’s on your heart?"
-              }
-              placeholderTextColor={colors.textMuted}
-              value={input}
-              onChangeText={setInput}
-              multiline
-              editable={!loading && !transcribing && !isRecording}
-              testID="wisdom-input"
-            />
+            {isRecording ? (
+              <View
+                style={{
+                  flex: 1,
+                  minHeight: 44,
+                  justifyContent: "center",
+                  paddingHorizontal: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.bodyMedium,
+                    fontSize: 14,
+                    color: colors.primary,
+                  }}
+                >
+                  Tap stop when done
+                </Text>
+              </View>
+            ) : (
+              <TextInput
+                style={{
+                  flex: 1,
+                  minHeight: 40,
+                  maxHeight: 100,
+                  paddingHorizontal: 8,
+                  paddingVertical: 10,
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  color: colors.textPrimary,
+                }}
+                placeholder={transcribing ? "Almost there…" : "Share a concern…"}
+                placeholderTextColor={colors.textMuted}
+                value={input}
+                onChangeText={setInput}
+                multiline
+                editable={!loading && !transcribing}
+                testID="wisdom-input"
+              />
+            )}
             <Button
               label={sendFlash ? "Sent" : "Send"}
               icon={sendFlash ? "checkmark" : "send"}
@@ -593,21 +726,10 @@ export default function WisdomTab() {
               disabled={!input.trim() || transcribing || isRecording || quotaExhausted}
               fullWidth={false}
               haptic="medium"
-              style={{ minHeight: 44, paddingHorizontal: 16 }}
+              style={{ minHeight: 40, paddingHorizontal: 14 }}
               testID="wisdom-send"
             />
           </View>
-          <Text
-            style={{
-              marginTop: 8,
-              fontFamily: fonts.body,
-              fontSize: 11,
-              color: colors.textMuted,
-              textAlign: "center",
-            }}
-          >
-            Heart concerns only · Speak → review text → Send · 100 AI actions / month
-          </Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

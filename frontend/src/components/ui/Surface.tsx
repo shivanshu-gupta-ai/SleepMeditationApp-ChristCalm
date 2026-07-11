@@ -11,7 +11,11 @@ type Props = {
   testID?: string;
 };
 
-/** Shared surface card used across tabs for visual continuity. */
+/**
+ * Premium card surface.
+ * Nest dark: borderless charcoal on pure black (fill = hierarchy).
+ * Cooper light: white card + soft border.
+ */
 export function Surface({
   children,
   style,
@@ -19,7 +23,7 @@ export function Surface({
   elevated = true,
   testID,
 }: Props) {
-  const { colors, shadows } = useTheme();
+  const { colors, shadows, radius, isDark } = useTheme();
 
   return (
     <View
@@ -27,10 +31,10 @@ export function Surface({
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: layout.surfaceRadius,
-          borderWidth: 1,
-          borderColor: colors.borderSoft,
-          // Avoid overflow:hidden — it clips multi-line text near soft curves
+          borderRadius: radius.lg,
+          // Nest: no hard outlines — light keeps a whisper border
+          borderWidth: isDark ? 0 : 1,
+          borderColor: isDark ? "transparent" : colors.borderSoft,
           ...(elevated ? shadows.soft : null),
         },
         padded ? { padding: layout.cardPad } : null,

@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { layout } from "@/src/theme/layout";
+import { useResponsive } from "@/src/hooks/use-responsive";
 
 type Props = {
   overline?: string;
@@ -13,10 +14,11 @@ type Props = {
 };
 
 /**
- * Canonical page header — same rhythm on Home, Meditate, Wisdom, Journal, Profile.
+ * Page header — title scale adapts for SE → Pro Max.
  */
 export function PageHeader({ overline, title, subtitle, right, style, testID }: Props) {
   const { colors, fonts, spacing } = useTheme();
+  const { titleSize, titleLineHeight, isCompact } = useResponsive();
 
   return (
     <View
@@ -26,21 +28,24 @@ export function PageHeader({ overline, title, subtitle, right, style, testID }: 
           flexDirection: "row",
           alignItems: "flex-start",
           justifyContent: "space-between",
-          marginBottom: spacing.lg + 4,
+          // Nest: generous air under titles
+          marginBottom: isCompact ? spacing.lg : spacing.xl,
+          width: "100%",
+          maxWidth: "100%",
         },
         style,
       ]}
     >
-      <View style={{ flex: 1, paddingRight: right ? spacing.md : 0 }}>
+      <View style={{ flex: 1, minWidth: 0, paddingRight: right ? spacing.sm : 0 }}>
         {overline ? (
           <Text
+            numberOfLines={1}
             style={{
-              fontFamily: fonts.body,
-              fontSize: layout.overlineSize,
-              letterSpacing: layout.overlineTracking,
-              textTransform: "uppercase",
+              fontFamily: fonts.bodyMedium,
+              fontSize: 13,
+              letterSpacing: 0.2,
               color: colors.textMuted,
-              marginBottom: 8,
+              marginBottom: 6,
             }}
           >
             {overline}
@@ -48,13 +53,14 @@ export function PageHeader({ overline, title, subtitle, right, style, testID }: 
         ) : null}
         <Text
           style={{
+            // Inter Bold — Nest SF Pro–like display (tight tracking)
             fontFamily: fonts.headingBold,
-            fontSize: layout.titleSize,
-            lineHeight: layout.titleLineHeight + 2,
+            fontSize: titleSize,
+            lineHeight: titleLineHeight,
             color: colors.textPrimary,
-            letterSpacing: -0.4,
-            // Slight padding so descenders / tight tracking aren't clipped
+            letterSpacing: -0.8,
             paddingRight: 2,
+            flexShrink: 1,
           }}
         >
           {title}
@@ -63,19 +69,19 @@ export function PageHeader({ overline, title, subtitle, right, style, testID }: 
           <Text
             style={{
               fontFamily: fonts.body,
-              fontSize: layout.subtitleSize,
-              lineHeight: layout.subtitleLineHeight + 1,
+              fontSize: isCompact ? 14 : layout.subtitleSize,
+              lineHeight: isCompact ? 20 : layout.subtitleLineHeight,
               color: colors.textSecondary,
-              marginTop: 8,
-              maxWidth: 360,
+              marginTop: 6,
               paddingRight: 4,
+              flexShrink: 1,
             }}
           >
             {subtitle}
           </Text>
         ) : null}
       </View>
-      {right}
+      {right ? <View style={{ flexShrink: 0 }}>{right}</View> : null}
     </View>
   );
 }

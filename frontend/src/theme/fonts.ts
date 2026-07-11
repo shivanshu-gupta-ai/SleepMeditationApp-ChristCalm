@@ -1,24 +1,28 @@
 /**
- * Brand typeface map for ChristCalm.
- * Loaded via expo-font aliases in use-app-fonts.ts.
+ * Brand typefaces — Nest / Fit Flockers style.
  *
- * Outfit  — headings (modern, calm, premium)
- * Figtree — body UI (friendly, highly legible)
- * Cormorant Garamond — scripture (reverent serif)
+ * Nest uses ONE clean geometric neo-grotesque (SF Pro–like):
+ * - Large, calm titles (Semibold / Bold)
+ * - Quiet secondary UI (Regular / Medium)
+ * - No display quirks, no dual-family “product” pairing
+ *
+ * Inter is the open closest match to that system-premium look.
+ * (Sora + Plus Jakarta felt more “characterful” than Nest’s restraint.)
  */
 
 export const fontFamilies = {
-  heading: "Outfit",
-  headingMedium: "Outfit-Medium",
-  headingSemiBold: "Outfit-SemiBold",
-  headingBold: "Outfit-Bold",
-  body: "Figtree",
-  bodyMedium: "Figtree-Medium",
-  bodySemiBold: "Figtree-SemiBold",
-  bodyBold: "Figtree-Bold",
-  scripture: "CormorantGaramond",
-  scriptureItalic: "CormorantGaramond-Italic",
-  scriptureMediumItalic: "CormorantGaramond-MediumItalic",
+  heading: "Inter",
+  headingMedium: "Inter-Medium",
+  headingSemiBold: "Inter-SemiBold",
+  headingBold: "Inter-Bold",
+  body: "Inter",
+  bodyMedium: "Inter-Medium",
+  bodySemiBold: "Inter-SemiBold",
+  bodyBold: "Inter-Bold",
+  /** Verse / quote — same family, medium weight (Nest keeps one face) */
+  scripture: "Inter-Medium",
+  scriptureItalic: "Inter",
+  scriptureMediumItalic: "Inter-Medium",
 } as const;
 
 export type FontKey = keyof typeof fontFamilies;

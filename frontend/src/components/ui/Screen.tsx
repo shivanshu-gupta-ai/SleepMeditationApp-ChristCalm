@@ -23,10 +23,14 @@ type Props = {
   contentStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   testID?: string;
-  /** @deprecated Viewport is always phone-sized; kept for call-site compatibility */
+  /** @deprecated Viewport is always phone-sized */
   constrain?: boolean;
 };
 
+/**
+ * Phone-first screen shell.
+ * Horizontal padding + bottom clearance adapt to iPhone SE → Pro Max.
+ */
 export function Screen({
   children,
   edges = ["top"],
@@ -39,20 +43,25 @@ export function Screen({
   testID,
 }: Props) {
   const { colors } = useTheme();
-  const { pagePadding } = useResponsive();
+  const { pagePadding, bottomClearance } = useResponsive();
 
-  // Viewport is already phone-clamped (MobileShell on web) — full width of shell
   const body = scroll ? (
     <ScrollView
       contentContainerStyle={[
         styles.scrollContent,
-        { paddingHorizontal: pagePadding, paddingBottom: 40, width: "100%" },
+        {
+          paddingHorizontal: pagePadding,
+          paddingBottom: bottomClearance,
+          width: "100%",
+          maxWidth: "100%",
+        },
         contentStyle,
       ]}
       style={styles.fill}
       showsVerticalScrollIndicator={false}
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      bounces
       refreshControl={
         onRefresh ? (
           <RefreshControl
@@ -70,7 +79,12 @@ export function Screen({
     <View
       style={[
         styles.fill,
-        { paddingHorizontal: pagePadding, width: "100%" },
+        {
+          paddingHorizontal: pagePadding,
+          width: "100%",
+          maxWidth: "100%",
+          paddingBottom: bottomClearance * 0.35,
+        },
         contentStyle,
       ]}
     >
@@ -82,6 +96,7 @@ export function Screen({
     <KeyboardAvoidingView
       style={styles.fill}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
       {body}
     </KeyboardAvoidingView>
@@ -101,6 +116,6 @@ export function Screen({
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
+  fill: { flex: 1, width: "100%", maxWidth: "100%", overflow: "hidden" },
+  scrollContent: { flexGrow: 1, maxWidth: "100%" },
 });

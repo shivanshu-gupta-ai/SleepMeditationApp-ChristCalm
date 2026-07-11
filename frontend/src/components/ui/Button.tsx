@@ -27,6 +27,10 @@ type Props = {
   haptic?: "none" | "light" | "medium" | "heavy" | "success" | "warning";
 };
 
+/**
+ * Premium pill buttons — Cooper black CTA / Nest gold-violet emphasis.
+ * Logic unchanged; visual language only.
+ */
 export function Button({
   label,
   onPress,
@@ -40,22 +44,23 @@ export function Button({
   fullWidth = true,
   haptic,
 }: Props) {
-  const { colors, fonts, radius, shadows } = useTheme();
+  const { colors, fonts, radius, shadows, isDark } = useTheme();
   const isDisabled = disabled || loading;
 
+  // Light: primary = deep ink (Cooper). Dark: Nest light pill (not loud violet fill).
   const palette: Record<
     Variant,
     { bg: string; text: string; border?: string; shadow?: object }
   > = {
     primary: {
-      bg: colors.primary,
-      text: colors.textOnPrimary,
-      shadow: shadows.glow,
+      bg: isDark ? colors.white : colors.textPrimary,
+      text: isDark ? "#0A0A0A" : colors.white,
+      shadow: isDark ? shadows.soft : shadows.glow,
     },
     secondary: {
-      bg: colors.surface,
+      bg: isDark ? colors.surfaceAlt : colors.surface,
       text: colors.textPrimary,
-      border: colors.border,
+      border: isDark ? undefined : colors.border,
     },
     ghost: {
       bg: "transparent",
@@ -67,8 +72,9 @@ export function Button({
       shadow: shadows.medium,
     },
     premium: {
+      // Nest gold CTA — dark ink on gold for premium contrast
       bg: colors.premium,
-      text: colors.white,
+      text: "#1A1525",
       shadow: shadows.soft,
     },
     danger: {
@@ -123,7 +129,7 @@ export function Button({
               fontFamily: fonts.bodyBold,
               fontSize: 16,
               color: p.text,
-              letterSpacing: 0.2,
+              letterSpacing: 0.15,
             }}
           >
             {label}
@@ -140,7 +146,7 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     minHeight: Math.max(54, touchTarget),
-    paddingHorizontal: 22,
+    paddingHorizontal: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

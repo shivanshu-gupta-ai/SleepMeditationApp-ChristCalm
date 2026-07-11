@@ -1,3 +1,5 @@
+> **Design (current):** see [`../design/system.md`](../design/system.md)
+
 # ChristCalm — Product Requirements Document (Updated)
 
 ## Vision

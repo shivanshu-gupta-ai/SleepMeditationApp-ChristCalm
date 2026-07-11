@@ -239,7 +239,7 @@ export default function SOS() {
           <View style={{ marginTop: spacing.xl, paddingHorizontal: spacing.lg, alignItems: "center" }}>
             <Text
               style={{
-                fontFamily: fonts.scriptureItalic,
+                fontFamily: fonts.scripture,
                 fontSize: 20,
                 color: colors.textPrimary,
                 textAlign: "center",

@@ -89,3 +89,29 @@ variable "revenuecat_entitlement_id" {
   type    = string
   default = "christcalm_premium"
 }
+
+# --- DIY scale knobs (no AWS Support required for defaults) ---
+
+variable "api_throttle_rate" {
+  type        = number
+  description = "API Gateway stage steady-state req/sec (raise if growing; Service Quotas only if still throttled)"
+  default     = 2000
+}
+
+variable "api_throttle_burst" {
+  type        = number
+  description = "API Gateway stage burst capacity"
+  default     = 1000
+}
+
+variable "lambda_provisioned_concurrency" {
+  type        = number
+  description = "Warm Lambda instances (0 = off / free of PC cost). Set 2–5 if cold starts hurt."
+  default     = 0
+}
+
+variable "ai_monthly_limit" {
+  type        = number
+  description = "Default monthly AI/Wisdom actions per user (also overridable via env)"
+  default     = 100
+}

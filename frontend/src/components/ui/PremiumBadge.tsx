@@ -20,6 +20,8 @@ export function PremiumBadge({
   const { colors, fonts, radius } = useTheme();
 
   if (isPremium) {
+    // Nest/Cooper gold pill — always dark ink on warm gold for contrast
+    const onGold = "#1A1525";
     return (
       <View
         testID={testID}
@@ -33,8 +35,8 @@ export function PremiumBadge({
           borderRadius: radius.full,
         }}
       >
-        <Ionicons name="star" size={13} color={colors.white} />
-        <Text style={{ color: colors.white, fontFamily: fonts.bodyBold, fontSize: 12 }}>
+        <Ionicons name="star" size={13} color={onGold} />
+        <Text style={{ color: onGold, fontFamily: fonts.bodyBold, fontSize: 12 }}>
           Premium
         </Text>
       </View>

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { View, Text } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePremium } from "@/src/hooks/use-premium";
@@ -32,7 +31,7 @@ type Devotional = { verse: string; reference: string; reflection: string };
 
 export default function Home() {
   const router = useRouter();
-  const { width, pagePadding } = useResponsive();
+  const { width, pagePadding, isCompact, bottomClearance } = useResponsive();
   const { user, refreshUser } = useAuth();
   const { isPremium } = usePremium();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
@@ -85,11 +84,11 @@ export default function Home() {
     router.push({ pathname: "/(tabs)/meditate", params: { emotion: em.id } });
   };
 
-  // 2 compact columns — FadeIn wrappers must own width or each tile becomes a full row
+  // 2 columns — Nest uses roomy gaps between cards
   const cols = 2;
-  const gap = 10;
-  const contentW = Math.max(width - pagePadding * 2, 280);
-  const cardW = (contentW - gap * (cols - 1)) / cols;
+  const gap = isCompact ? 12 : 14;
+  const contentW = Math.max(width - pagePadding * 2, 0);
+  const cardW = contentW > 0 ? (contentW - gap * (cols - 1)) / cols : 0;
 
   if (loading) return <LoadingState message="Gathering calm…" />;
 
@@ -114,7 +113,10 @@ export default function Home() {
         setRefreshing(true);
         load();
       }}
-      contentStyle={{ paddingTop: layout.pageTop, paddingBottom: layout.pageBottom }}
+      contentStyle={{
+        paddingTop: isCompact ? 12 : layout.pageTop,
+        paddingBottom: bottomClearance,
+      }}
     >
       <FadeIn>
         <PageHeader
@@ -136,15 +138,15 @@ export default function Home() {
 
       <TodaysPath emotions={emotions} />
 
-      {/* KEY: Emotion grid — same visual DNA as Meditate filters */}
+      {/* Emotion grid — Nest: sparse labels, borderless cards, roomy cells */}
       <FadeIn delay={40}>
         <Text
           style={{
             fontFamily: fonts.headingBold,
-            fontSize: 22,
+            fontSize: isCompact ? 24 : 28,
             color: colors.textPrimary,
-            letterSpacing: -0.4,
-            marginBottom: 6,
+            letterSpacing: -0.7,
+            marginBottom: 8,
           }}
         >
           How are you feeling?
@@ -152,14 +154,14 @@ export default function Home() {
         <Text
           style={{
             fontFamily: fonts.body,
-            fontSize: layout.subtitleSize,
-            lineHeight: layout.subtitleLineHeight,
-            color: colors.textSecondary,
+            fontSize: 14,
+            lineHeight: 20,
+            color: colors.textMuted,
             marginBottom: spacing.lg,
-            maxWidth: 360,
+            maxWidth: 320,
           }}
         >
-          Choose an emotion for Scripture-guided meditation — your session continues on Meditate.
+          Choose a feeling for a guided session
         </Text>
 
         <View
@@ -168,13 +170,12 @@ export default function Home() {
             flexWrap: "wrap",
             gap,
             marginBottom: layout.sectionGap,
-            // Keep row width stable so 2-col math holds
             width: contentW,
             alignSelf: "center",
           }}
         >
           {emotions.map((em, index) => {
-            const tint = isDark ? "28" : "30";
+            const tint = isDark ? "22" : "30";
             const icon = emotionIcon(em.id);
             return (
               <FadeIn
@@ -190,27 +191,27 @@ export default function Home() {
                   accessibilityLabel={`${em.label}. Open meditations for this feeling`}
                   style={{
                     width: "100%",
-                    minHeight: 64,
+                    minHeight: isCompact ? 76 : 84,
                     borderRadius: layout.surfaceRadius,
                     backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.borderSoft,
-                    paddingVertical: 12,
-                    paddingHorizontal: 12,
+                    // Nest: no borders — pure elevated fill
+                    borderWidth: isDark ? 0 : 1,
+                    borderColor: isDark ? "transparent" : colors.borderSoft,
+                    paddingVertical: 16,
+                    paddingHorizontal: 16,
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 10,
-                    ...shadows.soft,
+                    gap: 14,
+                    ...(isDark ? null : shadows.soft),
                   }}
                 >
                   <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 16,
                       backgroundColor: em.color + tint,
-                      borderWidth: 1,
-                      borderColor: em.color + "55",
+                      borderWidth: 0,
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
@@ -223,9 +224,9 @@ export default function Home() {
                     style={{
                       flex: 1,
                       fontFamily: fonts.headingBold,
-                      fontSize: 15,
+                      fontSize: 16,
                       color: colors.textPrimary,
-                      letterSpacing: -0.2,
+                      letterSpacing: -0.3,
                       paddingRight: 2,
                     }}
                   >
@@ -238,151 +239,30 @@ export default function Home() {
         </View>
       </FadeIn>
 
-      <FadeIn delay={180}>
-        <Text
-          style={{
-            fontFamily: fonts.body,
-            fontSize: layout.overlineSize,
-            letterSpacing: layout.overlineTracking,
-            textTransform: "uppercase",
-            color: colors.textMuted,
-            marginBottom: spacing.md,
-          }}
-        >
-          More support
-        </Text>
-
-        <View style={{ gap: layout.listGap, marginBottom: layout.sectionGap }}>
-          <PressableScale
-            haptic="medium"
-            onPress={() => {
-              void markFirstStep("sos");
-              router.push("/sos");
-            }}
-            testID="home-sos-btn"
-            accessibilityLabel="Need calm now. Open SOS breathing"
-            style={{ borderRadius: layout.surfaceRadius, overflow: "hidden", ...shadows.soft }}
-          >
-            <LinearGradient
-              colors={isDark ? ["#3A2A2A", "#2A2224"] : [colors.accentSOSSoft, colors.surface]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 16,
-                paddingHorizontal: 18,
-                gap: 14,
-                borderWidth: 1,
-                borderColor: isDark ? "rgba(232,160,155,0.25)" : colors.accentSOS + "33",
-                borderRadius: layout.surfaceRadius,
-              }}
-            >
-              <View
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  backgroundColor: colors.accentSOS,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Ionicons name="heart" size={20} color={colors.white} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonts.headingBold, fontSize: 16, color: colors.textPrimary }}>
-                  Need calm now
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 13,
-                    color: colors.textSecondary,
-                    marginTop: 2,
-                  }}
-                >
-                  4-7-8 breathing · SOS
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </LinearGradient>
-          </PressableScale>
-
-          <PressableScale
-            haptic="medium"
-            onPress={() => {
-              void markFirstStep("wisdom");
-              router.push("/(tabs)/wisdom");
-            }}
-            testID="home-wisdom-btn"
-            accessibilityLabel="What would Jesus say? Open wisdom chat"
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: colors.surface,
-              paddingVertical: 16,
-              paddingHorizontal: 18,
-              borderRadius: layout.surfaceRadius,
-              gap: 14,
-              borderWidth: 1,
-              borderColor: colors.borderSoft,
-              ...shadows.soft,
-            }}
-          >
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 21,
-                backgroundColor: colors.primarySoft,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.headingBold, fontSize: 16, color: colors.textPrimary }}>
-                What would Jesus say?
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  color: colors.textSecondary,
-                  marginTop: 2,
-                }}
-              >
-                Share a concern · wisdom chat
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </PressableScale>
-        </View>
-      </FadeIn>
-
+      {/* Scripture — Nest sparse secondary block */}
       {devotional ? (
-        <FadeIn delay={260}>
+        <FadeIn delay={160}>
           <Text
             style={{
-              fontFamily: fonts.body,
-              fontSize: layout.overlineSize,
-              letterSpacing: layout.overlineTracking,
-              textTransform: "uppercase",
+              fontFamily: fonts.bodyMedium,
+              fontSize: 13,
+              letterSpacing: 0.15,
               color: colors.textMuted,
               marginBottom: spacing.md,
             }}
           >
             Today’s word
           </Text>
-          <Surface testID="devotional-card" style={{ padding: spacing.xl }}>
+          <Surface
+            testID="devotional-card"
+            style={{ padding: spacing.xl, marginBottom: layout.sectionGap }}
+          >
             <Text
               style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                letterSpacing: 2.2,
-                color: colors.primary,
+                fontFamily: fonts.bodyMedium,
+                fontSize: 13,
+                letterSpacing: 0.15,
+                color: isDark ? colors.premium : colors.primary,
                 marginBottom: spacing.md,
               }}
             >
@@ -390,11 +270,12 @@ export default function Home() {
             </Text>
             <Text
               style={{
-                fontFamily: fonts.scriptureItalic,
+                fontFamily: fonts.scripture,
                 fontSize: 22,
                 color: colors.textPrimary,
-                lineHeight: 34,
-                marginBottom: spacing.lg,
+                lineHeight: 32,
+                marginBottom: spacing.md,
+                letterSpacing: -0.3,
               }}
             >
               “{devotional.verse}”
@@ -414,6 +295,157 @@ export default function Home() {
           </Surface>
         </FadeIn>
       ) : null}
+
+      {/*
+        Quick paths —
+        Dark Nest: quiet charcoal wells + gold/violet icon accents
+        Light Cooper: soft pastel tiles + one ink contrast tile
+      */}
+      <FadeIn delay={200}>
+        <Text
+          style={{
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.15,
+            color: colors.textMuted,
+            marginBottom: spacing.md,
+          }}
+        >
+          Quick paths
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap,
+            width: contentW,
+            alignSelf: "center",
+            marginBottom: spacing.lg,
+          }}
+        >
+          {(
+            [
+              {
+                id: "meditate",
+                title: "Meditate",
+                sub: "Sessions",
+                icon: "leaf-outline" as const,
+                bg: isDark ? colors.surface : colors.tileA,
+                color: colors.primary,
+                inverted: false,
+                onPress: () => router.push("/(tabs)/meditate"),
+                testID: "home-tile-meditate",
+              },
+              {
+                id: "wisdom",
+                title: "Wisdom",
+                sub: "Talk it through",
+                icon: "chatbubbles-outline" as const,
+                bg: isDark ? colors.surface : colors.tileB,
+                color: isDark ? colors.premium : colors.primaryDark,
+                inverted: false,
+                onPress: () => {
+                  void markFirstStep("wisdom");
+                  router.push("/(tabs)/wisdom");
+                },
+                testID: "home-tile-wisdom",
+              },
+              {
+                id: "sos",
+                title: "SOS",
+                sub: "Breathe now",
+                icon: "heart-outline" as const,
+                bg: isDark ? colors.surface : colors.tileD,
+                color: colors.accentSOS,
+                inverted: false,
+                onPress: () => {
+                  void markFirstStep("sos");
+                  router.push("/sos");
+                },
+                testID: "home-sos-btn",
+              },
+              {
+                id: "journal",
+                title: "Journal",
+                sub: "Write freely",
+                icon: "create-outline" as const,
+                bg: isDark ? colors.surface : colors.tileC,
+                color: isDark ? colors.secondary : colors.premium,
+                inverted: !isDark,
+                onPress: () => {
+                  void markFirstStep("journal");
+                  router.push("/(tabs)/journal");
+                },
+                testID: "home-journal-btn",
+              },
+            ] as const
+          ).map((tile) => {
+            const titleColor = tile.inverted ? colors.white : colors.textPrimary;
+            const subColor = tile.inverted
+              ? "rgba(255,255,255,0.72)"
+              : colors.textMuted;
+            const iconWellBg = tile.inverted
+              ? "rgba(255,255,255,0.12)"
+              : isDark
+                ? "rgba(255,255,255,0.06)"
+                : "rgba(255,255,255,0.72)";
+            return (
+              <PressableScale
+                key={tile.id}
+                haptic="medium"
+                onPress={tile.onPress}
+                testID={tile.testID}
+                style={{
+                  width: cardW,
+                  minHeight: isCompact ? 108 : 120,
+                  borderRadius: layout.surfaceRadius,
+                  backgroundColor: tile.bg,
+                  borderWidth: isDark || tile.inverted ? 0 : 1,
+                  borderColor: tile.inverted ? "transparent" : colors.borderSoft,
+                  padding: spacing.lg,
+                  justifyContent: "space-between",
+                  ...(isDark ? null : shadows.soft),
+                }}
+              >
+                <View
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 14,
+                    backgroundColor: iconWellBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name={tile.icon} size={20} color={tile.color} />
+                </View>
+                <View style={{ marginTop: 16 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.headingBold,
+                      fontSize: 17,
+                      color: titleColor,
+                      letterSpacing: -0.3,
+                    }}
+                  >
+                    {tile.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      color: subColor,
+                      marginTop: 4,
+                    }}
+                  >
+                    {tile.sub}
+                  </Text>
+                </View>
+              </PressableScale>
+            );
+          })}
+        </View>
+      </FadeIn>
     </Screen>
   );
 }

@@ -1,18 +1,35 @@
-# Static assets
+# Assets (media hub)
 
-## `audio/`
-
-Drop meditation audio files here before upload to your CDN (S3 + CloudFront recommended).
-
-Suggested naming:
+Canonical place for **content media** you can replace by hand.
 
 ```
-audio/
-  med-1-cast-your-cares.mp3
-  med-2-be-still.mp3
-  ...
+assets/
+├── meditations/
+│   ├── covers/          # Cover images med-1.jpg … med-10.jpg
+│   └── audio/           # Optional local meditation audio files
+├── audio/               # Legacy / general audio uploads (.gitkeep)
+└── design-reference/    # Design research frames (not shipped in app)
 ```
 
-After upload, set `audio_url` in `backend/seed_data.py` to the public URL. Until then, seed data uses temporary Pixabay CDN links.
+## Meditation covers
 
-Supported formats: `.mp3`, `.m4a`, `.wav`
+1. Replace files in `meditations/covers/` keeping the same names (`med-1.jpg`, …).  
+2. Copy into the Expo bundle:
+
+```bash
+cp assets/meditations/covers/*.jpg frontend/assets/meditations/covers/
+```
+
+3. Optional CDN: set `MEDIA_BASE_URL` on Lambda so API returns full HTTPS URLs  
+   (`{MEDIA_BASE_URL}/meditations/covers/med-1.jpg`).
+
+Details: [`meditations/covers/README.md`](meditations/covers/README.md)
+
+## Audio
+
+Place files under `audio/` or `meditations/audio/`, upload to S3/CloudFront, then set  
+`audio_url` in `backend/seed_data.py` (or wire `MEDIA_BASE_URL` the same way).
+
+## Design reference
+
+`design-reference/video-frames/` — research screenshots only. Do not import into the app.

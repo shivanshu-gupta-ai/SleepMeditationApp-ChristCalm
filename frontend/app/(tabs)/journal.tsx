@@ -3,6 +3,7 @@ import { View, Text, TextInput, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/src/context/ThemeContext";
+import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
 import { layout } from "@/src/theme/layout";
 import { emotionIcon, type IonIconName } from "@/src/constants/emotion-icons";
@@ -37,6 +38,7 @@ const MOODS: { id: string; label: string; icon: IonIconName }[] = [
 export default function Journal() {
   const router = useRouter();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
+  const { bottomClearance, isCompact } = useResponsive();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [content, setContent] = useState("");
   const [mood, setMood] = useState<string | null>(null);
@@ -92,7 +94,10 @@ export default function Journal() {
     <Screen
       scroll
       keyboard
-      contentStyle={{ paddingTop: layout.pageTop, paddingBottom: layout.pageBottom }}
+      contentStyle={{
+        paddingTop: isCompact ? 12 : layout.pageTop,
+        paddingBottom: bottomClearance,
+      }}
     >
       <FadeIn>
         <PageHeader
@@ -106,10 +111,9 @@ export default function Journal() {
         <Surface style={{ marginBottom: layout.sectionGap }}>
           <Text
             style={{
-              fontFamily: fonts.body,
-              fontSize: layout.overlineSize,
-              letterSpacing: layout.overlineTracking,
-              textTransform: "uppercase",
+              fontFamily: fonts.bodyMedium,
+              fontSize: 13,
+              letterSpacing: 0.2,
               color: colors.textMuted,
               marginBottom: spacing.sm,
             }}
@@ -215,10 +219,9 @@ export default function Journal() {
       <FadeIn delay={80}>
         <Text
           style={{
-            fontFamily: fonts.body,
-            fontSize: layout.overlineSize,
-            letterSpacing: layout.overlineTracking,
-            textTransform: "uppercase",
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.2,
             color: colors.textMuted,
             marginBottom: spacing.md,
           }}

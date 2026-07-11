@@ -46,7 +46,7 @@ export default function Paywall() {
   const { isPremium } = usePremium();
   const { supported, loadingOfferings, purchasing, getPackage, purchase, restore } =
     useRevenueCat();
-  const { colors, fonts, spacing, radius, shadows } = useTheme();
+  const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
   const [plan, setPlan] = useState<PlanId>("annual");
   const [error, setError] = useState<string | null>(null);
 
@@ -93,15 +93,22 @@ export default function Paywall() {
         testID="paywall-close-btn"
       />
 
+      {/* Nest dark: deep surface + gold star · Cooper light: soft lavender hero */}
       <LinearGradient
-        colors={[colors.premium, colors.premiumDark]}
+        colors={
+          isDark
+            ? [colors.surfaceAlt, colors.surface, "#1a1428"]
+            : [colors.tileA, colors.backgroundElevated, colors.tileB]
+        }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
           padding: spacing.xl,
-          borderRadius: radius.lg,
+          borderRadius: radius.xl,
           alignItems: "center",
           marginBottom: spacing.xl,
+          borderWidth: 1,
+          borderColor: isDark ? colors.premium + "44" : colors.borderSoft,
           ...shadows.medium,
         }}
       >
@@ -110,19 +117,21 @@ export default function Paywall() {
             width: 64,
             height: 64,
             borderRadius: 32,
-            backgroundColor: "rgba(255,255,255,0.22)",
+            backgroundColor: colors.premiumSoft,
+            borderWidth: 1,
+            borderColor: colors.premium + "55",
             justifyContent: "center",
             alignItems: "center",
             marginBottom: spacing.md,
           }}
         >
-          <Ionicons name="star" size={30} color={colors.white} />
+          <Ionicons name="star" size={30} color={colors.premium} />
         </View>
         <Text
           style={{
             fontFamily: fonts.headingBold,
             fontSize: 26,
-            color: colors.white,
+            color: colors.textPrimary,
             letterSpacing: -0.5,
           }}
         >
@@ -132,9 +141,10 @@ export default function Paywall() {
           style={{
             fontFamily: fonts.body,
             fontSize: 14,
-            color: "rgba(255,255,255,0.95)",
+            color: colors.textSecondary,
             textAlign: "center",
             marginTop: 6,
+            lineHeight: 20,
           }}
         >
           Full access to every meditation, prayer, and calm tool.
@@ -196,88 +206,130 @@ export default function Paywall() {
 
       <SectionHeader title="Choose your plan" />
 
-      {(["annual", "monthly"] as PlanId[]).map((p) => {
-        const price = p === "annual" ? annualPrice : monthlyPrice;
-        const active = plan === p;
-        return (
-          <TouchableOpacity
-            key={p}
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: radius.lg,
-              padding: spacing.lg,
-              borderWidth: 2,
-              borderColor: active ? colors.primary : colors.borderSoft,
-              marginBottom: spacing.md,
-              position: "relative",
-            }}
-            onPress={() => setPlan(p)}
-            testID={`plan-${p}`}
-            activeOpacity={0.9}
-          >
-            {p === "annual" ? (
+      {/* Dual plan cards — Cooper+ style, calm palette */}
+      <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
+        {(["annual", "monthly"] as PlanId[]).map((p) => {
+          const price = p === "annual" ? annualPrice : monthlyPrice;
+          const active = plan === p;
+          const isAnnual = p === "annual";
+          return (
+            <TouchableOpacity
+              key={p}
+              style={{
+                backgroundColor: active
+                  ? isAnnual
+                    ? colors.tileA
+                    : colors.tileB
+                  : colors.surface,
+                borderRadius: radius.lg,
+                padding: spacing.lg,
+                borderWidth: 2,
+                borderColor: active ? colors.primary : colors.borderSoft,
+                position: "relative",
+                ...shadows.soft,
+              }}
+              onPress={() => setPlan(p)}
+              testID={`plan-${p}`}
+              activeOpacity={0.9}
+            >
               <View
                 style={{
-                  position: "absolute",
-                  top: -10,
-                  right: 16,
-                  backgroundColor: colors.premium,
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: radius.full,
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
                 }}
               >
-                <Text
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text
+                      style={{
+                        fontFamily: fonts.headingBold,
+                        fontSize: 18,
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      {isAnnual ? "Yearly plan" : "Monthly plan"}
+                    </Text>
+                    {isAnnual ? (
+                      <View
+                        style={{
+                          backgroundColor: colors.premiumSoft,
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: radius.full,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: colors.premiumDark,
+                            fontFamily: fonts.bodyBold,
+                            fontSize: 11,
+                          }}
+                        >
+                          Best value
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text
+                    style={{
+                      fontFamily: fonts.headingBold,
+                      fontSize: 28,
+                      color: colors.textPrimary,
+                      marginTop: 8,
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    {price.main}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      color: colors.textSecondary,
+                      marginTop: 4,
+                    }}
+                  >
+                    {price.sub}
+                  </Text>
+                  <View style={{ marginTop: spacing.md, gap: 6 }}>
+                    {["Unlimited meditations", "Wisdom chat", "Ad-free calm"].map((f) => (
+                      <View key={f} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                        <Text
+                          style={{
+                            fontFamily: fonts.body,
+                            fontSize: 13,
+                            color: colors.textSecondary,
+                          }}
+                        >
+                          {f}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View
                   style={{
-                    color: colors.white,
-                    fontFamily: fonts.bodyBold,
-                    fontSize: 11,
-                    letterSpacing: 1,
+                    width: 26,
+                    height: 26,
+                    borderRadius: 13,
+                    borderWidth: 2,
+                    borderColor: active ? colors.primary : colors.border,
+                    backgroundColor: active ? colors.primary : "transparent",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  SAVE 50%
-                </Text>
+                  {active ? (
+                    <Ionicons name="checkmark" size={16} color={colors.textOnPrimary} />
+                  ) : null}
+                </View>
               </View>
-            ) : null}
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                letterSpacing: 2,
-                color: colors.textSecondary,
-                textTransform: "uppercase",
-              }}
-            >
-              {p}
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.headingBold,
-                fontSize: 32,
-                color: colors.textPrimary,
-                marginTop: 4,
-              }}
-            >
-              {price.main}
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 13,
-                color: colors.textSecondary,
-                marginTop: 4,
-              }}
-            >
-              {price.sub}
-            </Text>
-            {active ? (
-              <View style={{ position: "absolute", right: 16, top: 16 }}>
-                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-              </View>
-            ) : null}
-          </TouchableOpacity>
-        );
-      })}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {!isPremium ? (
         <>

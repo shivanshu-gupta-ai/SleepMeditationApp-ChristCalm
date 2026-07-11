@@ -19,6 +19,7 @@ import {
   FadeIn,
 } from "@/src/components/ui";
 import { emotionIcon } from "@/src/constants/emotion-icons";
+import { meditationCoverSource } from "@/src/constants/meditation-covers";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
 
@@ -29,7 +30,8 @@ type Meditation = {
   title: string;
   subtitle: string;
   duration_min: number;
-  cover: string;
+  cover?: string;
+  cover_file?: string;
   scripture: string;
   verse: string;
   premium: boolean;
@@ -39,7 +41,7 @@ export default function Meditate() {
   const router = useRouter();
   const params = useLocalSearchParams<{ emotion?: string }>();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
-  const { pagePadding } = useResponsive();
+  const { pagePadding, bottomClearance, isCompact } = useResponsive();
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [meds, setMeds] = useState<Meditation[]>([]);
@@ -207,8 +209,8 @@ export default function Meditate() {
           showsHorizontalScrollIndicator={false}
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingBottom: layout.pageBottom,
-            gap: layout.listGap,
+            paddingBottom: bottomClearance,
+            gap: isCompact ? 10 : layout.listGap,
             flexGrow: 1,
           }}
           renderItem={({ item, index }) => (
@@ -222,36 +224,42 @@ export default function Meditate() {
                 accessibilityLabel={`${item.title}, ${item.duration_min} minutes${item.premium ? ", premium" : ""}`}
                 style={{
                   backgroundColor: colors.surface,
-                  borderRadius: layout.surfaceRadius,
+                  borderRadius: layout.surfaceRadius + 2,
                   overflow: "hidden",
                   borderWidth: 1,
                   borderColor: colors.borderSoft,
                   ...shadows.soft,
                 }}
               >
-                <View style={{ height: 128, position: "relative" }}>
+                {/* Hero cover — travel-board language */}
+                <View style={{ height: isCompact ? 148 : 168, position: "relative" }}>
                   <Image
-                    source={{ uri: item.cover }}
+                    source={meditationCoverSource(item.id, item.cover)}
                     style={{ width: "100%", height: "100%" }}
+                    resizeMode="cover"
                   />
                   <LinearGradient
-                    colors={["transparent", isDark ? "rgba(10,12,16,0.85)" : "rgba(26,35,50,0.45)"]}
+                    colors={[
+                      "transparent",
+                      isDark ? "rgba(10,12,16,0.88)" : "rgba(20,28,36,0.55)",
+                    ]}
                     style={{
                       position: "absolute",
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      height: 72,
+                      height: 88,
                     }}
                   />
                   <View
                     style={{
                       position: "absolute",
-                      left: 16,
+                      left: 14,
+                      right: 14,
                       bottom: 12,
                       flexDirection: "row",
                       alignItems: "center",
-                      gap: 8,
+                      justifyContent: "space-between",
                     }}
                   >
                     <View
@@ -259,26 +267,32 @@ export default function Meditate() {
                         flexDirection: "row",
                         alignItems: "center",
                         gap: 4,
-                        backgroundColor: "rgba(0,0,0,0.35)",
+                        backgroundColor: "rgba(0,0,0,0.4)",
                         paddingHorizontal: 10,
-                        paddingVertical: 4,
+                        paddingVertical: 5,
                         borderRadius: 999,
                       }}
                     >
                       <Ionicons name="time-outline" size={12} color="#fff" />
-                      <Text style={{ color: "#fff", fontFamily: fonts.body, fontSize: 12 }}>
+                      <Text style={{ color: "#fff", fontFamily: fonts.bodyBold, fontSize: 12 }}>
                         {item.duration_min} min
                       </Text>
                     </View>
                     {item.premium ? <PremiumTag /> : null}
                   </View>
                 </View>
-                <View style={{ padding: layout.cardPad }}>
+                {/* Soft meta sheet under image */}
+                <View
+                  style={{
+                    padding: layout.cardPad,
+                    backgroundColor: isDark ? colors.surface : colors.white,
+                  }}
+                >
                   <Text
                     style={{
-                      fontFamily: fonts.body,
-                      fontSize: 11,
-                      letterSpacing: 2,
+                      fontFamily: fonts.bodyMedium,
+                      fontSize: 13,
+                      letterSpacing: 0.2,
                       color: colors.primary,
                       marginBottom: 6,
                     }}
@@ -288,7 +302,7 @@ export default function Meditate() {
                   <Text
                     style={{
                       fontFamily: fonts.headingBold,
-                      fontSize: 18,
+                      fontSize: isCompact ? 17 : 18,
                       color: colors.textPrimary,
                       letterSpacing: -0.3,
                       marginBottom: 4,

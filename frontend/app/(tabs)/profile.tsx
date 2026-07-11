@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,7 +6,9 @@ import { useTheme, type ThemePreference } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePremium } from "@/src/hooks/use-premium";
 import { layout } from "@/src/theme/layout";
-import { Screen, PageHeader, Button, Surface, FadeIn } from "@/src/components/ui";
+import { Screen, PageHeader, Button, Surface, FadeIn, ProgressRing } from "@/src/components/ui";
+import { useResponsive } from "@/src/hooks/use-responsive";
+import { getStreak, getCompletedCount } from "@/src/utils/session-progress";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
   system: "System",
@@ -26,6 +28,14 @@ export default function Profile() {
   const { isPremium } = usePremium();
   const { colors, fonts, spacing, radius, shadows, preference, setPreference, isDark } =
     useTheme();
+  const { bottomClearance, isCompact } = useResponsive();
+  const [localStreak, setLocalStreak] = useState(0);
+  const [completed, setCompleted] = useState(0);
+
+  useEffect(() => {
+    getStreak().then(setLocalStreak);
+    getCompletedCount().then(setCompleted);
+  }, []);
 
   const cycleTheme = () => {
     const order: ThemePreference[] = ["dark", "light", "system"];
@@ -33,10 +43,19 @@ export default function Profile() {
     setPreference(order[(idx + 1) % order.length]);
   };
 
+  const minutes = user?.minutes_meditated ?? 0;
+  const weekGoal = 60; // gentle weekly goal for ring
+  const ringProgress = Math.min(1, minutes / weekGoal || completed / 7);
+  const streak = Math.max(user?.streak ?? 0, localStreak);
+  const sessions = Math.max(user?.prayers_completed ?? 0, completed);
+
   return (
     <Screen
       scroll
-      contentStyle={{ paddingTop: layout.pageTop, paddingBottom: layout.pageBottom }}
+      contentStyle={{
+        paddingTop: isCompact ? 12 : layout.pageTop,
+        paddingBottom: bottomClearance,
+      }}
     >
       <FadeIn>
         <PageHeader overline="Your space" title="Profile" subtitle={user?.email || undefined} />
@@ -49,14 +68,21 @@ export default function Profile() {
               width: 88,
               height: 88,
               borderRadius: 44,
-              backgroundColor: colors.primary,
+              backgroundColor: colors.primarySoft,
+              borderWidth: 2,
+              borderColor: colors.primary + "55",
               justifyContent: "center",
               alignItems: "center",
               marginBottom: spacing.md,
-              ...shadows.glow,
             }}
           >
-            <Text style={{ fontFamily: fonts.headingBold, fontSize: 34, color: colors.white }}>
+            <Text
+              style={{
+                fontFamily: fonts.headingBold,
+                fontSize: 34,
+                color: colors.primary,
+              }}
+            >
               {(user?.name || "?").charAt(0).toUpperCase()}
             </Text>
           </View>
@@ -78,15 +104,17 @@ export default function Profile() {
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 6,
-                backgroundColor: colors.premium,
+                backgroundColor: colors.premiumSoft,
+                borderWidth: 1,
+                borderColor: colors.premium + "55",
                 paddingHorizontal: 14,
                 paddingVertical: 6,
                 borderRadius: radius.full,
                 marginTop: spacing.md,
               }}
             >
-              <Ionicons name="star" size={14} color={colors.white} />
-              <Text style={{ color: colors.white, fontFamily: fonts.bodyBold, fontSize: 13 }}>
+              <Ionicons name="star" size={14} color={colors.premium} />
+              <Text style={{ color: colors.premiumDark, fontFamily: fonts.bodyBold, fontSize: 13 }}>
                 Premium Member
               </Text>
             </View>
@@ -104,37 +132,110 @@ export default function Profile() {
         </View>
       </FadeIn>
 
+      {/* Progress ring — weekly calm rhythm */}
+      <FadeIn delay={60}>
+        <Surface style={{ alignItems: "center", marginBottom: layout.sectionGap, paddingVertical: spacing.xl }}>
+          <ProgressRing
+            progress={ringProgress || 0.05}
+            size={isCompact ? 140 : 160}
+            label={`${minutes}`}
+            sublabel="minutes with Him"
+            testID="profile-progress-ring"
+          />
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 13,
+              color: colors.textSecondary,
+              marginTop: spacing.md,
+              textAlign: "center",
+            }}
+          >
+            Gentle goal: {weekGoal} min / season of rest
+          </Text>
+        </Surface>
+      </FadeIn>
+
       <FadeIn delay={80}>
-        <View style={{ flexDirection: "row", gap: spacing.sm, marginBottom: layout.sectionGap }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: spacing.sm,
+            marginBottom: layout.sectionGap,
+          }}
+        >
           {[
-            { value: user?.streak ?? 0, label: "Day streak" },
-            { value: user?.minutes_meditated ?? 0, label: "Minutes" },
-            { value: user?.prayers_completed ?? 0, label: "Sessions" },
+            {
+              value: streak,
+              label: "Day streak",
+              icon: "flame-outline" as const,
+              bg: isDark ? colors.surface : colors.tileB,
+              inverted: false,
+              iconColor: isDark ? colors.premium : colors.primaryDark,
+            },
+            {
+              value: minutes,
+              label: "Minutes",
+              icon: "time-outline" as const,
+              bg: isDark ? colors.surface : colors.tileA,
+              inverted: false,
+              iconColor: colors.primary,
+            },
+            {
+              value: sessions,
+              label: "Sessions",
+              icon: "leaf-outline" as const,
+              bg: isDark ? colors.surface : colors.tileC,
+              inverted: !isDark,
+              iconColor: isDark ? colors.secondary : colors.premium,
+            },
+            {
+              value: completed,
+              label: "Completed",
+              icon: "checkmark-circle-outline" as const,
+              bg: isDark ? colors.surface : colors.tileD,
+              inverted: false,
+              iconColor: colors.accentSOS,
+            },
           ].map((s) => (
-            <Surface
+            <View
               key={s.label}
-              elevated={false}
               style={{
-                flex: 1,
-                paddingVertical: spacing.md,
-                alignItems: "center",
-                ...shadows.soft,
+                width: "48%",
+                flexGrow: 1,
+                minWidth: "46%",
+                backgroundColor: s.bg,
+                borderRadius: layout.surfaceRadius,
+                borderWidth: isDark || s.inverted ? 0 : 1,
+                borderColor: s.inverted ? "transparent" : colors.borderSoft,
+                padding: spacing.lg,
+                ...(isDark ? null : shadows.soft),
               }}
             >
-              <Text style={{ fontFamily: fonts.headingBold, fontSize: 24, color: colors.primary }}>
+              <Ionicons name={s.icon} size={18} color={s.iconColor} />
+              <Text
+                style={{
+                  fontFamily: fonts.headingBold,
+                  fontSize: 28,
+                  color: s.inverted ? colors.white : colors.textPrimary,
+                  marginTop: 12,
+                  letterSpacing: -0.6,
+                }}
+              >
                 {s.value}
               </Text>
               <Text
                 style={{
                   fontFamily: fonts.body,
-                  fontSize: 12,
-                  color: colors.textSecondary,
+                  fontSize: 13,
+                  color: s.inverted ? "rgba(255,255,255,0.72)" : colors.textMuted,
                   marginTop: 4,
                 }}
               >
                 {s.label}
               </Text>
-            </Surface>
+            </View>
           ))}
         </View>
       </FadeIn>
@@ -142,10 +243,9 @@ export default function Profile() {
       <FadeIn delay={120}>
         <Text
           style={{
-            fontFamily: fonts.body,
-            fontSize: layout.overlineSize,
-            letterSpacing: layout.overlineTracking,
-            textTransform: "uppercase",
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.2,
             color: colors.textMuted,
             marginBottom: spacing.md,
           }}
@@ -164,10 +264,9 @@ export default function Profile() {
 
         <Text
           style={{
-            fontFamily: fonts.body,
-            fontSize: layout.overlineSize,
-            letterSpacing: layout.overlineTracking,
-            textTransform: "uppercase",
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.2,
             color: colors.textMuted,
             marginBottom: spacing.md,
           }}
@@ -175,6 +274,12 @@ export default function Profile() {
           Journey
         </Text>
         <Surface padded={false} style={{ overflow: "hidden" }}>
+          <MenuItem
+            icon="create-outline"
+            label="Journal"
+            onPress={() => router.push("/(tabs)/journal")}
+            testID="menu-journal"
+          />
           <MenuItem
             icon="heart-outline"
             label="Panic Relief (SOS)"
@@ -210,25 +315,15 @@ export default function Profile() {
       <Text
         style={{
           textAlign: "center",
-          fontFamily: fonts.scriptureItalic,
+          fontFamily: fonts.scripture,
           fontSize: 15,
           color: colors.textSecondary,
           marginTop: layout.sectionGap,
           lineHeight: 22,
+          letterSpacing: -0.1,
         }}
       >
-        “The Lord is close to the brokenhearted.” — Psalm 34:18
-      </Text>
-      <Text
-        style={{
-          textAlign: "center",
-          fontFamily: fonts.body,
-          fontSize: 12,
-          color: colors.textMuted,
-          marginTop: spacing.sm,
-        }}
-      >
-        {isDark ? "Dark" : "Light"} calm · ChristCalm
+        “Be still, and know that I am God.”
       </Text>
     </Screen>
   );
@@ -251,38 +346,49 @@ function MenuItem({
   last?: boolean;
   testID?: string;
 }) {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, fonts, spacing, isDark } = useTheme();
   return (
     <TouchableOpacity
+      onPress={onPress}
+      testID={testID}
       style={{
         flexDirection: "row",
         alignItems: "center",
-        padding: spacing.md + 2,
-        gap: spacing.md,
+        paddingVertical: 16,
+        paddingHorizontal: spacing.md,
         borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
         borderBottomColor: colors.borderSoft,
+        gap: 12,
       }}
-      onPress={onPress}
-      testID={testID}
-      activeOpacity={0.7}
     >
-      <Ionicons name={icon} size={22} color={danger ? colors.danger : colors.textPrimary} />
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          backgroundColor: danger ? colors.dangerSoft : colors.primarySoft,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons name={icon} size={18} color={danger ? colors.danger : colors.primary} />
+      </View>
       <Text
         style={{
           flex: 1,
-          fontFamily: fonts.body,
-          fontSize: 16,
+          fontFamily: fonts.bodyBold,
+          fontSize: 15,
           color: danger ? colors.danger : colors.textPrimary,
         }}
       >
         {label}
       </Text>
       {value ? (
-        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary }}>
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.textMuted }}>
           {value}
         </Text>
       ) : null}
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }

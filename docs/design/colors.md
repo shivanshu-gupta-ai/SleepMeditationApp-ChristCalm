@@ -1,55 +1,55 @@
-# ChristCalm Color System
+# Color tokens (current)
 
-**Source of Truth**: `design_guidelines.json`
-
-The app supports **both Light and Dark themes** using semantic color tokens. All components must use these tokens (never hardcode hex values).
-
----
-
-## Light Theme
-
-| Token              | Hex       | Primary Usage                            |
-| ------------------ | --------- | ---------------------------------------- |
-| `background`       | `#F9F7F1` | Main app canvas                          |
-| `surface`          | `#FFFFFF` | Cards, modals, input fields              |
-| `primary`          | `#5B9BA5` | Primary CTAs, active states, links       |
-| `primary_hover`    | `#4A828C` | Hover states on primary elements         |
-| `secondary`        | `#8FA99A` | Secondary buttons, accents               |
-| `text_primary`     | `#1F2937` | Headings, body text, important labels    |
-| `text_secondary`   | `#6B7280` | Captions, hints, secondary text          |
-| `accent_sos`       | `#D27D78` | SOS / Panic relief button                |
-| `accent_sos_hover` | `#BC6964` | Hover state for SOS button               |
-| `border`           | `#E5E7EB` | Card borders, input borders, dividers    |
-| `paywall_premium`  | `#D4AF37` | Paywall CTAs, premium badges, highlights |
-| `success`          | `#4A9B8C` | Success states, checkmarks               |
+**Source of truth:** `frontend/src/theme/tokens.ts`  
+Legacy Soft-UI teal palette archived as `_archive_design_guidelines.json`.
 
 ---
 
-## Dark Theme
+## Light — Cooper
 
-| Token              | Hex       | Primary Usage                            |
-| ------------------ | --------- | ---------------------------------------- |
-| `background`       | `#0F1115` | Main app canvas                          |
-| `surface`          | `#1A1D23` | Cards, modals, input fields              |
-| `primary`          | `#6BA8B3` | Primary CTAs, active states, links       |
-| `primary_hover`    | `#5A919C` | Hover states on primary elements         |
-| `secondary`        | `#7D9688` | Secondary buttons, accents               |
-| `text_primary`     | `#F3F4F6` | Headings, body text, important labels    |
-| `text_secondary`   | `#9CA3AF` | Captions, hints, secondary text          |
-| `accent_sos`       | `#E08A85` | SOS / Panic relief button                |
-| `accent_sos_hover` | `#D27D78` | Hover state for SOS button               |
-| `border`           | `#2F343C` | Card borders, input borders, dividers    |
-| `paywall_premium`  | `#E8C670` | Paywall CTAs, premium badges, highlights |
-| `success`          | `#5AB5A3` | Success states, checkmarks               |
+| Token | Value | Usage |
+|-------|--------|--------|
+| `background` | `#F6F3FA` | App canvas |
+| `backgroundElevated` | `#FCFAFE` | Elevated chrome |
+| `surface` | `#FFFFFF` | Cards, sheets |
+| `surfaceAlt` | `#F0ECF6` | Subtle wells |
+| `primary` | `#7C6FE0` | Links, active light accents |
+| `secondary` | `#C4A35A` | Soft gold accent |
+| `textPrimary` | `#1A1525` | Headings / body |
+| `textSecondary` | `#5C5568` | Secondary copy |
+| `textMuted` | `#8E8799` | Labels |
+| `premium` | `#C9A227` | Premium / gold |
+| `accentSOS` | `#D47872` | SOS |
+| `tileA–D` | Soft lavender / gold / ink / rose | Home tiles |
+| `fab` | `#7C6FE0` | Start Calm FAB |
+
+Primary CTA (light): ink black (`textPrimary`), not violet fill.
 
 ---
 
-## Usage Guidelines
+## Dark — Nest
 
-- **Always** reference tokens via Tailwind classes or theme object (e.g. `bg-background`, `text-primary`, `border-border`).
-- Use `dark:` variant for dark mode overrides when needed.
-- The `paywall_premium` color should feel luxurious but not flashy.
-- `accent_sos` must remain clearly distinguishable and calming (not alarming).
-- Maintain minimum contrast ratios per APCA/WCAG standards in both themes.
+| Token | Value | Usage |
+|-------|--------|--------|
+| `background` | `#000000` | True black canvas |
+| `surface` | `#161618` | Cards (no hard border) |
+| `surfaceAlt` | `#1C1C1F` | Elevated wells |
+| `primary` | `#B8A4F5` | Soft violet accent |
+| `secondary` / `premium` | `#F0C14A` | Warm gold |
+| `textPrimary` | `#F5F5F7` | Headings |
+| `textSecondary` | `#A0A0A8` | Secondary |
+| `textMuted` | `#6E6E76` | Labels |
+| `border` / `borderSoft` | White @ 8% / 4% | Rare separators |
+| `fab` | `#F0C14A` | Gold FAB |
+| `tileA–D` | `#1A1A1D` | Quiet charcoal tiles |
 
-**Implementation Tip**: Create a `theme.ts` file that exports both light and dark color objects and use a theme context/provider for runtime switching.
+Primary CTA (dark): light/white pill. Premium: gold + dark ink.
+
+---
+
+## Rules
+
+1. Never hardcode hex in screens — use `useTheme().colors`.  
+2. Dark hierarchy = **fill**, not heavy borders.  
+3. Purple/gold are **accents**, not full backgrounds.  
+4. SOS keeps warm coral; success/danger stay soft.

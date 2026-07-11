@@ -47,6 +47,10 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
         aws_dynamodb_table.journal_entries.arn,
         aws_dynamodb_table.ai_prayers.arn,
         aws_dynamodb_table.payment_transactions.arn,
+        aws_dynamodb_table.rate_limits.arn,
+        aws_dynamodb_table.usage_events.arn,
+        "${aws_dynamodb_table.usage_events.arn}/index/*",
+        aws_dynamodb_table.usage_daily.arn,
       ]
     }]
   })
@@ -93,6 +97,9 @@ resource "aws_lambda_function" "api" {
       DYNAMODB_TABLE_PREFIX = var.dynamodb_table_prefix
       SSM_PREFIX            = local.ssm_prefix
       VOICE_BUCKET          = aws_s3_bucket.voice.bucket
+      # DIY scale: shared rate limits across all Lambda instances
+      RATE_LIMIT_BACKEND = "dynamo"
+      AI_MONTHLY_LIMIT   = tostring(var.ai_monthly_limit)
     }
   }
 
@@ -103,6 +110,11 @@ resource "aws_lambda_function" "api" {
     ignore_changes = [filename, source_code_hash]
   }
 }
+
+# NOTE: Provisioned concurrency needs a published version/alias (not $LATEST).
+# CodeBuild deploys to $LATEST — enable PC from Console after publish, or set
+# lambda_provisioned_concurrency > 0 only when you wire alias deploys.
+# See docs/scalability-diy.md
 
 resource "aws_apigatewayv2_api" "http" {
   name          = "${local.name_prefix}-api"
@@ -130,10 +142,10 @@ resource "aws_apigatewayv2_stage" "default" {
   auto_deploy = true
   tags        = local.common_tags
 
-  # Edge-ish throttle (per-stage). App also enforces per-user AI/auth limits.
+  # DIY scale: higher stage throttle (no AWS Support). Raise further via Service Quotas if 429s persist.
   default_route_settings {
-    throttling_burst_limit = 50
-    throttling_rate_limit  = 100
+    throttling_burst_limit = var.api_throttle_burst
+    throttling_rate_limit  = var.api_throttle_rate
   }
 }
 

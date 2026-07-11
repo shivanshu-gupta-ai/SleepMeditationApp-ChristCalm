@@ -1,36 +1,23 @@
 /**
- * Shared layout rhythm for a premium wellness UI.
- * Inspired by Calm/Headspace-style calm apps: generous space, soft surfaces,
- * low visual noise, consistent hierarchy across tabs.
- */
-/**
- * Shared layout rhythm — Soft UI Evolution, spacious wellness density.
- * Generous whitespace, soft surfaces, consistent hierarchy across tabs.
+ * Layout rhythm — Nest premium = generous pad + large section air.
  */
 export const layout = {
-  /** Top padding inside Screen content */
-  pageTop: 20,
-  /** Bottom padding for scroll content above tab bar */
-  pageBottom: 56,
-  /** Vertical gap between major sections */
-  sectionGap: 36,
-  /** Gap between cards in a list */
+  pageTop: 22,
+  pageBottom: 120,
+  tabBarFloatInset: 14,
+  fabSize: 52,
+  /** Nest screens breathe — large gaps between sections */
+  sectionGap: 40,
   listGap: 16,
-  /** Standard card padding */
   cardPad: 22,
-  /** Page title */
-  titleSize: 30,
-  titleLineHeight: 36,
-  /** Body helper under titles */
+  titleSize: 32,
+  titleLineHeight: 38,
   subtitleSize: 15,
-  subtitleLineHeight: 23,
-  /** Uppercase labels */
-  overlineSize: 12,
-  overlineTracking: 1.6,
-  /** Emotion / filter tiles — min 44pt touch */
+  subtitleLineHeight: 22,
+  overlineSize: 13,
+  overlineTracking: 0.15,
   filterHeight: 44,
-  /** Soft radius — keep moderate so body text isn't clipped at corners */
-  surfaceRadius: 18,
-  /** Min touch target */
+  /** Nest large soft card corners */
+  surfaceRadius: 24,
   touchMin: 44,
 } as const;

@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/src/context/AuthContext";
 import { RevenueCatProvider } from "@/src/context/RevenueCatContext";
 import { ThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { ViewportProvider } from "@/src/context/ViewportContext";
+import { startAnalytics, stopAnalytics } from "@/src/utils/analytics";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +22,13 @@ export default function RootLayout() {
     if (fontsReady || fontsError) {
       SplashScreen.hideAsync();
     }
+  }, [fontsReady, fontsError]);
+
+  // Product usage → DynamoDB (background flush)
+  useEffect(() => {
+    if (!fontsReady && !fontsError) return;
+    startAnalytics();
+    return () => stopAnalytics();
   }, [fontsReady, fontsError]);
 
   if (!fontsReady && !fontsError) return null;

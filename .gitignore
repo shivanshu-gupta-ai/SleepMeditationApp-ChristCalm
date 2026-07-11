@@ -80,10 +80,14 @@ agenthub/agents/youtube/db
 config/**/*.local
 config/auth/.env
 
-# Uploaded audio (keep folder via .gitkeep)
+# Uploaded audio originals (keep folder docs)
 assets/audio/*
 !assets/audio/.gitkeep
 !assets/audio/README.md
+assets/meditations/audio/*
+!assets/meditations/audio/.gitkeep
+!assets/meditations/audio/README.md
+# Meditation covers ARE tracked (edit in assets/meditations/covers/)
 
 # Mobile development
 android-sdk/
@@ -107,6 +111,5 @@ aws/terraform/terraform.tfvars
 # Local agent/skill caches (keep skill source optional)
 .claude/skills/**/node_modules/
 
-# Video analysis frames can be regenerated with ffmpeg
-# docs/design/video-frames/*.jpg
-# docs/design/video-frames/*.png
+# Design research frames (large); keep under assets/design-reference if needed
+# assets/design-reference/video-frames/

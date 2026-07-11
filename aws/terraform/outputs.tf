@@ -21,6 +21,17 @@ output "dynamodb_tables" {
     journal_entries      = aws_dynamodb_table.journal_entries.name
     ai_prayers           = aws_dynamodb_table.ai_prayers.name
     payment_transactions = aws_dynamodb_table.payment_transactions.name
+    rate_limits          = aws_dynamodb_table.rate_limits.name
+    usage_events         = aws_dynamodb_table.usage_events.name
+    usage_daily          = aws_dynamodb_table.usage_daily.name
+  }
+}
+
+output "api_throttle" {
+  description = "HTTP API stage throttle (DIY scale — no Support ticket for these defaults)"
+  value = {
+    rate_limit  = var.api_throttle_rate
+    burst_limit = var.api_throttle_burst
   }
 }
 

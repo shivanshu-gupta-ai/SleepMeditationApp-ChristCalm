@@ -66,6 +66,31 @@ class TimingMiddleware(BaseHTTPMiddleware):
         return response
 
 
+# Static catalog paths — safe to cache (seed data, not user-specific)
+_CACHEABLE_PREFIXES = (
+    "/api/emotions",
+    "/api/meditations",
+    "/api/prayers",
+    "/api/devotional",
+    "/api/wisdom/status",
+)
+
+
+class CatalogCacheMiddleware(BaseHTTPMiddleware):
+    """DIY scale: Cache-Control on public catalog GETs (reduces Lambda load)."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if request.method == "GET":
+            path = request.url.path.rstrip("/") or "/"
+            if any(path == p or path.startswith(p + "/") for p in _CACHEABLE_PREFIXES):
+                # 5 min browser/CDN; clients also cache in-app
+                response.headers.setdefault(
+                    "Cache-Control", "public, max-age=300, stale-while-revalidate=60"
+                )
+        return response
+
+
 def _client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for") or request.headers.get("x-real-ip")
     if forwarded:
@@ -794,6 +819,97 @@ async def subscription_status(user: dict = Depends(get_current_user)):
     return {"active": active, "plan": fresh.get("plan"), "premium_until": premium_until}
 
 
+# ------------------- Usage analytics (DynamoDB for analysis) -------------------
+class AnalyticsEventIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=64)
+    props: Optional[dict] = None
+    ts: Optional[str] = None
+    id: Optional[str] = None
+
+
+class AnalyticsBatchIn(BaseModel):
+    events: List[AnalyticsEventIn] = Field(..., min_length=1, max_length=100)
+    platform: Optional[str] = "unknown"
+    session_id: Optional[str] = None
+    device_id: Optional[str] = None
+
+
+async def get_optional_user(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> Optional[dict]:
+    if not creds:
+        return None
+    try:
+        payload = pyjwt.decode(creds.credentials, JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        return await db.get_user_by_id(user_id)
+    except Exception:
+        return None
+
+
+@api.post("/analytics/events")
+async def analytics_ingest(
+    body: AnalyticsBatchIn,
+    request: Request,
+    user: Optional[dict] = Depends(get_optional_user),
+):
+    """
+    Batch product usage events into DynamoDB for analysis.
+    Auth preferred (user_id). Without auth uses device_id → anon:{id}.
+    """
+    # Light abuse protection
+    _enforce_rate_limit(
+        f"analytics:{_client_ip(request)}",
+        limit=120,
+        window=60,
+    )
+    if user:
+        uid = user["id"]
+    else:
+        device = (body.device_id or "").strip()[:64] or "unknown"
+        uid = f"anon:{device}"
+
+    payload = [e.model_dump() for e in body.events]
+    result = await db.put_usage_events(
+        user_id=uid,
+        events=payload,
+        platform=(body.platform or "unknown")[:32],
+        session_id=body.session_id,
+    )
+    return {"ok": True, **result, "user_id": uid}
+
+
+@api.get("/analytics/me")
+async def analytics_me(
+    user: dict = Depends(get_current_user),
+    limit: int = Query(40, ge=1, le=100),
+):
+    """Recent events for the signed-in user (debug / personal insight)."""
+    events = await db.list_user_usage(user["id"], limit=limit)
+    counts: dict[str, int] = {}
+    for e in events:
+        n = e.get("event_name") or "unknown"
+        counts[n] = counts.get(n, 0) + 1
+    return {"events": events, "counts": counts}
+
+
+@api.get("/analytics/summary")
+async def analytics_summary(
+    user: dict = Depends(get_current_user),
+    days: int = Query(7, ge=1, le=30),
+):
+    """
+    Daily rollups for analysis (last N days).
+    Restricted to signed-in users; treat as internal product metrics.
+    """
+    # Mild rate limit so summary isn't scraped
+    _enforce_rate_limit(f"analytics_summary:{user['id']}", limit=30, window=60)
+    summary = await db.usage_summary_for_days(days=days)
+    return summary
+
+
 app.include_router(api)
 
 _cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
@@ -807,6 +923,7 @@ _dev_web_origins = [
 _allow_origins = list(dict.fromkeys(_cors_origins + _dev_web_origins)) or ["*"]
 # Security headers + timing first (outermost last in Starlette reverse order)
 app.add_middleware(TimingMiddleware)
+app.add_middleware(CatalogCacheMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allow_origins,

@@ -1,4 +1,5 @@
 import { storage } from "@/src/utils/storage";
+import { cacheGet, cacheSet } from "@/src/utils/api-cache";
 
 const BACKEND_URL = (process.env.EXPO_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 
@@ -75,15 +76,55 @@ export const api = {
   }) => request("/auth/onboarding", { method: "POST", body: payload }),
 
 
-  emotions: () => request("/emotions", { auth: false }),
-  meditations: (emotion?: string) =>
-    request(`/meditations${emotion ? `?emotion=${emotion}` : ""}`, { auth: false }),
-  meditationById: (id: string) => request(`/meditations/${id}`, { auth: false }),
+  /** Cached 5 min — static catalog, DIY scale (no AWS Support) */
+  emotions: async () => {
+    const key = "catalog:emotions";
+    const hit = cacheGet<any>(key);
+    if (hit) return hit;
+    const data = await request("/emotions", { auth: false });
+    cacheSet(key, data);
+    return data;
+  },
+  meditations: async (emotion?: string) => {
+    const key = `catalog:meditations:${emotion || "all"}`;
+    const hit = cacheGet<any>(key);
+    if (hit) return hit;
+    const data = await request(
+      `/meditations${emotion ? `?emotion=${emotion}` : ""}`,
+      { auth: false }
+    );
+    cacheSet(key, data);
+    return data;
+  },
+  meditationById: async (id: string) => {
+    const key = `catalog:meditation:${id}`;
+    const hit = cacheGet<any>(key);
+    if (hit) return hit;
+    const data = await request(`/meditations/${id}`, { auth: false });
+    cacheSet(key, data);
+    return data;
+  },
   completeMeditation: (meditation_id: string, minutes: number) =>
     request("/meditations/complete", { method: "POST", body: { meditation_id, minutes } }),
-  prayers: (category?: string) =>
-    request(`/prayers${category ? `?category=${category}` : ""}`, { auth: false }),
-  devotional: () => request("/devotional/today", { auth: false }),
+  prayers: async (category?: string) => {
+    const key = `catalog:prayers:${category || "all"}`;
+    const hit = cacheGet<any>(key);
+    if (hit) return hit;
+    const data = await request(
+      `/prayers${category ? `?category=${category}` : ""}`,
+      { auth: false }
+    );
+    cacheSet(key, data);
+    return data;
+  },
+  devotional: async () => {
+    const key = "catalog:devotional";
+    const hit = cacheGet<any>(key);
+    if (hit) return hit;
+    const data = await request("/devotional/today", { auth: false });
+    cacheSet(key, data, 15 * 60 * 1000); // day-stable; refresh every 15 min
+    return data;
+  },
 
   logMood: (emotion: string, note?: string) =>
     request("/mood/log", { method: "POST", body: { emotion, note } }),
@@ -116,6 +157,17 @@ export const api = {
   wisdomQuota: () =>
     request<{ used: number; limit: number; remaining: number; month: string; ok: boolean }>(
       "/wisdom/quota"
+    ),
+
+  /** Product usage summary (daily rollups for analysis) */
+  analyticsSummary: (days = 7) =>
+    request<{
+      days: { day: string; dau: number; events: number; by_event: Record<string, number> }[];
+      totals: { events: number; dau_sum: number; by_event: Record<string, number> };
+    }>(`/analytics/summary?days=${days}`),
+  analyticsMe: (limit = 40) =>
+    request<{ events: unknown[]; counts: Record<string, number> }>(
+      `/analytics/me?limit=${limit}`
     ),
 
   /**

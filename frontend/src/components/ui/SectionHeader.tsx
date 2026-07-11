@@ -17,12 +17,12 @@ export function SectionHeader({ title, subtitle, overline, large }: Props) {
       {overline ? (
         <Text
           style={{
-            fontFamily: fonts.body,
-            fontSize: 12,
-            letterSpacing: 1.8,
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.3,
             color: colors.textMuted,
-            marginBottom: 8,
-            textTransform: "uppercase",
+            marginBottom: 6,
+            // Sentence case feels more modern than full uppercase print labels
           }}
         >
           {overline}
@@ -31,10 +31,10 @@ export function SectionHeader({ title, subtitle, overline, large }: Props) {
       <Text
         style={{
           fontFamily: fonts.headingBold,
-          fontSize: large ? 30 : 20,
+          fontSize: large ? 34 : 22,
           color: colors.textPrimary,
-          letterSpacing: -0.5,
-          lineHeight: large ? 36 : 26,
+          letterSpacing: large ? -1 : -0.6,
+          lineHeight: large ? 40 : 28,
         }}
       >
         {title}

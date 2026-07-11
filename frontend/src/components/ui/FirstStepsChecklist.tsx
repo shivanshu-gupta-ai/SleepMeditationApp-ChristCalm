@@ -85,7 +85,7 @@ export async function markFirstStep(id: StepId): Promise<void> {
  */
 export function FirstStepsChecklist() {
   const router = useRouter();
-  const { colors, fonts, spacing, shadows } = useTheme();
+  const { colors, fonts, spacing, shadows, isDark } = useTheme();
   const [state, setState] = useState<StepState>(DEFAULT);
   const [dismissed, setDismissed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -114,11 +114,11 @@ export function FirstStepsChecklist() {
         style={{
           backgroundColor: colors.surface,
           borderRadius: layout.surfaceRadius,
-          borderWidth: 1,
-          borderColor: colors.borderSoft,
-          padding: spacing.md,
+          borderWidth: isDark ? 0 : 1,
+          borderColor: isDark ? "transparent" : colors.borderSoft,
+          padding: spacing.lg,
           marginBottom: layout.sectionGap,
-          ...shadows.soft,
+          ...(isDark ? null : shadows.soft),
         }}
         testID="first-steps-checklist"
       >
@@ -133,10 +133,9 @@ export function FirstStepsChecklist() {
           <View style={{ flex: 1, paddingRight: 8 }}>
             <Text
               style={{
-                fontFamily: fonts.body,
-                fontSize: layout.overlineSize,
-                letterSpacing: layout.overlineTracking,
-                textTransform: "uppercase",
+                fontFamily: fonts.bodyMedium,
+                fontSize: 13,
+                letterSpacing: 0.2,
                 color: colors.primary,
                 marginBottom: 4,
               }}

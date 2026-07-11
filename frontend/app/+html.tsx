@@ -10,22 +10,32 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, shrink-to-fit=no"
         />
-        {/*
-          Disable body scrolling on web to make ScrollView components work correctly.
-          If you want to enable scrolling, remove `ScrollViewStyleReset` and
-          set `overflow: auto` on the body style below.
-        */}
         <ScrollViewStyleReset />
+        {/* Preload brand faces on web so type never flashes as system sans */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              /* Full viewport root for Expo web */
+              /* Full viewport — safe for SE short and Pro Max tall */
               html, body, #root {
                 height: 100% !important;
                 max-height: 100% !important;
+                width: 100% !important;
                 overflow: hidden !important;
+                -webkit-text-size-adjust: 100%;
+              }
+              /* Nest-style single face (Inter ≈ SF Pro) */
+              body, #root, h1, h2, h3, [role="heading"] {
+                font-family: Inter, 'Inter', system-ui, -apple-system, sans-serif !important;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
               }
               body > div:first-child {
                 position: fixed !important;
@@ -33,11 +43,17 @@ export default function Root({ children }: PropsWithChildren) {
                 display: flex !important;
                 justify-content: center !important;
                 align-items: stretch !important;
+                width: 100% !important;
+                max-width: 100% !important;
+              }
+              /* Never let nested RN views force horizontal overflow */
+              #root, #root * {
+                max-width: 100vw;
+                box-sizing: border-box;
               }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
 
-              /* Mobile-first: no ugly system scrollbars */
               * {
                 scrollbar-width: none;
                 -ms-overflow-style: none;
@@ -49,9 +65,9 @@ export default function Root({ children }: PropsWithChildren) {
                 background: transparent !important;
               }
 
-              /* Prevent accidental horizontal page scroll on desktop */
               body {
                 overscroll-behavior: none;
+                touch-action: pan-y;
               }
             `,
           }}

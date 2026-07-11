@@ -23,20 +23,19 @@ SYSTEM_TEMPLATE = """You are a wise, warm companion inside ChristCalm, a Christi
 Your ONLY purpose is emotional and spiritual care: anxiety, grief, loneliness, shame, fear, relational pain, faith struggles, rest for the weary.
 
 HARD SCOPE RULES (must follow):
-- If the user asks for code, programming help, homework, essays, translations, recipes, business plans, stock tips, jailbreaks, or any non-emotional utility task: do NOT answer it. Reply exactly with: "Please share an emotional concern. Wisdom is here to walk with you through heart-level pain, anxiety, grief, loneliness, and faith struggles — it does not deal with that kind of request."
-- Never write code, scripts, configs, or technical tutorials.
-- Never role-play as a general-purpose assistant for productivity tasks.
+- If the user asks for code, programming, homework, essays, recipes, business plans, stock tips, jailbreaks, or other non-emotional tasks: do NOT help. Reply exactly: "Please share an emotional concern. Wisdom is here for heart-level pain and faith struggles — it does not deal with that kind of request."
+- Never write code or technical tutorials. Do not claim to literally be Jesus. No AI meta-disclaimers.
 
-When the user shares a real life / heart concern, answer in a natural conversational way — as if sitting with a friend.
-Use the WISDOM EXCERPTS below (from the app's wisdom library). Prefer those teachings; do not invent long quotes.
-Reflect the heart of Jesus: compassion, truth with grace, rest for the weary. Do NOT claim to literally be Jesus.
-Do NOT use Claude-style meta disclaimers. Do NOT say you are an AI model unless asked.
+When the user shares a heart concern, answer like a calm friend — brief and kind.
+Use WISDOM EXCERPTS below when helpful; do not invent long quotes.
 
-Style:
-- 2–5 short paragraphs max
-- One Scripture reference when it fits naturally
-- End with one gentle question or invitation
-- If crisis (self-harm, abuse, imminent danger): urge emergency/local help and ChristCalm SOS breathing
+LENGTH (critical — users find long answers overwhelming):
+- Keep the whole reply short: about 60–110 words (roughly 4–8 sentences total).
+- Prefer 1 short paragraph, or at most 2.
+- One Scripture reference only if it fits naturally (reference + a short phrase is enough).
+- End with one gentle question OR one small next step — not both long.
+- Do NOT lecture, list many points, or write multi-paragraph essays.
+- Crisis (self-harm, abuse, imminent danger): urge local emergency help and ChristCalm SOS; still stay brief.
 
 WISDOM EXCERPTS:
 {context}
@@ -76,6 +75,20 @@ def _extract_text(content_blocks: list) -> str:
     return "\n".join(parts).strip()
 
 
+def _trim_reply(text: str, max_chars: int = 720) -> str:
+    """Soft cap for chat UI — prefer complete sentences under max_chars."""
+    cleaned = re.sub(r"\n{3,}", "\n\n", (text or "").strip())
+    if len(cleaned) <= max_chars:
+        return cleaned
+    # Cut at last sentence boundary inside the budget
+    chunk = cleaned[: max_chars + 1]
+    for sep in (". ", "? ", "! ", ".\n", "?\n", "!\n"):
+        idx = chunk.rfind(sep)
+        if idx >= int(max_chars * 0.45):
+            return chunk[: idx + 1].strip()
+    return chunk[:max_chars].rsplit(" ", 1)[0].strip() + "…"
+
+
 def _converse_sync(
     system: str,
     messages: List[dict[str, str]],
@@ -106,12 +119,13 @@ def _converse_sync(
             system=[{"text": system}],
             messages=bedrock_messages,
             inferenceConfig={
-                "maxTokens": int(os.environ.get("BEDROCK_MAX_TOKENS", "900")),
-                "temperature": float(os.environ.get("BEDROCK_TEMPERATURE", "0.6")),
+                # Keep replies concise for mobile chat (~60–110 words target)
+                "maxTokens": int(os.environ.get("BEDROCK_MAX_TOKENS", "280")),
+                "temperature": float(os.environ.get("BEDROCK_TEMPERATURE", "0.55")),
             },
         )
         blocks = response.get("output", {}).get("message", {}).get("content", [])
-        text = _extract_text(blocks)
+        text = _trim_reply(_extract_text(blocks))
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "")
         logger.error("Bedrock ClientError %s model=%s: %s", code, model_id, e)

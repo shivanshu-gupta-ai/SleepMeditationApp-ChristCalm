@@ -118,7 +118,8 @@ function WebPhoneShell({
       style={[
         styles.outer,
         {
-          backgroundColor: isDark ? "#050608" : "#E8E4DB",
+          // Nest pure black desktop chrome · Cooper soft lavender desk
+          backgroundColor: isDark ? colors.background : colors.backgroundElevated,
         },
       ]}
     >
@@ -161,8 +162,8 @@ const styles = StyleSheet.create({
   phone: {
     width: "100%",
     height: "100%",
-    maxHeight: 932, // iPhone 14 Pro Max logical height class
-    // Mild curve — large radius + overflow:hidden was clipping edge text
+    // Allow full available height (SE short → Pro Max tall); don't force max that clips
+    maxHeight: "100%",
     borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",

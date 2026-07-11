@@ -1,4 +1,14 @@
-/** Semantic color tokens — premium wellness aesthetic (light + dark). */
+/**
+ * ChristCalm design system — Nest dark + Cooper light (visual only).
+ *
+ * DARK  → Nest / Fit Flockers (Appdesign/4.png):
+ *   true black canvas, soft charcoal cards WITHOUT hard borders,
+ *   sparse typography, violet accents sparingly, warm gold FAB only.
+ *   Premium = emptiness + hierarchy, not extra chrome.
+ *
+ * LIGHT → Cooper (Appdesign/8..png):
+ *   cream-lavender canvas, white cards, lavender + soft gold tiles.
+ */
 
 export type ColorTokens = {
   background: string;
@@ -34,81 +44,107 @@ export type ColorTokens = {
   tabBar: string;
   inputFill: string;
   focusRing: string;
+  tileA: string;
+  tileB: string;
+  tileC: string;
+  tileD: string;
+  fab: string;
+  fabText: string;
 };
 
 /**
- * Soft UI Evolution palette — serene teal + sage wellness.
- * Retains ChristCalm brand (not generic purple). Contrast tuned for WCAG AA+.
+ * LIGHT — Cooper: cream-lavender canvas, white cards, soft purple + gold.
  */
 export const lightColors: ColorTokens = {
-  background: "#F5F2EB",
-  backgroundElevated: "#FBF9F4",
+  background: "#F6F3FA",
+  backgroundElevated: "#FCFAFE",
   surface: "#FFFFFF",
-  surfaceAlt: "#F0EBE2",
-  surfaceMuted: "#E8F3F4",
-  primary: "#4F8F99",
-  primaryDark: "#3D757E",
-  primarySoft: "rgba(79, 143, 153, 0.14)",
-  secondary: "#7A9B88",
-  textPrimary: "#15202B",
-  textSecondary: "#4F5966",
-  textMuted: "#7A8491",
+  surfaceAlt: "#F0ECF6",
+  surfaceMuted: "#EDE8F7",
+  primary: "#7C6FE0",
+  primaryDark: "#6358C4",
+  primarySoft: "rgba(124, 111, 224, 0.12)",
+  secondary: "#C4A35A",
+  textPrimary: "#1A1525",
+  textSecondary: "#5C5568",
+  textMuted: "#8E8799",
   textOnPrimary: "#FFFFFF",
-  accentSOS: "#C96B66",
-  accentSOSDark: "#B05550",
-  accentSOSSoft: "rgba(201, 107, 102, 0.12)",
-  border: "#DDD8CF",
-  borderSoft: "#EBE6DD",
-  premium: "#B8941F",
-  premiumDark: "#967812",
-  premiumSoft: "rgba(184, 148, 31, 0.14)",
-  success: "#3D8F80",
-  successSoft: "rgba(61, 143, 128, 0.12)",
-  danger: "#B84D48",
-  dangerSoft: "rgba(184, 77, 72, 0.12)",
+  accentSOS: "#D47872",
+  accentSOSDark: "#B85E59",
+  accentSOSSoft: "rgba(212, 120, 114, 0.12)",
+  border: "#E6E1EF",
+  borderSoft: "#F0ECF5",
+  premium: "#C9A227",
+  premiumDark: "#A8861A",
+  premiumSoft: "rgba(201, 162, 39, 0.14)",
+  success: "#5BA88F",
+  successSoft: "rgba(91, 168, 143, 0.12)",
+  danger: "#C45C57",
+  dangerSoft: "rgba(196, 92, 87, 0.12)",
   white: "#FFFFFF",
-  overlay: "rgba(21, 32, 43, 0.48)",
-  scrim: "rgba(21, 32, 43, 0.58)",
-  gradient: ["#F5F2EB", "#EAF2F3", "#F0EBE2"],
-  cardGlass: "rgba(255, 255, 255, 0.94)",
-  tabBar: "rgba(255, 255, 255, 0.96)",
+  overlay: "rgba(26, 21, 37, 0.4)",
+  scrim: "rgba(26, 21, 37, 0.5)",
+  gradient: ["#F6F3FA", "#EFEAF8", "#F8F4EC"],
+  cardGlass: "rgba(255, 255, 255, 0.96)",
+  tabBar: "rgba(255, 255, 255, 0.94)",
   inputFill: "#FFFFFF",
-  focusRing: "rgba(79, 143, 153, 0.4)",
+  focusRing: "rgba(124, 111, 224, 0.35)",
+  tileA: "#EDE8FB",
+  tileB: "#FBF3D9",
+  tileC: "#1A1525",
+  tileD: "#F5E6E4",
+  fab: "#7C6FE0",
+  fabText: "#FFFFFF",
 };
 
-/** Deep charcoal + soft teal — calm, luxurious night mode (Soft UI Evolution dark) */
+/**
+ * DARK — Nest: pure black + soft elevated cards.
+ * Borders are near-invisible (premium apps separate layers by fill, not lines).
+ * Purple/gold are accents only — never wall-to-wall chrome.
+ */
 export const darkColors: ColorTokens = {
-  background: "#0B0E13",
-  backgroundElevated: "#12161E",
-  surface: "#171C26",
-  surfaceAlt: "#1E2430",
-  surfaceMuted: "rgba(126, 196, 206, 0.14)",
-  primary: "#8AD0DA",
-  primaryDark: "#5FAAB5",
-  primarySoft: "rgba(138, 208, 218, 0.2)",
-  secondary: "#96BCAA",
-  textPrimary: "#F5F7FA",
-  textSecondary: "#B0B8C4",
-  textMuted: "#7A8494",
-  textOnPrimary: "#0B0E13",
-  accentSOS: "#ECA8A3",
-  accentSOSDark: "#D9908B",
-  accentSOSSoft: "rgba(236, 168, 163, 0.16)",
-  border: "#2E3644",
-  borderSoft: "#252B36",
-  premium: "#EBC878",
-  premiumDark: "#D6B14F",
-  premiumSoft: "rgba(235, 200, 120, 0.16)",
-  success: "#75CDBA",
-  successSoft: "rgba(117, 205, 186, 0.16)",
-  danger: "#E59590",
-  dangerSoft: "rgba(229, 149, 144, 0.16)",
+  background: "#000000",
+  backgroundElevated: "#0A0A0B",
+  // Nest charcoal cards — sit above pure black without harsh outlines
+  surface: "#161618",
+  surfaceAlt: "#1C1C1F",
+  surfaceMuted: "rgba(255, 255, 255, 0.06)",
+  // Soft violet accent (Nest purple gem) — used sparingly
+  primary: "#B8A4F5",
+  primaryDark: "#9B86E8",
+  primarySoft: "rgba(184, 164, 245, 0.14)",
+  secondary: "#F0C14A",
+  textPrimary: "#F5F5F7",
+  textSecondary: "#A0A0A8",
+  textMuted: "#6E6E76",
+  // Nest primary CTAs are often light-on-dark ink, not violet fills
+  textOnPrimary: "#0A0A0A",
+  accentSOS: "#F0A8A3",
+  accentSOSDark: "#E08A85",
+  accentSOSSoft: "rgba(240, 168, 163, 0.12)",
+  // Near-invisible separators (Nest almost never draws hard borders)
+  border: "rgba(255, 255, 255, 0.08)",
+  borderSoft: "rgba(255, 255, 255, 0.04)",
+  premium: "#F0C14A",
+  premiumDark: "#D4A82E",
+  premiumSoft: "rgba(240, 193, 74, 0.14)",
+  success: "#6BC4A8",
+  successSoft: "rgba(107, 196, 168, 0.12)",
+  danger: "#E08A85",
+  dangerSoft: "rgba(224, 138, 133, 0.12)",
   white: "#FFFFFF",
-  overlay: "rgba(0, 0, 0, 0.58)",
+  overlay: "rgba(0, 0, 0, 0.55)",
   scrim: "rgba(0, 0, 0, 0.72)",
-  gradient: ["#0B0E13", "#0F131A", "#141A22"],
-  cardGlass: "rgba(23, 28, 38, 0.96)",
-  tabBar: "rgba(18, 22, 30, 0.98)",
-  inputFill: "#1E2430",
-  focusRing: "rgba(138, 208, 218, 0.45)",
+  gradient: ["#000000", "#050506", "#0C0C0E"],
+  cardGlass: "rgba(22, 22, 24, 0.94)",
+  tabBar: "rgba(18, 18, 20, 0.92)",
+  inputFill: "#1C1C1F",
+  focusRing: "rgba(184, 164, 245, 0.4)",
+  // Dark tiles = soft elevated wells (not loud pastels — Nest calm)
+  tileA: "#1A1A1D",
+  tileB: "#1A1A1D",
+  tileC: "#1A1A1D",
+  tileD: "#1A1A1D",
+  fab: "#F0C14A",
+  fabText: "#0A0A0A",
 };
