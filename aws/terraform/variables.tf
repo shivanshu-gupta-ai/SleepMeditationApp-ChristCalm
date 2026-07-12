@@ -75,7 +75,20 @@ variable "openai_model" {
 variable "bedrock_model_id" {
   type        = string
   default     = "openai.gpt-oss-20b-1:0"
-  description = "Bedrock model ID for wisdom chat (GPT-OSS 20B or Mistral — not Claude)"
+  description = "Primary Wisdom model (GPT-OSS 20B)"
+}
+
+variable "bedrock_inference_geo" {
+  type        = string
+  default     = "us"
+  description = "Cross-region inference geo: us | eu | none"
+}
+
+variable "bedrock_model_ids" {
+  type        = string
+  # Cost→quality ladder of Converse-verified models (GPT-OSS primary; no Claude)
+  default     = "openai.gpt-oss-20b-1:0,us.amazon.nova-micro-v1:0,us.amazon.nova-lite-v1:0,us.amazon.nova-2-lite-v1:0,us.meta.llama3-1-8b-instruct-v1:0,mistral.mistral-large-2402-v1:0,us.meta.llama3-1-70b-instruct-v1:0,us.meta.llama3-3-70b-instruct-v1:0,us.amazon.nova-pro-v1:0,us.deepseek.r1-v1:0,us.mistral.pixtral-large-2502-v1:0"
+  description = "Comma-separated Bedrock chain: primary first, then cost-optimized fallbacks"
 }
 
 variable "revenuecat_webhook_authorization" {

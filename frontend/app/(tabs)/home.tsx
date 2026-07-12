@@ -31,7 +31,7 @@ type Devotional = { verse: string; reference: string; reflection: string };
 
 export default function Home() {
   const router = useRouter();
-  const { width, pagePadding, isCompact, bottomClearance } = useResponsive();
+  const { width, pagePadding, isCompact, isTablet, bottomClearance, columns } = useResponsive();
   const { user, refreshUser } = useAuth();
   const { isPremium } = usePremium();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
@@ -84,9 +84,10 @@ export default function Home() {
     router.push({ pathname: "/(tabs)/meditate", params: { emotion: em.id } });
   };
 
-  // 2 columns — Nest uses roomy gaps between cards
-  const cols = 2;
-  const gap = isCompact ? 12 : 14;
+  // 2 cols phone · 3 iPad · 4 wide iPad — Nest roomy gaps
+  const cols = columns({ phone: 2, tablet: 3, tabletWide: 4 });
+  const gap = isCompact ? 12 : isTablet ? 16 : 14;
+  // Screen already pads; width is content column — subtract pad for card math
   const contentW = Math.max(width - pagePadding * 2, 0);
   const cardW = contentW > 0 ? (contentW - gap * (cols - 1)) / cols : 0;
 
@@ -143,7 +144,7 @@ export default function Home() {
         <Text
           style={{
             fontFamily: fonts.headingBold,
-            fontSize: isCompact ? 24 : 28,
+            fontSize: isCompact ? 24 : isTablet ? 32 : 28,
             color: colors.textPrimary,
             letterSpacing: -0.7,
             marginBottom: 8,
@@ -154,11 +155,11 @@ export default function Home() {
         <Text
           style={{
             fontFamily: fonts.body,
-            fontSize: 14,
-            lineHeight: 20,
+            fontSize: isTablet ? 16 : 14,
+            lineHeight: isTablet ? 24 : 20,
             color: colors.textMuted,
             marginBottom: spacing.lg,
-            maxWidth: 320,
+            maxWidth: isTablet ? 480 : 320,
           }}
         >
           Choose a feeling for a guided session
@@ -191,7 +192,7 @@ export default function Home() {
                   accessibilityLabel={`${em.label}. Open meditations for this feeling`}
                   style={{
                     width: "100%",
-                    minHeight: isCompact ? 76 : 84,
+                    minHeight: isCompact ? 76 : isTablet ? 96 : 84,
                     borderRadius: layout.surfaceRadius,
                     backgroundColor: colors.surface,
                     // Nest: no borders — pure elevated fill

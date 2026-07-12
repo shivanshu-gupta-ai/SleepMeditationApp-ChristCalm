@@ -9,7 +9,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useRevenueCat } from "@/src/context/RevenueCatContext";
 import { usePremium } from "@/src/hooks/use-premium";
 import type { PlanId } from "@/src/constants/subscriptions";
-import { Screen, Button, ErrorBanner, SectionHeader } from "@/src/components/ui";
+import { Screen, Button, ErrorBanner, SectionHeader, PressableScale } from "@/src/components/ui";
 
 const FEATURES = [
   { icon: "leaf" as const, label: "Unlimited emotion-based meditations" },
@@ -213,8 +213,12 @@ export default function Paywall() {
           const active = plan === p;
           const isAnnual = p === "annual";
           return (
-            <TouchableOpacity
+            <PressableScale
               key={p}
+              scaleTo={active ? 0.99 : 0.97}
+              onPress={() => setPlan(p)}
+              testID={`plan-${p}`}
+              haptic="light"
               style={{
                 backgroundColor: active
                   ? isAnnual
@@ -225,12 +229,8 @@ export default function Paywall() {
                 padding: spacing.lg,
                 borderWidth: 2,
                 borderColor: active ? colors.primary : colors.borderSoft,
-                position: "relative",
                 ...shadows.soft,
               }}
-              onPress={() => setPlan(p)}
-              testID={`plan-${p}`}
-              activeOpacity={0.9}
             >
               <View
                 style={{
@@ -326,7 +326,7 @@ export default function Paywall() {
                   ) : null}
                 </View>
               </View>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>

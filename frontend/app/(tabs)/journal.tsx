@@ -44,6 +44,7 @@ export default function Journal() {
   const [mood, setMood] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -83,6 +84,9 @@ export default function Journal() {
       setContent("");
       setMood(null);
       await load();
+      // P1: success morph
+      setSaveFlash(true);
+      setTimeout(() => setSaveFlash(false), 1200);
     } catch (e: any) {
       setSaveError(e?.message || "Could not save entry.");
     } finally {
@@ -197,11 +201,12 @@ export default function Journal() {
 
           <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
             <Button
-              label="Save entry"
-              icon="checkmark"
+              label={saveFlash ? "Saved" : "Save entry"}
+              icon={saveFlash ? "checkmark-circle" : "checkmark"}
+              variant={saveFlash ? "premium" : "primary"}
               onPress={save}
               loading={saving}
-              disabled={!content.trim()}
+              disabled={!content.trim() && !saveFlash}
               testID="journal-save-btn"
             />
             <Button

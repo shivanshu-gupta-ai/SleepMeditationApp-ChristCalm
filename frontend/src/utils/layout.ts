@@ -4,96 +4,170 @@ import { Dimensions, PixelRatio, Platform, type ScaledSize } from "react-native"
 export const PHONE_BASE_WIDTH = 390;
 
 /**
- * Cap for mobile shell on web / large screens.
- * Covers iPhone 14/15/16 Pro Max (~430) and slightly wider previews.
+ * Reference phone upper bound (Pro Max class).
+ * Used for web "phone chrome" shell on very wide desktops only.
  */
 export const PHONE_MAX_WIDTH = 430;
 
-/** Smallest modern iPhone class we design for (SE 3rd gen = 375; older SE = 320) */
+/** Smallest modern iPhone class (SE 3rd gen = 375; older SE = 320) */
 export const PHONE_MIN_WIDTH = 320;
+
+/**
+ * Tablet / large-layout breakpoints (logical points).
+ * 600 covers large phones in landscape + iPad mini portrait.
+ * 900 covers iPad landscape / iPad Pro.
+ */
+export const TABLET_BREAKPOINT = 600;
+export const TABLET_WIDE_BREAKPOINT = 900;
+
+/** Readable content column caps — avoid ultra-wide text lines on iPad */
+export const CONTENT_MAX_TABLET = 720;
+export const CONTENT_MAX_TABLET_WIDE = 900;
+
+/** Desktop web: wrap in phone chrome above this width */
+export const DESKTOP_SHELL_BREAKPOINT = 1100;
 
 const BASE_WIDTH = PHONE_BASE_WIDTH;
 
-export type PhoneSizeClass = "compact" | "regular" | "large";
+export type SizeClass = "compact" | "regular" | "large" | "tablet" | "tabletWide";
+
+/** @deprecated Use SizeClass */
+export type PhoneSizeClass = SizeClass;
 
 export function getWindow(): ScaledSize {
   return Dimensions.get("window");
 }
 
-/**
- * Effective layout width for UI math.
- * - Never wider than Pro Max class (web shell / tablets)
- * - Never invent a width larger than the real window (prevents SE overflow)
- */
-export function layoutWidth(windowWidth?: number): number {
-  const w = windowWidth ?? getWindow().width;
+/** Raw window width (never invented larger than the device). */
+export function windowWidth(windowW?: number): number {
+  const w = windowW ?? getWindow().width;
   if (!Number.isFinite(w) || w <= 0) return PHONE_BASE_WIDTH;
-  return Math.min(w, PHONE_MAX_WIDTH);
+  return w;
 }
 
-/** SE / mini / short width */
-export function isCompactWidth(width?: number): boolean {
-  return layoutWidth(width) <= 375;
+export function windowHeight(windowH?: number): number {
+  const h = windowH ?? getWindow().height;
+  if (!Number.isFinite(h) || h <= 0) return 844;
+  return h;
 }
 
-export function phoneSizeClass(width?: number): PhoneSizeClass {
-  const w = layoutWidth(width);
-  if (w <= 375) return "compact"; // SE, 13 mini, etc.
-  if (w <= 402) return "regular"; // 14/15/16 standard
-  return "large"; // Plus / Pro Max
-}
-
-/** Scale size relative to iPhone 14 width; wider range for SE ↔ Pro Max */
-export function scale(size: number, width?: number): number {
-  const w = layoutWidth(width);
-  const ratio = Math.min(Math.max(w / BASE_WIDTH, 0.82), 1.12);
-  return Math.round(PixelRatio.roundToNearestPixel(size * ratio));
+export function isTabletWidth(width?: number): boolean {
+  return windowWidth(width) >= TABLET_BREAKPOINT;
 }
 
 export function isTablet(width?: number): boolean {
-  const w = width ?? getWindow().width;
-  return Platform.OS !== "web" && w >= 768;
+  return isTabletWidth(width);
 }
 
+export function isLandscape(width?: number, height?: number): boolean {
+  return windowWidth(width) > windowHeight(height);
+}
+
+/**
+ * Device size class across iPhone SE → Pro Max → iPad mini → iPad Pro.
+ */
+export function sizeClass(width?: number): SizeClass {
+  const w = windowWidth(width);
+  if (w >= TABLET_WIDE_BREAKPOINT) return "tabletWide";
+  if (w >= TABLET_BREAKPOINT) return "tablet";
+  if (w <= 375) return "compact"; // SE, mini
+  if (w <= 402) return "regular"; // standard iPhone
+  return "large"; // Plus / Pro Max / large phone
+}
+
+/** @deprecated Prefer sizeClass */
+export function phoneSizeClass(width?: number): SizeClass {
+  return sizeClass(width);
+}
+
+/**
+ * Max width of the main content column.
+ * Phones: full window. Tablets: capped + centered by Screen.
+ */
 export function contentMaxWidth(width?: number): number {
-  return layoutWidth(width);
+  const w = windowWidth(width);
+  const cls = sizeClass(w);
+  if (cls === "tabletWide") return Math.min(w, CONTENT_MAX_TABLET_WIDE);
+  if (cls === "tablet") return Math.min(w, CONTENT_MAX_TABLET);
+  return w;
 }
 
-/** Horizontal page padding — Nest-spacious, still SE-safe */
+/**
+ * Width used for UI math (grids, card sizes) inside the content column.
+ */
+export function layoutWidth(windowW?: number): number {
+  return contentMaxWidth(windowW);
+}
+
+/** SE / mini / short phone width (not tablets). */
+export function isCompactWidth(width?: number): boolean {
+  const w = windowWidth(width);
+  return w < TABLET_BREAKPOINT && w <= 375;
+}
+
+/** Scale type/spacing relative to iPhone 14; gentle on tablets. */
+export function scale(size: number, width?: number): number {
+  const w = Math.min(layoutWidth(width), PHONE_BASE_WIDTH * 1.15);
+  const ratio = Math.min(Math.max(w / BASE_WIDTH, 0.82), 1.15);
+  return Math.round(PixelRatio.roundToNearestPixel(size * ratio));
+}
+
+/**
+ * Horizontal page padding — SE-safe, Nest-spacious on large phones, airy on iPad.
+ */
 export function pagePadding(width?: number): number {
-  const w = layoutWidth(width);
-  if (w <= 340) return 16;
-  if (w <= 375) return 18; // SE class
-  if (w <= 402) return 22; // standard
-  return 24; // Pro Max class — Nest-like side air
+  const cls = sizeClass(width);
+  const w = windowWidth(width);
+  if (cls === "compact") return w <= 340 ? 16 : 18;
+  if (cls === "regular") return 22;
+  if (cls === "large") return 24;
+  if (cls === "tablet") return 28;
+  return 32; // tabletWide
+}
+
+/**
+ * Grid column count for emotion tiles, cards, etc.
+ */
+export function gridColumns(
+  width?: number,
+  opts?: { phone?: number; tablet?: number; tabletWide?: number }
+): number {
+  const cls = sizeClass(width);
+  if (cls === "tabletWide") return opts?.tabletWide ?? 4;
+  if (cls === "tablet") return opts?.tablet ?? 3;
+  return opts?.phone ?? 2;
 }
 
 /**
  * Scroll/content clearance above floating tab bar + FAB + home indicator.
- * Used for ScrollView paddingBottom AND sticky composers (e.g. Wisdom input).
- * Pass safe-area bottom inset for accuracy.
- *
- * Must stay ≥ pill height (~62) + bottom pad + gap so inputs never sit under the nav.
  */
 export function tabBarClearance(bottomInset = 0, width?: number): number {
   const compact = isCompactWidth(width);
-  // Matches FloatingTabBar pillMinH + paddingVertical + FAB row
-  const bar = compact ? 62 : 68;
+  const tablet = isTabletWidth(width);
+  const bar = compact ? 62 : tablet ? 72 : 68;
   const fabLift = compact ? 4 : 6;
-  // Visual air between content/composer and top of floating pill
-  const gap = compact ? 14 : 16;
+  const gap = compact ? 14 : tablet ? 18 : 16;
   const inset = Math.max(bottomInset, Platform.OS === "web" ? 10 : 0);
   return bar + inset + fabLift + gap + (compact ? 8 : 10);
+}
+
+/** Max width for floating tab bar pill row (centered on tablet). */
+export function tabBarMaxWidth(width?: number): number {
+  const w = windowWidth(width);
+  if (isTabletWidth(w)) return Math.min(contentMaxWidth(w) + 48, w - 24);
+  return w;
 }
 
 export function isWeb(): boolean {
   return Platform.OS === "web";
 }
 
-/** Title / type scale by device class — larger display for Sora personality */
+/** Title / type scale by device class */
 export function titleMetrics(width?: number): { size: number; lineHeight: number } {
-  const cls = phoneSizeClass(width);
+  const cls = sizeClass(width);
   if (cls === "compact") return { size: 28, lineHeight: 34 };
+  if (cls === "regular") return { size: 32, lineHeight: 38 };
   if (cls === "large") return { size: 34, lineHeight: 40 };
-  return { size: 32, lineHeight: 38 };
+  if (cls === "tablet") return { size: 36, lineHeight: 42 };
+  return { size: 40, lineHeight: 46 }; // tabletWide
 }

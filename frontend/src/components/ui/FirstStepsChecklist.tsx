@@ -2,11 +2,57 @@ import React, { useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { useTheme } from "@/src/context/ThemeContext";
 import { PressableScale } from "@/src/components/ui/PressableScale";
 import { storage } from "@/src/utils/storage";
 import { layout } from "@/src/theme/layout";
 import { FadeIn } from "@/src/components/ui/FadeIn";
+
+function CheckCircle({ done, primary, onPrimary, border }: {
+  done: boolean;
+  primary: string;
+  onPrimary: string;
+  border: string;
+}) {
+  const scale = useSharedValue(done ? 1 : 0.85);
+  useEffect(() => {
+    if (done) {
+      scale.value = withSequence(
+        withSpring(1.2, { damping: 10, stiffness: 300 }),
+        withSpring(1, { damping: 12, stiffness: 220 })
+      );
+    } else {
+      scale.value = withTiming(0.85, { duration: 120 });
+    }
+  }, [done, scale]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View
+      style={[
+        {
+          width: 26,
+          height: 26,
+          borderRadius: 13,
+          borderWidth: 2,
+          borderColor: done ? primary : border,
+          backgroundColor: done ? primary : "transparent",
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        style,
+      ]}
+    >
+      {done ? <Ionicons name="checkmark" size={14} color={onPrimary} /> : null}
+    </Animated.View>
+  );
+}
 
 const KEY = "cc_first_steps_v1";
 
@@ -179,22 +225,12 @@ export function FirstStepsChecklist() {
               }}
               testID={`first-step-${step.id}`}
             >
-              <View
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  borderWidth: 2,
-                  borderColor: done ? colors.primary : colors.border,
-                  backgroundColor: done ? colors.primary : "transparent",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {done ? (
-                  <Ionicons name="checkmark" size={14} color={colors.textOnPrimary} />
-                ) : null}
-              </View>
+              <CheckCircle
+                done={done}
+                primary={colors.primary}
+                onPrimary={colors.textOnPrimary}
+                border={colors.border}
+              />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{

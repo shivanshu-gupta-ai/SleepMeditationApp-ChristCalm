@@ -1,8 +1,17 @@
-import React from "react";
-import { StyleSheet, Text, View, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { AccessibilityInfo, StyleSheet, Text, View, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useTheme } from "@/src/context/ThemeContext";
 import { FadeIn } from "@/src/components/ui/FadeIn";
+import { PressableScale } from "@/src/components/ui/PressableScale";
 
 const GRACE = require("@/assets/images/grace-mascot.jpg");
 
@@ -10,7 +19,6 @@ type Props = {
   icon?: keyof typeof Ionicons.glyphMap;
   title: string;
   message?: string;
-  /** Use Grace mascot for personality (empty / no-data) */
   withGrace?: boolean;
   actionLabel?: string;
   onAction?: () => void;
@@ -18,8 +26,7 @@ type Props = {
 };
 
 /**
- * Calm empty state — optional Grace illustration for personality
- * (premium apps use mascot empties instead of bare text).
+ * Calm empty state — optional Grace bob (P2).
  */
 export function EmptyState({
   icon = "leaf-outline",
@@ -30,23 +37,49 @@ export function EmptyState({
   onAction,
   testID = "empty-state",
 }: Props) {
-  const { colors, fonts, spacing, radius } = useTheme();
+  const { colors, fonts, spacing } = useTheme();
+  const bob = useSharedValue(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      bob.value = 0;
+      return;
+    }
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(-4, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+  }, [bob, reduceMotion]);
+
+  const bobStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: bob.value }],
+  }));
 
   return (
     <FadeIn>
       <View style={styles.wrap} testID={testID}>
         {withGrace ? (
-          <View
+          <Animated.View
             style={[
               styles.graceRing,
               {
                 borderColor: colors.borderSoft,
                 backgroundColor: colors.primarySoft,
               },
+              bobStyle,
             ]}
           >
             <Image source={GRACE} style={styles.grace} accessibilityLabel="Grace" />
-          </View>
+          </Animated.View>
         ) : (
           <View style={[styles.iconWrap, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name={icon} size={26} color={colors.primary} />
@@ -79,20 +112,20 @@ export function EmptyState({
           </Text>
         ) : null}
         {actionLabel && onAction ? (
-          <Text
-            onPress={onAction}
-            style={{
-              marginTop: spacing.md,
-              fontFamily: fonts.bodyBold,
-              fontSize: 14,
-              color: colors.primary,
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-            }}
-            accessibilityRole="button"
-          >
-            {actionLabel}
-          </Text>
+          <PressableScale onPress={onAction} scaleTo={0.96} style={{ marginTop: spacing.md }}>
+            <Text
+              style={{
+                fontFamily: fonts.bodyBold,
+                fontSize: 14,
+                color: colors.primary,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+              }}
+              accessibilityRole="button"
+            >
+              {actionLabel}
+            </Text>
+          </PressableScale>
         ) : null}
       </View>
     </FadeIn>

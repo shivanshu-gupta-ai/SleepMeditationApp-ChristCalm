@@ -55,6 +55,28 @@ ChristCalm is a **serverless** mobile backend: Expo app → HTTP API → Lambda 
 
 No Fargate/Docker required for normal scale. See [scalability.md](scalability.md).
 
+## Wisdom LLM (Bedrock)
+
+**Goal:** user should almost never see a Wisdom error. On any model failure, try the next.
+
+Chain is **Converse-probed** and ordered **cheaper → stronger** (no Claude; Legacy-denied models omitted).
+
+| # | Model ID | Role |
+|---|----------|------|
+| 1 | `openai.gpt-oss-20b-1:0` | **Primary** |
+| 2 | `us.amazon.nova-micro-v1:0` | Cheapest fallback |
+| 3 | `us.amazon.nova-lite-v1:0` | Cheap / fast |
+| 4 | `us.amazon.nova-2-lite-v1:0` | Cheap / better |
+| 5 | `us.meta.llama3-1-8b-instruct-v1:0` | Cost/performance |
+| 6 | `mistral.mistral-large-2402-v1:0` | Strong writing |
+| 7 | `us.meta.llama3-1-70b-instruct-v1:0` | Deeper reasoning |
+| 8 | `us.meta.llama3-3-70b-instruct-v1:0` | Newer 70B |
+| 9 | `us.amazon.nova-pro-v1:0` | Higher quality |
+| 10 | `us.deepseek.r1-v1:0` | Heavy reasoning |
+| 11 | `us.mistral.pixtral-large-2502-v1:0` | Last resort |
+
+Validate: `./scripts/check-bedrock-models.sh us-east-1`
+
 ## Related
 
 - [analytics.md](analytics.md) — usage event pipeline  

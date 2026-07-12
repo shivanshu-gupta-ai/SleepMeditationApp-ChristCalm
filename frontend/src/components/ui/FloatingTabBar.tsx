@@ -1,8 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Platform, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useTheme } from "@/src/context/ThemeContext";
 import { PressableScale } from "@/src/components/ui/PressableScale";
 import { StartCalmSheet } from "@/src/components/ui/StartCalmSheet";
@@ -10,16 +17,71 @@ import { playHaptic } from "@/src/utils/haptics";
 import { track } from "@/src/utils/analytics";
 import { useResponsive } from "@/src/hooks/use-responsive";
 
+function TabIconWrap({
+  focused,
+  activeColor,
+  children,
+}: {
+  focused: boolean;
+  activeColor: string;
+  children: React.ReactNode;
+}) {
+  const scale = useSharedValue(focused ? 1 : 0.92);
+  const dot = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    if (focused) {
+      scale.value = withSequence(
+        withSpring(1.12, { damping: 12, stiffness: 280 }),
+        withSpring(1, { damping: 14, stiffness: 220 })
+      );
+      dot.value = withSpring(1, { damping: 14, stiffness: 260 });
+    } else {
+      scale.value = withTiming(0.92, { duration: 160 });
+      dot.value = withTiming(0, { duration: 140 });
+    }
+  }, [focused, scale, dot]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: dot.value,
+    transform: [{ scale: 0.4 + 0.6 * dot.value }],
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: activeColor,
+    marginTop: 2,
+  }));
+
+  return (
+    <View style={{ alignItems: "center" }}>
+      <Animated.View style={style}>{children}</Animated.View>
+      <Animated.View style={dotStyle} />
+    </View>
+  );
+}
+
 /**
  * Floating pill tab bar + FAB.
- * Nest dark: charcoal pill, muted icons, gold active + gold FAB — sparse chrome.
- * Cooper light: white pill, lavender active + FAB.
+ * P0 motion: active tab icon pop + FAB + → × rotate when sheet open.
  */
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors, fonts, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { isCompact, width } = useResponsive();
+  const { isCompact, isTablet, tabBarMaxWidth: barMax } = useResponsive();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const fabRotate = useSharedValue(0);
+
+  useEffect(() => {
+    fabRotate.value = withSpring(sheetOpen ? 1 : 0, { damping: 16, stiffness: 220 });
+  }, [sheetOpen, fabRotate]);
+
+  const fabIconStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${fabRotate.value * 45}deg` }],
+  }));
 
   const HIDDEN = new Set(["prayers"]);
   const visibleRoutes = state.routes.filter((route) => {
@@ -29,12 +91,13 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   });
 
   const bottomPad = Math.max(insets.bottom, Platform.OS === "web" ? 10 : 8);
-  const hPad = isCompact ? 12 : 16;
-  const fabSize = isCompact ? 48 : 52;
-  const pillMinH = isCompact ? 58 : 64;
-  const iconSize = isCompact ? 22 : 24;
-  const labelSize = isCompact ? 10 : 11;
-  const gap = isCompact ? 8 : 10;
+  const hPad = isCompact ? 12 : isTablet ? 24 : 16;
+  const fabSize = isCompact ? 48 : isTablet ? 56 : 52;
+  const pillMinH = isCompact ? 58 : isTablet ? 68 : 64;
+  const iconSize = isCompact ? 22 : isTablet ? 26 : 24;
+  const labelSize = isCompact ? 10 : isTablet ? 12 : 11;
+  const gap = isCompact ? 8 : isTablet ? 14 : 10;
+  const activeColor = isDark ? colors.premium : colors.primary;
 
   return (
     <>
@@ -46,7 +109,8 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             paddingBottom: bottomPad,
             paddingHorizontal: hPad,
             gap,
-            maxWidth: width + hPad * 2,
+            // Center a comfortable bar on iPad; full width on phones
+            maxWidth: barMax,
             alignSelf: "center",
             width: "100%",
           },
@@ -57,7 +121,6 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             styles.pill,
             {
               minHeight: pillMinH,
-              // Nest: solid charcoal float · Cooper: white
               backgroundColor: isDark ? "rgba(22,22,24,0.94)" : "rgba(255,255,255,0.96)",
               borderWidth: isDark ? 0 : StyleSheet.hairlineWidth,
               borderColor: colors.borderSoft,
@@ -75,7 +138,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             },
           ]}
         >
-          {visibleRoutes.map((route) => {
+          {visibleRoutes.map((route, i) => {
             const focused = state.index === state.routes.indexOf(route);
             const { options } = descriptors[route.key];
             const label =
@@ -96,8 +159,6 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               }
             };
 
-            // Nest: soft gold when active. Cooper: lavender.
-            const activeColor = isDark ? colors.premium : colors.primary;
             const color = focused ? activeColor : colors.textMuted;
             const icon =
               options.tabBarIcon?.({
@@ -122,8 +183,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 testID={(options as { tabBarButtonTestID?: string }).tabBarButtonTestID}
                 style={[styles.tabItem, isCompact && { minWidth: 0 }]}
               >
-                {/* Nest: no busy icon wells — icon alone, like the reference bar */}
-                {icon}
+                <TabIconWrap focused={focused} activeColor={activeColor}>
+                  {icon}
+                </TabIconWrap>
                 <Text
                   numberOfLines={1}
                   adjustsFontSizeToFit
@@ -143,14 +205,14 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
           })}
         </View>
 
-        {/* Nest gold FAB */}
+        {/* FAB — rotates toward × when sheet open */}
         <PressableScale
           haptic="medium"
           onPress={() => {
             void track("fab_start_calm");
-            setSheetOpen(true);
+            setSheetOpen((o) => !o);
           }}
-          accessibilityLabel="Start calm"
+          accessibilityLabel={sheetOpen ? "Close start calm" : "Start calm"}
           testID="fab-start-calm"
           style={[
             styles.fab,
@@ -173,11 +235,16 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             },
           ]}
         >
-          <Ionicons name="add" size={isCompact ? 24 : 26} color={colors.fabText} />
+          <Animated.View style={fabIconStyle}>
+            <Ionicons name="add" size={isCompact ? 24 : 26} color={colors.fabText} />
+          </Animated.View>
         </PressableScale>
       </View>
 
-      <StartCalmSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <StartCalmSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+      />
     </>
   );
 }

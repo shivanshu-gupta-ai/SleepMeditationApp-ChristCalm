@@ -34,7 +34,7 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
 import { layout } from "@/src/theme/layout";
-import { Button, ErrorBanner, PressableScale } from "@/src/components/ui";
+import { ErrorBanner, PressableScale, FadeIn } from "@/src/components/ui";
 import { markFirstStep } from "@/src/components/ui/FirstStepsChecklist";
 import { ListeningWave } from "@/src/components/ui/ListeningWave";
 import { playHaptic } from "@/src/utils/haptics";
@@ -78,8 +78,8 @@ function mediaMetaFromUri(uri: string): { ext: string; contentType: string; form
 }
 
 export default function WisdomTab() {
-  const { colors, fonts, spacing, shadows } = useTheme();
-  const { pagePadding, bottomClearance } = useResponsive();
+  const { colors, fonts, spacing, shadows, isDark } = useTheme();
+  const { pagePadding, bottomClearance, contentMaxWidth, isTablet } = useResponsive();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: "welcome", role: "assistant", content: WELCOME },
   ]);
@@ -139,22 +139,21 @@ export default function WisdomTab() {
       });
   }, []);
 
-  // Always show fresh remaining count when tab is focused
+  // On focus: refresh quota + pull journal "Share with Wisdom" draft into the query bar
   useFocusEffect(
     useCallback(() => {
       refreshQuota();
+      let cancelled = false;
+      storage.getItem<string>("cc_wisdom_draft", "").then((draft) => {
+        if (cancelled || !draft?.trim()) return;
+        setInput(draft.trim());
+        void storage.removeItem("cc_wisdom_draft");
+      });
+      return () => {
+        cancelled = true;
+      };
     }, [refreshQuota])
   );
-
-  useEffect(() => {
-    // Prefill from journal "Share with Wisdom"
-    storage.getItem<string>("cc_wisdom_draft", "").then((draft) => {
-      if (draft) {
-        setInput(draft);
-        void storage.removeItem("cc_wisdom_draft");
-      }
-    });
-  }, []);
 
   useEffect(() => {
     if (messages.length) {
@@ -318,39 +317,40 @@ export default function WisdomTab() {
   const renderItem = ({ item }: { item: ChatMessage }) => {
     const mine = item.role === "user";
     return (
-      <View
-        style={{
-          alignSelf: mine ? "flex-end" : "flex-start",
-          maxWidth: "86%",
-          backgroundColor: mine ? colors.primarySoft : colors.surface,
-          borderRadius: 20,
-          paddingVertical: 14,
-          paddingHorizontal: 16,
-          marginBottom: 12,
-          // Nest dark: borderless bubbles
-          borderWidth: 0,
-          borderColor: "transparent",
-          ...(mine ? null : shadows.soft),
-        }}
-      >
-        <Text
+      <FadeIn delay={0} offset={10} duration={220}>
+        <View
           style={{
-            fontFamily: fonts.body,
-            fontSize: 15,
-            lineHeight: 22,
-            color: colors.textPrimary,
+            alignSelf: mine ? "flex-end" : "flex-start",
+            maxWidth: "86%",
+            backgroundColor: mine ? colors.primarySoft : colors.surface,
+            borderRadius: 20,
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            marginBottom: 12,
+            borderWidth: 0,
+            borderColor: "transparent",
+            ...(mine ? null : shadows.soft),
           }}
         >
-          {item.content}
-        </Text>
-      </View>
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 15,
+              lineHeight: 22,
+              color: colors.textPrimary,
+            }}
+          >
+            {item.content}
+          </Text>
+        </View>
+      </FadeIn>
     );
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["top"]}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, alignSelf: "center" }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={8}
       >
@@ -369,7 +369,7 @@ export default function WisdomTab() {
             <Text
               style={{
                 fontFamily: fonts.headingBold,
-                fontSize: 28,
+                fontSize: isTablet ? 32 : 28,
                 letterSpacing: -0.6,
                 color: colors.textPrimary,
               }}
@@ -718,17 +718,55 @@ export default function WisdomTab() {
                 testID="wisdom-input"
               />
             )}
-            <Button
-              label={sendFlash ? "Sent" : "Send"}
-              icon={sendFlash ? "checkmark" : "send"}
+            {/* Icon-only send — arrow; spring scale via PressableScale */}
+            <PressableScale
               onPress={() => send()}
-              loading={loading}
-              disabled={!input.trim() || transcribing || isRecording || quotaExhausted}
-              fullWidth={false}
+              disabled={
+                loading ||
+                !input.trim() ||
+                transcribing ||
+                isRecording ||
+                quotaExhausted
+              }
               haptic="medium"
-              style={{ minHeight: 40, paddingHorizontal: 14 }}
+              scaleTo={0.88}
+              accessibilityLabel={sendFlash ? "Sent" : "Send"}
+              accessibilityRole="button"
               testID="wisdom-send"
-            />
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor:
+                  !input.trim() || transcribing || isRecording || quotaExhausted
+                    ? colors.surfaceAlt
+                    : isDark
+                      ? colors.white
+                      : colors.textPrimary,
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={isDark ? "#0A0A0A" : colors.white}
+                />
+              ) : (
+                <Ionicons
+                  name={sendFlash ? "checkmark" : "arrow-up"}
+                  size={22}
+                  color={
+                    !input.trim() || transcribing || isRecording || quotaExhausted
+                      ? colors.textMuted
+                      : isDark
+                        ? "#0A0A0A"
+                        : colors.white
+                  }
+                />
+              )}
+            </PressableScale>
           </View>
         </View>
       </KeyboardAvoidingView>

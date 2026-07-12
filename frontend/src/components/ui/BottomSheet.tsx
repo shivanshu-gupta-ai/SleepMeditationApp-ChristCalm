@@ -14,7 +14,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/src/context/ThemeContext";
 import { playHaptic } from "@/src/utils/haptics";
-import { PHONE_MAX_WIDTH } from "@/src/utils/layout";
 import { useViewport } from "@/src/context/ViewportContext";
 
 type Props = {
@@ -30,7 +29,7 @@ type Props = {
 
 /**
  * Premium soft bottom sheet — scrim + slide-up surface.
- * On web, constrained to phone shell width (not full laptop width).
+ * Width follows the adaptive content column (phone full-width · tablet capped).
  */
 export function BottomSheet({
   visible,
@@ -43,16 +42,21 @@ export function BottomSheet({
 }: Props) {
   const { colors, fonts, spacing, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { width: shellWidth, height: shellHeight } = useViewport();
+  const {
+    width: shellWidth,
+    height: shellHeight,
+    contentMaxWidth,
+    windowWidth,
+  } = useViewport();
   const backdrop = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(40)).current;
 
-  // Phone-width column — always ≤ real window (SE safe) and ≤ Pro Max on desktop web
   const win = Dimensions.get("window");
+  // Match Screen content column so sheet aligns with app chrome on all devices
   const columnWidth = Math.min(
     win.width,
-    shellWidth > 0 ? shellWidth : win.width,
-    PHONE_MAX_WIDTH
+    windowWidth > 0 ? windowWidth : win.width,
+    contentMaxWidth > 0 ? contentMaxWidth : shellWidth || win.width
   );
   const maxSheetHeight =
     Math.min(win.height, shellHeight > 0 ? shellHeight : win.height) * maxHeightRatio;
@@ -148,14 +152,14 @@ export function BottomSheet({
           />
         </Pressable>
 
-        {/* Centered phone-width column — sheet only as wide as the app shell */}
+        {/* Centered content column — matches Screen / tab bar on phone + iPad */}
         <View
           pointerEvents="box-none"
           style={[
             styles.phoneColumn,
             {
               width: columnWidth,
-              maxWidth: PHONE_MAX_WIDTH,
+              maxWidth: columnWidth,
             },
           ]}
         >
@@ -223,7 +227,6 @@ const styles = StyleSheet.create({
   },
   phoneColumn: {
     width: "100%",
-    maxWidth: PHONE_MAX_WIDTH,
     justifyContent: "flex-end",
     // Keep above tab bar area on web; sheet sits at bottom of column
     alignSelf: "center",

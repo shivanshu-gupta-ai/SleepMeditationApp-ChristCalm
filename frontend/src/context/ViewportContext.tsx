@@ -8,18 +8,28 @@ import React, {
 } from "react";
 import { Dimensions, Platform, View, StyleSheet } from "react-native";
 import {
+  DESKTOP_SHELL_BREAKPOINT,
   PHONE_MAX_WIDTH,
-  layoutWidth,
+  contentMaxWidth as calcContentMax,
   pagePadding as calcPadding,
+  windowWidth as clampWindowW,
+  isTabletWidth,
 } from "@/src/utils/layout";
 import { useTheme } from "@/src/context/ThemeContext";
 
 export type ViewportValue = {
-  /** Layout width for UI (phone-clamped) */
-  width: number;
+  /** Full window width (device / browser). */
+  windowWidth: number;
+  /** Height of the layout surface. */
   height: number;
+  /**
+   * Width for UI math inside the content column
+   * (phones = full width; tablets = capped column).
+   */
+  width: number;
   pagePadding: number;
   contentMaxWidth: number;
+  isTablet: boolean;
   isWebShell: boolean;
 };
 
@@ -27,19 +37,22 @@ const ViewportContext = createContext<ViewportValue | null>(null);
 
 function fromWindow(): ViewportValue {
   const win = Dimensions.get("window");
-  const width = layoutWidth(win.width);
+  const ww = clampWindowW(win.width);
+  const contentMax = calcContentMax(ww);
   return {
-    width,
+    windowWidth: ww,
     height: win.height,
-    pagePadding: calcPadding(width),
-    contentMaxWidth: width,
-    isWebShell: Platform.OS === "web" && win.width > PHONE_MAX_WIDTH,
+    width: contentMax,
+    pagePadding: calcPadding(ww),
+    contentMaxWidth: contentMax,
+    isTablet: isTabletWidth(ww),
+    isWebShell: Platform.OS === "web" && ww > DESKTOP_SHELL_BREAKPOINT,
   };
 }
 
 /**
- * Provides phone-sized layout metrics. On wide web viewports, MobileShell
- * measures the actual shell and overrides these values.
+ * Provides adaptive layout metrics for iPhone SE → Pro Max and all iPads.
+ * On very wide desktop web only, wraps UI in a phone chrome shell.
  */
 export function ViewportProvider({ children }: { children: React.ReactNode }) {
   const [viewport, setViewport] = useState<ViewportValue>(fromWindow);
@@ -52,19 +65,22 @@ export function ViewportProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setMeasured = useCallback((width: number, height: number) => {
-    const w = layoutWidth(width);
+    const ww = clampWindowW(width);
+    const contentMax = calcContentMax(ww);
     setViewport({
-      width: w,
+      windowWidth: ww,
       height,
-      pagePadding: calcPadding(w),
-      contentMaxWidth: w,
-      isWebShell: Platform.OS === "web",
+      width: contentMax,
+      pagePadding: calcPadding(ww),
+      contentMaxWidth: contentMax,
+      isTablet: isTabletWidth(ww),
+      isWebShell: Platform.OS === "web" && ww > DESKTOP_SHELL_BREAKPOINT,
     });
   }, []);
 
   const value = useMemo(() => viewport, [viewport]);
 
-  // Native: no shell, just context
+  // Native iPhone / iPad: full adaptive, no chrome shell
   if (Platform.OS !== "web") {
     return (
       <ViewportContext.Provider value={value}>{children}</ViewportContext.Provider>
@@ -73,21 +89,23 @@ export function ViewportProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ViewportContext.Provider value={value}>
-      <WebPhoneShell onMeasure={setMeasured}>{children}</WebPhoneShell>
+      <WebAdaptiveShell onMeasure={setMeasured}>{children}</WebAdaptiveShell>
     </ViewportContext.Provider>
   );
 }
 
 export function useViewport(): ViewportValue {
   const ctx = useContext(ViewportContext);
-  if (!ctx) {
-    // Fallback if used outside provider
-    return fromWindow();
-  }
+  if (!ctx) return fromWindow();
   return ctx;
 }
 
-function WebPhoneShell({
+/**
+ * Web only:
+ * - Tablet-sized viewports → full adaptive (no phone chrome)
+ * - Very wide desktop → optional centered phone chrome for demo
+ */
+function WebAdaptiveShell({
   children,
   onMeasure,
 }: {
@@ -96,10 +114,9 @@ function WebPhoneShell({
 }) {
   const { colors, isDark } = useTheme();
   const win = Dimensions.get("window");
-  const needsShell = win.width > PHONE_MAX_WIDTH + 8;
+  const needsPhoneShell = win.width > DESKTOP_SHELL_BREAKPOINT;
 
-  if (!needsShell) {
-    // Already phone-sized browser / responsive mode
+  if (!needsPhoneShell) {
     return (
       <View
         style={styles.fill}
@@ -118,7 +135,6 @@ function WebPhoneShell({
       style={[
         styles.outer,
         {
-          // Nest pure black desktop chrome · Cooper soft lavender desk
           backgroundColor: isDark ? colors.background : colors.backgroundElevated,
         },
       ]}
@@ -129,7 +145,6 @@ function WebPhoneShell({
           {
             backgroundColor: colors.background,
             maxWidth: PHONE_MAX_WIDTH,
-            // Soft phone chrome
             borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
             shadowColor: "#000",
             shadowOpacity: isDark ? 0.5 : 0.12,
@@ -162,7 +177,6 @@ const styles = StyleSheet.create({
   phone: {
     width: "100%",
     height: "100%",
-    // Allow full available height (SE short → Pro Max tall); don't force max that clips
     maxHeight: "100%",
     borderRadius: 16,
     borderWidth: 1,

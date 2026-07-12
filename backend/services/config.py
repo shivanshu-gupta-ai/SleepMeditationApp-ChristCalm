@@ -21,6 +21,8 @@ SSM_KEYS = (
     "OPENAI_API_KEY",
     "OPENAI_MODEL",
     "BEDROCK_MODEL_ID",
+    "BEDROCK_MODEL_IDS",
+    "BEDROCK_INFERENCE_GEO",
     "REVENUECAT_WEBHOOK_AUTHORIZATION",
     "REVENUECAT_ENTITLEMENT_ID",
     "RATE_LIMIT_AUTH",
@@ -60,7 +62,27 @@ def bootstrap() -> None:
 
     # Sensible defaults for non-secret config
     os.environ.setdefault("LLM_PROVIDER", "bedrock")
+    # Working models only (Converse-probed). First success wins.
+    os.environ.setdefault("BEDROCK_INFERENCE_GEO", "us")
     os.environ.setdefault("BEDROCK_MODEL_ID", "openai.gpt-oss-20b-1:0")
+    os.environ.setdefault(
+        "BEDROCK_MODEL_IDS",
+        ",".join(
+            [
+                "openai.gpt-oss-20b-1:0",  # primary
+                "us.amazon.nova-micro-v1:0",
+                "us.amazon.nova-lite-v1:0",
+                "us.amazon.nova-2-lite-v1:0",
+                "us.meta.llama3-1-8b-instruct-v1:0",
+                "mistral.mistral-large-2402-v1:0",
+                "us.meta.llama3-1-70b-instruct-v1:0",
+                "us.meta.llama3-3-70b-instruct-v1:0",
+                "us.amazon.nova-pro-v1:0",
+                "us.deepseek.r1-v1:0",
+                "us.mistral.pixtral-large-2502-v1:0",
+            ]
+        ),
+    )
     os.environ.setdefault("REVENUECAT_ENTITLEMENT_ID", "christcalm_premium")
 
     _LOADED = True

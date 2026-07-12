@@ -63,6 +63,22 @@ resource "aws_ssm_parameter" "bedrock_model_id" {
   tags  = local.common_tags
 }
 
+resource "aws_ssm_parameter" "bedrock_inference_geo" {
+  name  = "${local.ssm_prefix}/BEDROCK_INFERENCE_GEO"
+  type  = "String"
+  value = var.bedrock_inference_geo
+  tags  = local.common_tags
+}
+
+resource "aws_ssm_parameter" "bedrock_model_ids" {
+  name  = "${local.ssm_prefix}/BEDROCK_MODEL_IDS"
+  type  = "String"
+  value = var.bedrock_model_ids
+  tags  = local.common_tags
+}
+
+
+
 resource "aws_ssm_parameter" "revenuecat_webhook_authorization" {
   name  = "${local.ssm_prefix}/REVENUECAT_WEBHOOK_AUTHORIZATION"
   type  = "SecureString"

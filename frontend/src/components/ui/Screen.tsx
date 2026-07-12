@@ -23,13 +23,16 @@ type Props = {
   contentStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   testID?: string;
-  /** @deprecated Viewport is always phone-sized */
+  /**
+   * When true (default), centers a readable content column on tablet / wide layouts.
+   * Set false for full-bleed screens (e.g. immersive players).
+   */
   constrain?: boolean;
 };
 
 /**
- * Phone-first screen shell.
- * Horizontal padding + bottom clearance adapt to iPhone SE → Pro Max.
+ * Adaptive screen shell for iPhone SE → Pro Max and all iPads.
+ * Horizontal padding + optional centered content max-width on large devices.
  */
 export function Screen({
   children,
@@ -41,19 +44,30 @@ export function Screen({
   contentStyle,
   style,
   testID,
+  constrain = true,
 }: Props) {
   const { colors } = useTheme();
-  const { pagePadding, bottomClearance } = useResponsive();
+  const { pagePadding, bottomClearance, contentMaxWidth, isTablet } = useResponsive();
+
+  const columnStyle: ViewStyle = constrain
+    ? {
+        width: "100%",
+        maxWidth: contentMaxWidth,
+        alignSelf: "center",
+      }
+    : {
+        width: "100%",
+        maxWidth: "100%",
+      };
 
   const body = scroll ? (
     <ScrollView
       contentContainerStyle={[
         styles.scrollContent,
+        columnStyle,
         {
           paddingHorizontal: pagePadding,
           paddingBottom: bottomClearance,
-          width: "100%",
-          maxWidth: "100%",
         },
         contentStyle,
       ]}
@@ -62,6 +76,8 @@ export function Screen({
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       bounces
+      // Slightly roomier bounce feel on iPad
+      contentInsetAdjustmentBehavior="automatic"
       refreshControl={
         onRefresh ? (
           <RefreshControl
@@ -76,19 +92,21 @@ export function Screen({
       {children}
     </ScrollView>
   ) : (
-    <View
-      style={[
-        styles.fill,
-        {
-          paddingHorizontal: pagePadding,
-          width: "100%",
-          maxWidth: "100%",
-          paddingBottom: bottomClearance * 0.35,
-        },
-        contentStyle,
-      ]}
-    >
-      {children}
+    <View style={[styles.fill, styles.centerCol]}>
+      <View
+        style={[
+          styles.fill,
+          columnStyle,
+          {
+            paddingHorizontal: pagePadding,
+            // Leave room for floating tab bar on non-scroll screens
+            paddingBottom: isTablet ? bottomClearance * 0.4 : bottomClearance * 0.35,
+          },
+          contentStyle,
+        ]}
+      >
+        {children}
+      </View>
     </View>
   );
 
@@ -116,6 +134,7 @@ export function Screen({
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, width: "100%", maxWidth: "100%", overflow: "hidden" },
-  scrollContent: { flexGrow: 1, maxWidth: "100%" },
+  fill: { flex: 1, width: "100%", maxWidth: "100%" },
+  centerCol: { alignItems: "center" },
+  scrollContent: { flexGrow: 1 },
 });

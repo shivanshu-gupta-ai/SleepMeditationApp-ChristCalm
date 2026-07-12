@@ -56,6 +56,7 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
   })
 }
 
+# Cross-region inference profiles need invoke on the profile + FMs in destination regions
 resource "aws_iam_role_policy" "lambda_bedrock" {
   name = "${local.name_prefix}-bedrock"
   role = aws_iam_role.lambda.id
@@ -63,13 +64,27 @@ resource "aws_iam_role_policy" "lambda_bedrock" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+        Sid    = "BedrockInvoke"
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream",
+        ]
         Resource = [
           "arn:aws:bedrock:${var.aws_region}::foundation-model/*",
+          # Destination regions for US/EU geo cross-region routing
+          "arn:aws:bedrock:*::foundation-model/*",
+          # System inference profiles (us.amazon.nova-2-lite-v1:0 etc.)
           "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:inference-profile/*",
+          "arn:aws:bedrock:*:${data.aws_caller_identity.current.account_id}:inference-profile/*",
         ]
-      }
+      },
+      {
+        Sid      = "BedrockInferenceProfileRead"
+        Effect   = "Allow"
+        Action   = ["bedrock:GetInferenceProfile", "bedrock:ListInferenceProfiles"]
+        Resource = ["*"]
+      },
     ]
   })
 }

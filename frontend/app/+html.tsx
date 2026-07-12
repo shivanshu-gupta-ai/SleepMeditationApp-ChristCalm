@@ -46,9 +46,14 @@ export default function Root({ children }: PropsWithChildren) {
                 width: 100% !important;
                 max-width: 100% !important;
               }
-              /* Never let nested RN views force horizontal overflow */
-              #root, #root * {
+              /* Constrain shell only — NOT all descendants.
+                 #root * { max-width: 100vw } collapses horizontal ScrollView
+                 content (emotion chips, mood row) so they cannot pan. */
+              #root {
                 max-width: 100vw;
+                box-sizing: border-box;
+              }
+              #root, #root * {
                 box-sizing: border-box;
               }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
@@ -67,7 +72,30 @@ export default function Root({ children }: PropsWithChildren) {
 
               body {
                 overscroll-behavior: none;
-                touch-action: pan-y;
+                touch-action: manipulation;
+              }
+
+              /* Horizontal chip strips (EmotionFilter).
+                 Use a real DOM overflow-x container — force it past phone shell. */
+              [data-hscroll="1"],
+              #emotion-filter-scroll {
+                overflow-x: scroll !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-x !important;
+                max-width: 100% !important;
+                overscroll-behavior-x: contain;
+              }
+              [data-hscroll="1"]::-webkit-scrollbar,
+              #emotion-filter-scroll::-webkit-scrollbar {
+                display: none !important;
+                height: 0 !important;
+              }
+              /* Chips keep intrinsic width so the row can exceed the viewport */
+              [data-hscroll="1"] > *,
+              #emotion-filter-scroll > * {
+                max-width: none !important;
+                flex-shrink: 0 !important;
               }
             `,
           }}

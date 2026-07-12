@@ -1,4 +1,10 @@
-"""Bedrock conversational wisdom — RAG over /wisdom files. Default: GPT-OSS 20B."""
+"""Bedrock conversational wisdom — RAG over /wisdom files.
+
+Large multi-model chain so the user almost never sees an AI error:
+try Meta Llama US profiles, then GPT-OSS / Mistral / Nova. Never Claude.
+
+Override: BEDROCK_MODEL_IDS=id1,id2,...
+"""
 
 from __future__ import annotations
 
@@ -6,18 +12,62 @@ import asyncio
 import logging
 import os
 import re
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from services.wisdom_rag import format_context, retrieve
 from services.wisdom_guardrails import enforce_wisdom_scope
 
 logger = logging.getLogger("christcalm.llm")
 
-# User asked: Mistral or GPT-OSS 20B — not Claude
-DEFAULT_MODEL = "openai.gpt-oss-20b-1:0"
+# Primary + working fallbacks only (probed with Converse in us-east-1).
+# Order: cost ↑ then quality — first success wins; user rarely sees AI errors.
+# Excludes Legacy-denied Llama 3.2 1B/3B/11B/90B, Claude, Nova Premier (access denied).
+DEFAULT_PRIMARY = "openai.gpt-oss-20b-1:0"
+
+DEFAULT_MODEL_CHAIN = (
+    # Primary
+    "openai.gpt-oss-20b-1:0",
+    # Cheap / high volume (Nova micro → lite → 2 lite)
+    "us.amazon.nova-micro-v1:0",
+    "us.amazon.nova-lite-v1:0",
+    "us.amazon.nova-2-lite-v1:0",
+    # Cost-effective Llama that actually invoke
+    "us.meta.llama3-1-8b-instruct-v1:0",
+    # Stronger writing / reasoning
+    "mistral.mistral-large-2402-v1:0",
+    "us.meta.llama3-1-70b-instruct-v1:0",
+    "us.meta.llama3-3-70b-instruct-v1:0",
+    # Higher quality / premium-ish (still no Claude)
+    "us.amazon.nova-pro-v1:0",
+    "us.deepseek.r1-v1:0",
+    "us.mistral.pixtral-large-2502-v1:0",
+)
+
+_GEO_PREFIXES = ("us.", "eu.", "apac.", "jp.", "global.")
+# Only these families need geo prefixing when bare foundation IDs are supplied
+_GEO_PREFIX_FAMILIES = ("amazon.nova", "meta.llama")
 
 MAX_MESSAGE_LEN = 2000
 MAX_HISTORY_TURNS = 8
+
+# Any of these → try the next model (user must not see an error if another works)
+_RETRYABLE_CODES = frozenset(
+    {
+        "ThrottlingException",
+        "TooManyRequestsException",
+        "ServiceUnavailableException",
+        "ModelTimeoutException",
+        "ModelErrorException",
+        "InternalServerException",
+        "ModelNotReadyException",
+        "ServiceQuotaExceededException",
+        "AccessDeniedException",
+        "ResourceNotFoundException",
+        "ValidationException",
+        "ModelNotInvokableException",
+        "ModelStreamErrorException",
+    }
+)
 
 SYSTEM_TEMPLATE = """You are a wise, warm companion inside ChristCalm, a Christian mental wellness app.
 Your ONLY purpose is emotional and spiritual care: anxiety, grief, loneliness, shame, fear, relational pain, faith struggles, rest for the weary.
@@ -58,12 +108,75 @@ def validate_user_message(message: str) -> str:
     return msg
 
 
+def _inference_geo() -> str:
+    """
+    us | eu | apac | jp | global | none
+    When not 'none', bare foundation model IDs get a geo prefix for cross-region profiles.
+    """
+    geo = (os.environ.get("BEDROCK_INFERENCE_GEO") or "us").strip().lower()
+    if geo in ("", "none", "off", "in-region", "false", "0"):
+        return ""
+    if geo in ("us", "eu", "apac", "jp", "global"):
+        return geo
+    return "us"
+
+
+def _to_invoke_id(model_id: str) -> str:
+    """
+    Convert foundation model ID → geo inference profile ID when needed.
+
+    Nova often requires inference profiles (us.amazon.nova-2-lite-v1:0).
+    GPT-OSS / Mistral Large 2402 typically use foundation IDs only.
+    """
+    mid = (model_id or "").strip()
+    if not mid:
+        return mid
+    if mid.startswith(_GEO_PREFIXES):
+        return mid
+    geo = _inference_geo()
+    if not geo:
+        return mid
+    # Only prefix families that use geo profiles for on-demand invoke
+    if any(mid.startswith(fam) for fam in _GEO_PREFIX_FAMILIES):
+        return f"{geo}.{mid}"
+    return mid
+
+
+def _model_chain() -> List[str]:
+    """
+    Ordered Bedrock invoke IDs (US Meta Llama inference profiles by default).
+    BEDROCK_MODEL_IDS=comma,separated  → full chain override
+    else primary (BEDROCK_MODEL_ID) + remaining DEFAULT_MODEL_CHAIN entries.
+    """
+    multi = (os.environ.get("BEDROCK_MODEL_IDS") or "").strip()
+    if multi:
+        chain = [m.strip() for m in multi.split(",") if m.strip()]
+    else:
+        primary = (
+            os.environ.get("BEDROCK_MODEL_ID")
+            or os.environ.get("WISDOM_MODEL_ID")
+            or DEFAULT_PRIMARY
+        ).strip()
+        # Keep primary first; append the rest of the Llama ladder (no dups)
+        rest = [m for m in DEFAULT_MODEL_CHAIN if m != primary]
+        chain = [primary, *rest]
+
+    out: List[str] = []
+    for m in chain:
+        if not m:
+            continue
+        if "anthropic" in m.lower() or "claude" in m.lower():
+            logger.warning("Skipping Claude model in chain: %s", m)
+            continue
+        invoke_id = _to_invoke_id(m)
+        if invoke_id not in out:
+            out.append(invoke_id)
+    return out or [DEFAULT_PRIMARY]
+
+
 def _model_id() -> str:
-    return (
-        os.environ.get("BEDROCK_MODEL_ID")
-        or os.environ.get("WISDOM_MODEL_ID")
-        or DEFAULT_MODEL
-    ).strip()
+    """Primary model (first in chain) — for status / logging."""
+    return _model_chain()[0]
 
 
 def _extract_text(content_blocks: list) -> str:
@@ -80,7 +193,6 @@ def _trim_reply(text: str, max_chars: int = 720) -> str:
     cleaned = re.sub(r"\n{3,}", "\n\n", (text or "").strip())
     if len(cleaned) <= max_chars:
         return cleaned
-    # Cut at last sentence boundary inside the budget
     chunk = cleaned[: max_chars + 1]
     for sep in (". ", "? ", "! ", ".\n", "?\n", "!\n"):
         idx = chunk.rfind(sep)
@@ -89,17 +201,100 @@ def _trim_reply(text: str, max_chars: int = 720) -> str:
     return chunk[:max_chars].rsplit(" ", 1)[0].strip() + "…"
 
 
+def _converse_one(
+    client: Any,
+    model_id: str,
+    system: str,
+    bedrock_messages: list,
+) -> str:
+    """Single model invoke. Raises ClientError / BotoCoreError / LLMError."""
+    from botocore.exceptions import BotoCoreError, ClientError
+
+    try:
+        response = client.converse(
+            modelId=model_id,
+            system=[{"text": system}],
+            messages=bedrock_messages,
+            inferenceConfig={
+                "maxTokens": int(os.environ.get("BEDROCK_MAX_TOKENS", "280")),
+                "temperature": float(os.environ.get("BEDROCK_TEMPERATURE", "0.55")),
+            },
+        )
+        blocks = response.get("output", {}).get("message", {}).get("content", [])
+        text = _trim_reply(_extract_text(blocks))
+        if not text:
+            raise LLMError("empty_response")
+        return text
+    except ClientError:
+        raise
+    except BotoCoreError:
+        raise
+    except LLMError:
+        raise
+    except Exception as e:
+        logger.exception("Bedrock unexpected model=%s: %s", model_id, type(e).__name__)
+        raise LLMError("Wisdom is temporarily unavailable. Please try again.") from e
+
+
+def _should_fallback(exc: BaseException) -> bool:
+    """Prefer trying another model over surfacing an error to the user."""
+    from botocore.exceptions import (
+        BotoCoreError,
+        ClientError,
+        EndpointConnectionError,
+        ConnectTimeoutError,
+        ReadTimeoutError,
+    )
+
+    if isinstance(exc, LLMError) and str(exc) == "empty_response":
+        return True
+    if isinstance(exc, (EndpointConnectionError, ConnectTimeoutError, ReadTimeoutError)):
+        return True
+    if isinstance(exc, BotoCoreError) and not isinstance(exc, ClientError):
+        return True
+    if isinstance(exc, ClientError):
+        code = exc.response.get("Error", {}).get("Code", "") or ""
+        msg = str(exc).lower()
+        if code in _RETRYABLE_CODES:
+            return True
+        # Legacy / access / capacity wording — always try next
+        if any(
+            s in msg
+            for s in (
+                "throttl",
+                "too many requests",
+                "service unavailable",
+                "timeout",
+                "quota",
+                "capacity",
+                "access denied",
+                "legacy",
+                "not authorized",
+                "not enabled",
+                "invalid",
+                "on-demand",
+            )
+        ):
+            return True
+        # Default: still try next model so user rarely sees failure
+        return True
+    # Unknown errors: try next model rather than fail hard mid-chain
+    return True
+
+
 def _converse_sync(
     system: str,
     messages: List[dict[str, str]],
-) -> str:
-    """messages: [{role: user|assistant, content: str}]"""
+) -> Tuple[str, str]:
+    """
+    Try model chain. Returns (reply_text, model_id_used).
+    """
     import boto3
     from botocore.exceptions import BotoCoreError, ClientError
 
     region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
-    model_id = _model_id()
     client = boto3.Session(region_name=region).client("bedrock-runtime")
+    chain = _model_chain()
 
     bedrock_messages = []
     for m in messages:
@@ -113,38 +308,67 @@ def _converse_sync(
     if not bedrock_messages or bedrock_messages[-1]["role"] != "user":
         raise LLMError("Invalid conversation state.")
 
-    try:
-        response = client.converse(
-            modelId=model_id,
-            system=[{"text": system}],
-            messages=bedrock_messages,
-            inferenceConfig={
-                # Keep replies concise for mobile chat (~60–110 words target)
-                "maxTokens": int(os.environ.get("BEDROCK_MAX_TOKENS", "280")),
-                "temperature": float(os.environ.get("BEDROCK_TEMPERATURE", "0.55")),
-            },
-        )
-        blocks = response.get("output", {}).get("message", {}).get("content", [])
-        text = _trim_reply(_extract_text(blocks))
-    except ClientError as e:
-        code = e.response.get("Error", {}).get("Code", "")
-        logger.error("Bedrock ClientError %s model=%s: %s", code, model_id, e)
-        if code in ("AccessDeniedException", "ValidationException"):
-            raise LLMError(
-                "Wisdom service is not available for this model yet. "
-                "Please try again later or contact support."
-            ) from e
-        raise LLMError("Wisdom is temporarily unavailable. Please try again.") from e
-    except BotoCoreError as e:
-        logger.error("Bedrock BotoCoreError: %s", e)
-        raise LLMError("Wisdom is temporarily unavailable. Please try again.") from e
-    except Exception as e:
-        logger.exception("Bedrock unexpected: %s", type(e).__name__)
-        raise LLMError("Wisdom is temporarily unavailable. Please try again.") from e
+    last_error: Optional[BaseException] = None
+    last_code = ""
 
-    if not text:
-        raise LLMError("No response was generated. Please try again.")
-    return text
+    for i, model_id in enumerate(chain):
+        try:
+            text = _converse_one(client, model_id, system, bedrock_messages)
+            if i > 0:
+                logger.warning(
+                    "Bedrock fallback succeeded model=%s after_primary_failures=%s",
+                    model_id,
+                    i,
+                )
+            else:
+                logger.info("Bedrock ok model=%s", model_id)
+            return text, model_id
+        except ClientError as e:
+            last_error = e
+            last_code = e.response.get("Error", {}).get("Code", "")
+            logger.error(
+                "Bedrock ClientError %s model=%s (%s/%s): %s",
+                last_code,
+                model_id,
+                i + 1,
+                len(chain),
+                e,
+            )
+            if i < len(chain) - 1 and _should_fallback(e):
+                logger.warning("Trying next Bedrock model after %s", model_id)
+                continue
+            break
+        except BotoCoreError as e:
+            last_error = e
+            logger.error(
+                "Bedrock BotoCoreError model=%s (%s/%s): %s",
+                model_id,
+                i + 1,
+                len(chain),
+                e,
+            )
+            if i < len(chain) - 1 and _should_fallback(e):
+                continue
+            break
+        except LLMError as e:
+            last_error = e
+            if str(e) == "empty_response" and i < len(chain) - 1:
+                logger.warning("Empty reply from %s — trying next model", model_id)
+                continue
+            if str(e) == "empty_response":
+                raise LLMError("No response was generated. Please try again.") from e
+            raise
+
+    # Only after every model in the chain failed
+    logger.error(
+        "All Bedrock models failed last_code=%s last_err=%s chain=%s",
+        last_code,
+        last_error,
+        chain,
+    )
+    raise LLMError(
+        "Wisdom is temporarily unavailable. Please try again in a moment."
+    ) from last_error
 
 
 async def generate_wisdom_reply(
@@ -152,7 +376,7 @@ async def generate_wisdom_reply(
     history: Optional[List[dict[str, str]]] = None,
 ) -> dict[str, Any]:
     """
-    RAG + Bedrock conversational reply.
+    RAG + Bedrock conversational reply (with model fallbacks).
     history: prior turns [{role, content}] oldest-first, excluding the new user message.
     Guardrails run before Bedrock — off-topic requests never hit the model.
     """
@@ -181,11 +405,13 @@ async def generate_wisdom_reply(
     messages.append({"role": "user", "content": msg})
 
     loop = asyncio.get_event_loop()
-    reply = await loop.run_in_executor(None, _converse_sync, system, messages)
+    reply, model_used = await loop.run_in_executor(
+        None, _converse_sync, system, messages
+    )
 
     return {
         "reply": reply,
-        "model": _model_id(),
+        "model": model_used,
         "sources": [
             {"source": c["source"], "heading": c["heading"]} for c in chunks
         ],

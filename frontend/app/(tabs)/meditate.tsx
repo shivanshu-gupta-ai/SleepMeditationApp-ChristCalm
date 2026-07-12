@@ -41,7 +41,8 @@ export default function Meditate() {
   const router = useRouter();
   const params = useLocalSearchParams<{ emotion?: string }>();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
-  const { pagePadding, bottomClearance, isCompact } = useResponsive();
+  const { pagePadding, bottomClearance, isCompact, isTablet, columns } = useResponsive();
+  const listCols = columns({ phone: 1, tablet: 2, tabletWide: 2 });
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [meds, setMeds] = useState<Meditation[]>([]);
@@ -115,13 +116,17 @@ export default function Meditate() {
         />
       </FadeIn>
 
-      {/* Full-bleed filter row so first/last chips aren't cut by page padding */}
+      {/* Full-bleed filter row — own stacking context so FlatList below can't steal pans */}
       <View
         style={{
           marginHorizontal: -pagePadding,
+          zIndex: 5,
+          // Isolate from parent overflow:hidden on Screen.fill
           overflow: "visible",
-          zIndex: 2,
+          position: "relative",
         }}
+        // Don't let the vertical meditation FlatList capture horizontal drags starting here
+        onStartShouldSetResponderCapture={() => false}
       >
         <EmotionFilter
           emotions={emotions}
@@ -204,17 +209,27 @@ export default function Meditate() {
       ) : (
         <FlatList
           data={meds}
+          key={`meds-${listCols}`}
           keyExtractor={(item) => item.id}
+          numColumns={listCols}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           style={{ flex: 1 }}
+          columnWrapperStyle={
+            listCols > 1
+              ? { gap: isTablet ? 14 : 12, marginBottom: isCompact ? 10 : layout.listGap }
+              : undefined
+          }
           contentContainerStyle={{
             paddingBottom: bottomClearance,
-            gap: isCompact ? 10 : layout.listGap,
+            gap: listCols === 1 ? (isCompact ? 10 : layout.listGap) : 0,
             flexGrow: 1,
           }}
           renderItem={({ item, index }) => (
-            <FadeIn delay={Math.min(index * 35, 180)}>
+            <FadeIn
+              delay={Math.min(index * 35, 180)}
+              style={listCols > 1 ? { flex: 1 } : undefined}
+            >
               <PressableScale
                 scaleTo={0.985}
                 onPress={() =>
@@ -223,16 +238,23 @@ export default function Meditate() {
                 testID={`meditation-card-${item.id}`}
                 accessibilityLabel={`${item.title}, ${item.duration_min} minutes${item.premium ? ", premium" : ""}`}
                 style={{
+                  flex: listCols > 1 ? 1 : undefined,
                   backgroundColor: colors.surface,
                   borderRadius: layout.surfaceRadius + 2,
                   overflow: "hidden",
                   borderWidth: 1,
                   borderColor: colors.borderSoft,
                   ...shadows.soft,
+                  marginBottom: listCols === 1 ? 0 : undefined,
                 }}
               >
                 {/* Hero cover — travel-board language */}
-                <View style={{ height: isCompact ? 148 : 168, position: "relative" }}>
+                <View
+                  style={{
+                    height: isCompact ? 148 : isTablet ? 180 : 168,
+                    position: "relative",
+                  }}
+                >
                   <Image
                     source={meditationCoverSource(item.id, item.cover)}
                     style={{ width: "100%", height: "100%" }}
