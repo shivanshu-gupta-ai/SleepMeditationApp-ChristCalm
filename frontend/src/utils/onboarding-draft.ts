@@ -2,7 +2,8 @@ import { storage } from "@/src/utils/storage";
 
 export type OnboardingDraft = {
   name: string;
-  emotionalState: string | null;
+  /** Multi-select heart states (step 3) */
+  emotionalState: string[];
   faithStage: string | null;
   concerns: string[];
   desiredSupport: string[];
@@ -16,7 +17,7 @@ const KEY = "cc_onboarding_draft";
 
 export const defaultOnboardingDraft = (): OnboardingDraft => ({
   name: "",
-  emotionalState: null,
+  emotionalState: [],
   faithStage: null,
   concerns: [],
   desiredSupport: [],
@@ -43,9 +44,17 @@ export async function loadOnboardingDraft(): Promise<OnboardingDraft> {
     return defaultOnboardingDraft();
   }
 
+  // Migrate old single-string heart selection → array
+  let emotionalState: string[] = [];
+  if (Array.isArray(d.emotionalState)) {
+    emotionalState = d.emotionalState.filter((c): c is string => typeof c === "string");
+  } else if (typeof d.emotionalState === "string" && d.emotionalState) {
+    emotionalState = [d.emotionalState];
+  }
+
   return {
     name: typeof d.name === "string" ? d.name : "",
-    emotionalState: typeof d.emotionalState === "string" ? d.emotionalState : null,
+    emotionalState,
     faithStage: typeof d.faithStage === "string" ? d.faithStage : null,
     concerns: Array.isArray(d.concerns) ? d.concerns.filter((c) => typeof c === "string") : [],
     desiredSupport: Array.isArray(d.desiredSupport)
@@ -73,7 +82,8 @@ export function draftToApiPayload(draft: OnboardingDraft) {
   return {
     faith_journey: draft.faithStage,
     concerns: draft.concerns,
-    emotional_state: draft.emotionalState,
+    // Backend stores a string — join multi heart choices
+    emotional_state: draft.emotionalState.length ? draft.emotionalState.join(",") : null,
     desired_support: draft.desiredSupport,
     preferred_time: draft.preferredTime,
     commitment_accepted: draft.commitmentAccepted,

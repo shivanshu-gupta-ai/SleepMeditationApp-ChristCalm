@@ -3,19 +3,24 @@ import { View, Text } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 
 type Props = {
-  /** Small uppercase label above the question (e.g. "YOUR FAITH") */
+  /** Small label above the question (e.g. "Your heart") */
   overline?: string;
   title: string;
-  /** Helper under the title — keep tone soft and optional */
+  /** Helper under the title — keep short */
   subtitle?: string;
   /** multi | single hint line */
   hint?: string;
   center?: boolean;
+  /**
+   * compact (default): denser hierarchy for option lists.
+   * roomy: welcome-style screens that need more air.
+   */
+  density?: "compact" | "roomy";
 };
 
 /**
- * Canonical question header for every knowledge-capture step.
- * Same hierarchy: overline → title → subtitle → optional hint.
+ * Question header — compact by default so options own the screen.
+ * Hierarchy: overline → title → optional one-line helper (subtitle or hint, not both tall).
  */
 export function OnboardingQuestion({
   overline,
@@ -23,20 +28,26 @@ export function OnboardingQuestion({
   subtitle,
   hint,
   center = false,
+  density = "compact",
 }: Props) {
   const { colors, fonts, spacing } = useTheme();
   const align = center ? ("center" as const) : ("left" as const);
+  const compact = density === "compact";
+
+  // Compact: show subtitle OR hint (prefer subtitle); avoids 3 stacked text blocks
+  const helper = compact ? subtitle || hint : subtitle;
+  const showHint = compact ? false : Boolean(hint);
 
   return (
-    <View style={{ marginBottom: spacing.lg }}>
+    <View style={{ marginBottom: compact ? spacing.md : spacing.lg }}>
       {overline ? (
         <Text
           style={{
             fontFamily: fonts.bodyMedium,
-            fontSize: 13,
+            fontSize: compact ? 12 : 13,
             letterSpacing: 0.2,
             color: colors.primary,
-            marginBottom: spacing.sm,
+            marginBottom: compact ? 4 : spacing.sm,
             textAlign: align,
           }}
         >
@@ -46,31 +57,32 @@ export function OnboardingQuestion({
       <Text
         style={{
           fontFamily: fonts.headingBold,
-          fontSize: 26,
+          fontSize: compact ? 22 : 26,
           color: colors.textPrimary,
-          letterSpacing: -0.6,
-          lineHeight: 34,
+          letterSpacing: -0.5,
+          lineHeight: compact ? 28 : 34,
           textAlign: align,
-          marginBottom: subtitle || hint ? spacing.sm : 0,
+          marginBottom: helper || showHint ? (compact ? 4 : spacing.sm) : 0,
         }}
       >
         {title}
       </Text>
-      {subtitle ? (
+      {helper ? (
         <Text
           style={{
             fontFamily: fonts.body,
-            fontSize: 16,
+            fontSize: compact ? 14 : 16,
             color: colors.textSecondary,
-            lineHeight: 24,
+            lineHeight: compact ? 20 : 24,
             textAlign: align,
-            marginBottom: hint ? spacing.sm : 0,
+            marginBottom: showHint ? spacing.sm : 0,
           }}
+          numberOfLines={compact ? 2 : undefined}
         >
-          {subtitle}
+          {helper}
         </Text>
       ) : null}
-      {hint ? (
+      {showHint && hint ? (
         <Text
           style={{
             fontFamily: fonts.body,

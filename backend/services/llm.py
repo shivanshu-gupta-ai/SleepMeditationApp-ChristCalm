@@ -1,8 +1,6 @@
 """Bedrock conversational wisdom — RAG over /wisdom files.
 
-Large multi-model chain so the user almost never sees an AI error:
-try Meta Llama US profiles, then GPT-OSS / Mistral / Nova. Never Claude.
-
+Full working fallback chain so users rarely see AI errors. Never Claude.
 Override: BEDROCK_MODEL_IDS=id1,id2,...
 """
 
@@ -19,25 +17,18 @@ from services.wisdom_guardrails import enforce_wisdom_scope
 
 logger = logging.getLogger("christcalm.llm")
 
-# Primary + working fallbacks only (probed with Converse in us-east-1).
-# Order: cost ↑ then quality — first success wins; user rarely sees AI errors.
-# Excludes Legacy-denied Llama 3.2 1B/3B/11B/90B, Claude, Nova Premier (access denied).
+# Primary + probed working fallbacks (first success wins). Unchanged for product reliability.
 DEFAULT_PRIMARY = "openai.gpt-oss-20b-1:0"
 
 DEFAULT_MODEL_CHAIN = (
-    # Primary
     "openai.gpt-oss-20b-1:0",
-    # Cheap / high volume (Nova micro → lite → 2 lite)
     "us.amazon.nova-micro-v1:0",
     "us.amazon.nova-lite-v1:0",
     "us.amazon.nova-2-lite-v1:0",
-    # Cost-effective Llama that actually invoke
     "us.meta.llama3-1-8b-instruct-v1:0",
-    # Stronger writing / reasoning
     "mistral.mistral-large-2402-v1:0",
     "us.meta.llama3-1-70b-instruct-v1:0",
     "us.meta.llama3-3-70b-instruct-v1:0",
-    # Higher quality / premium-ish (still no Claude)
     "us.amazon.nova-pro-v1:0",
     "us.deepseek.r1-v1:0",
     "us.mistral.pixtral-large-2502-v1:0",

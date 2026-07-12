@@ -42,7 +42,6 @@ def test_model_chain_primary_gpt_oss_and_working_fallbacks(monkeypatch):
     assert "mistral.mistral-large-2402-v1:0" in chain
     assert "us.meta.llama3-1-70b-instruct-v1:0" in chain
     assert not any("claude" in m.lower() or "anthropic" in m.lower() for m in chain)
-    # Legacy Llama 3.2 small sizes not in default chain (access denied on many accounts)
     assert "us.meta.llama3-2-1b-instruct-v1:0" not in chain
     assert "us.meta.llama3-2-3b-instruct-v1:0" not in chain
 

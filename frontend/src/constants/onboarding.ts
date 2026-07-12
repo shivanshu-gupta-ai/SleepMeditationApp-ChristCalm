@@ -19,7 +19,7 @@ export const QUESTIONS = {
     overline: "Your heart",
     title: "How has your heart been feeling lately?",
     subtitle: "Be honest — there's no wrong answer here.",
-    hint: "Choose the one that fits most right now",
+    hint: "Select all that feel true",
   },
   faith: {
     overline: "Your faith",
@@ -50,7 +50,6 @@ export const QUESTIONS = {
     title: "Here's how ChristCalm works.",
     subtitle:
       "There isn't a fixed Day 1–7 plan. When you open the app, you choose how you feel — and we meet you with Scripture-based calm for that moment.",
-    hint: "Optional: try one gentle practice before you start",
   },
   covenant: {
     overline: "A quiet commitment",
@@ -94,6 +93,7 @@ export const FAITH_STAGES: {
   },
 ];
 
+/** Step 5 (Concerns) — keep few, clear choices (ponytail: long lists hurt UX). */
 export const CONCERNS: {
   id: string;
   label: string;
@@ -102,47 +102,33 @@ export const CONCERNS: {
 }[] = [
   {
     id: "anxiety",
-    label: "Anxiety & Worry",
-    sub: "Restless thoughts, racing mind",
+    label: "Anxiety & Fear",
+    sub: "Worry, restless thoughts, or panic",
     icon: "water-outline",
   },
   {
-    id: "panic",
-    label: "Panic or Fear",
-    sub: "Sudden waves of alarm",
-    icon: "alert-circle-outline",
+    id: "sleep",
+    label: "Sleep & Rest",
+    sub: "Hard to settle at night",
+    icon: "bed-outline",
   },
-  { id: "sleep", label: "Sleep & Rest", sub: "Hard to settle at night", icon: "bed-outline" },
-  { id: "grief", label: "Grief or Loss", sub: "Carrying sorrow", icon: "heart-outline" },
   {
-    id: "loneliness",
-    label: "Loneliness",
-    sub: "Feeling unseen or alone",
-    icon: "person-outline",
+    id: "grief",
+    label: "Grief or Loneliness",
+    sub: "Sorrow, loss, or feeling unseen",
+    icon: "heart-outline",
   },
   {
     id: "overwhelm",
-    label: "Overwhelm & Busyness",
-    sub: "Too much to hold",
+    label: "Overwhelm",
+    sub: "Too much to hold right now",
     icon: "layers-outline",
   },
   {
-    id: "purpose",
-    label: "Purpose & Direction",
-    sub: "Unsure of the next step",
+    id: "faith_purpose",
+    label: "Faith & Purpose",
+    sub: "Doubt, direction, or wanting Jesus nearer",
     icon: "compass-outline",
-  },
-  {
-    id: "faith_struggle",
-    label: "Struggles with Faith",
-    sub: "Questions and doubt",
-    icon: "help-circle-outline",
-  },
-  {
-    id: "closer_to_jesus",
-    label: "Closer to Jesus",
-    sub: "I just want to grow nearer to Him",
-    icon: "heart-circle-outline",
   },
 ];
 
@@ -308,10 +294,11 @@ export const ONBOARDING_STEP_LABELS = [
 export const TOTAL_ONBOARDING_STEPS = ONBOARDING_STEP_LABELS.length;
 
 export function getInsightCopy(draft: OnboardingDraft) {
+  const hearts = draft.emotionalState || [];
   const heavy =
     draft.concerns.length >= 3 ||
-    draft.emotionalState === "anxious" ||
-    draft.emotionalState === "weary";
+    hearts.includes("anxious") ||
+    hearts.includes("weary");
 
   if (heavy) {
     return {
@@ -320,7 +307,7 @@ export function getInsightCopy(draft: OnboardingDraft) {
     };
   }
 
-  if (draft.emotionalState === "peaceful") {
+  if (hearts.includes("peaceful") && hearts.length === 1) {
     return {
       headline: "What a gift to begin from a place of peace.",
       sub: "Grace will walk with you as you deepen the calm God has already placed in your heart.",

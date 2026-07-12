@@ -65,11 +65,12 @@ def bootstrap() -> None:
     # Working models only (Converse-probed). First success wins.
     os.environ.setdefault("BEDROCK_INFERENCE_GEO", "us")
     os.environ.setdefault("BEDROCK_MODEL_ID", "openai.gpt-oss-20b-1:0")
+    # Keep in sync with services.llm.DEFAULT_MODEL_CHAIN
     os.environ.setdefault(
         "BEDROCK_MODEL_IDS",
         ",".join(
             [
-                "openai.gpt-oss-20b-1:0",  # primary
+                "openai.gpt-oss-20b-1:0",
                 "us.amazon.nova-micro-v1:0",
                 "us.amazon.nova-lite-v1:0",
                 "us.amazon.nova-2-lite-v1:0",

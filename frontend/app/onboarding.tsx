@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Image,
   Animated,
   Easing,
 } from "react-native";
@@ -17,12 +16,12 @@ import { useSafeBack } from "@/src/hooks/use-safe-back";
 import OnboardingStepLayout, { useObStyles } from "@/src/components/onboarding/OnboardingStepLayout";
 import { OnboardingQuestion } from "@/src/components/onboarding/OnboardingQuestion";
 import { OnboardingOption } from "@/src/components/onboarding/OnboardingOption";
+import { GraceCompanion } from "@/src/components/onboarding/GraceCompanion";
 import {
   CONCERNS,
   DESIRED_SUPPORT,
   EMOTIONAL_STATES,
   FAITH_STAGES,
-  FIRST_PRACTICES,
   HOW_THE_APP_WORKS,
   PREFERRED_TIMES,
   QUESTIONS,
@@ -35,8 +34,6 @@ import {
   type OnboardingDraft,
 } from "@/src/utils/onboarding-draft";
 import { LoadingState } from "@/src/components/ui";
-
-const GRACE = require("@/assets/images/grace-mascot.jpg");
 
 export default function Onboarding() {
   const router = useRouter();
@@ -127,18 +124,14 @@ export default function Onboarding() {
     return () => anim.stop();
   }, [step, hydrated, buildProgress, animateStep]);
 
-  const toggleList = (key: "concerns" | "desiredSupport", id: string) => {
+  const toggleList = (
+    key: "concerns" | "desiredSupport" | "emotionalState",
+    id: string
+  ) => {
     if (!draft) return;
     const list = draft[key];
     const next = list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
     patch({ [key]: next });
-  };
-
-  const togglePractice = (index: number) => {
-    if (!draft) return;
-    const next = [...draft.firstPracticesDone];
-    next[index] = !next[index];
-    patch({ firstPracticesDone: next });
   };
 
   const canProceed = () => {
@@ -150,9 +143,10 @@ export default function Onboarding() {
       case 8:
       case 9:
       case 10:
+      case 11:
         return true;
       case 2:
-        return !!draft.emotionalState;
+        return draft.emotionalState.length > 0;
       case 3:
         return !!draft.faithStage;
       case 4:
@@ -161,9 +155,6 @@ export default function Onboarding() {
         return !!draft.preferredTime;
       case 7:
         return draft.desiredSupport.length > 0;
-      case 11:
-        // Practices are optional — user may enter the app without checking any
-        return true;
       default:
         return true;
     }
@@ -286,15 +277,13 @@ export default function Onboarding() {
       case 0:
         return (
           <View style={obStyles.center}>
-            <View style={obStyles.heroRing}>
-              <Image source={GRACE} style={obStyles.heroImage} />
-            </View>
+            <GraceCompanion mood="wave" size={148} testID="grace-onboarding-welcome" />
             <Text style={obStyles.overline}>A sacred space for your heart</Text>
-            <Text style={[obStyles.title, { fontSize: 26 }]}>
+            <Text style={[obStyles.title, { fontSize: 24, lineHeight: 30 }]}>
               Peace I leave with you;{"\n"}my peace I give you.
             </Text>
             <Text style={obStyles.scriptureRef}>John 14:27</Text>
-            <Text style={[obStyles.sub, { marginTop: spacing.lg }]}>
+            <Text style={[obStyles.sub, { marginTop: spacing.md }]}>
               Grace is here to walk with you — one gentle step at a time.
             </Text>
           </View>
@@ -303,17 +292,23 @@ export default function Onboarding() {
       case 1:
         return (
           <View style={obStyles.content}>
-            <View style={{ alignItems: "flex-start", marginBottom: spacing.md }}>
-              <View
-                style={[
-                  obStyles.heroRing,
-                  { marginBottom: spacing.md, alignSelf: "flex-start" },
-                ]}
-              >
-                <Image source={GRACE} style={{ width: 88, height: 88, borderRadius: 44 }} />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: spacing.sm,
+              }}
+            >
+              <GraceCompanion
+                mood="wave"
+                size={64}
+                testID="grace-onboarding-name"
+              />
+              <View style={{ flex: 1 }}>
+                <OnboardingQuestion {...QUESTIONS.name} density="compact" />
               </View>
             </View>
-            <OnboardingQuestion {...QUESTIONS.name} />
             <TextInput
               style={obStyles.input}
               placeholder="Your name or nickname"
@@ -336,8 +331,9 @@ export default function Onboarding() {
                 icon={e.icon}
                 label={e.label}
                 sub={e.sub}
-                selected={draft.emotionalState === e.id}
-                onPress={() => patch({ emotionalState: e.id })}
+                multi
+                selected={draft.emotionalState.includes(e.id)}
+                onPress={() => toggleList("emotionalState", e.id)}
                 testID={`emotion-${e.id}`}
               />
             ))}
@@ -402,9 +398,7 @@ export default function Onboarding() {
       case 6:
         return (
           <View style={obStyles.center}>
-            <View style={obStyles.heroRing}>
-              <Image source={GRACE} style={{ width: 140, height: 140, borderRadius: 70 }} />
-            </View>
+            <GraceCompanion mood="idle" size={112} testID="grace-onboarding-insight" />
             <Text style={obStyles.overline}>A gentle insight</Text>
             <Text style={obStyles.title}>{insight.headline}</Text>
             <Text style={[obStyles.sub, { marginTop: spacing.md }]}>{insight.sub}</Text>
@@ -433,9 +427,7 @@ export default function Onboarding() {
       case 8:
         return (
           <View style={obStyles.center}>
-            <View style={obStyles.heroRing}>
-              <Image source={GRACE} style={obStyles.heroImage} />
-            </View>
+            <GraceCompanion mood="idle" size={120} testID="grace-onboarding-scripture" />
             <Text style={obStyles.overline}>Scripture</Text>
             <Text style={obStyles.title}>A moment with God&apos;s Word</Text>
             <View style={[obStyles.card, { marginTop: spacing.lg, width: "100%" }]}>
@@ -469,16 +461,11 @@ export default function Onboarding() {
       case 10:
         return (
           <View style={obStyles.center}>
-            <Image
-              source={GRACE}
-              style={{
-                width: 120,
-                height: 120,
-                borderRadius: 60,
-                marginBottom: spacing.lg,
-                borderWidth: 2,
-                borderColor: colors.borderSoft,
-              }}
+            <GraceCompanion
+              mood="idle"
+              size={120}
+              style={{ marginBottom: spacing.md }}
+              testID="grace-onboarding-build"
             />
             <Text style={obStyles.overline}>Almost there</Text>
             <Text style={obStyles.title}>Setting up your calm space.</Text>
@@ -551,44 +538,6 @@ export default function Onboarding() {
                 </View>
               ))}
             </View>
-
-            <Text
-              style={{
-                marginTop: spacing.lg,
-                marginBottom: spacing.sm,
-                fontFamily: fonts.bodyBold,
-                fontSize: 14,
-                color: colors.textSecondary,
-              }}
-            >
-              Optional — a quiet practice right now
-            </Text>
-            {FIRST_PRACTICES.map((p, i) => {
-              const done = draft.firstPracticesDone[i];
-              return (
-                <OnboardingOption
-                  key={p.id}
-                  icon={p.icon}
-                  label={p.label}
-                  sub={p.text}
-                  multi
-                  selected={done}
-                  onPress={() => togglePractice(i)}
-                  testID={`practice-${p.id}`}
-                />
-              );
-            })}
-            <Text
-              style={{
-                marginTop: spacing.sm,
-                textAlign: "center",
-                fontFamily: fonts.body,
-                fontSize: 12,
-                color: colors.textMuted,
-              }}
-            >
-              You can skip these and explore anytime from Home.
-            </Text>
           </View>
         );
 
@@ -596,6 +545,9 @@ export default function Onboarding() {
         return null;
     }
   };
+
+  // Tiny corner Grace only on long multi-select lists (doesn't fight the header)
+  const showCornerGrace = step === 4 || step === 7 || step === 11;
 
   return (
     <OnboardingStepLayout
@@ -605,6 +557,25 @@ export default function Onboarding() {
       footer={footer}
       scrollable={step !== 10}
     >
+      {showCornerGrace ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            right: 10,
+            top: 4,
+            zIndex: 4,
+            opacity: 0.92,
+          }}
+        >
+          <GraceCompanion
+            mood="idle"
+            size={44}
+            showRing
+            testID="grace-onboarding-corner"
+          />
+        </View>
+      ) : null}
       {animated(renderStep())}
     </OnboardingStepLayout>
   );

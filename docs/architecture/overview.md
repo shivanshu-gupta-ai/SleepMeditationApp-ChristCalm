@@ -16,7 +16,7 @@ ChristCalm is a **serverless** mobile backend: Expo app → HTTP API → Lambda 
                     ▼                       ▼                       ▼
               DynamoDB                 Bedrock LLM              S3 + Transcribe
            users, journal,            Wisdom chat               voice notes
-           usage analytics,           (optional OpenAI)
+           usage analytics,           (Converse only)
            rate limits
 ```
 
@@ -76,6 +76,8 @@ Chain is **Converse-probed** and ordered **cheaper → stronger** (no Claude; Le
 | 11 | `us.mistral.pixtral-large-2502-v1:0` | Last resort |
 
 Validate: `./scripts/check-bedrock-models.sh us-east-1`
+
+Agent lean rules (no runtime impact): [AGENTS.md](../../AGENTS.md) (ponytail).
 
 ## Related
 
