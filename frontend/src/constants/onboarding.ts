@@ -132,6 +132,7 @@ export const CONCERNS: {
   },
 ];
 
+/** Step 8 (Support) — few clear choices so the list fits one screen. */
 export const DESIRED_SUPPORT: {
   id: string;
   label: string;
@@ -139,52 +140,34 @@ export const DESIRED_SUPPORT: {
   icon: IonIconName;
 }[] = [
   {
-    id: "rest_sleep",
-    label: "Rest & sleep",
-    sub: "Help me rest and sleep better",
-    icon: "bed-outline",
-  },
-  {
     id: "calm_anxiety",
     label: "Calm my mind",
-    sub: "Scripture for anxious thoughts",
+    sub: "Scripture for anxious, racing thoughts",
     icon: "water-outline",
+  },
+  {
+    id: "rest_sleep",
+    label: "Rest & sleep",
+    sub: "Settle body and mind at night",
+    icon: "bed-outline",
   },
   {
     id: "scripture",
     label: "God's Word",
-    sub: "Hear Scripture personally",
+    sub: "Hear Scripture spoken into this season",
     icon: "book-outline",
   },
   {
-    id: "daily_habits",
-    label: "Simple habits",
-    sub: "Build gentle daily practices",
-    icon: "leaf-outline",
+    id: "hard_emotions",
+    label: "Hard emotions",
+    sub: "Grief, loneliness, or overwhelm",
+    icon: "heart-outline",
   },
   {
     id: "presence",
     label: "His presence",
-    sub: "Feel God more deeply",
+    sub: "Feel God near — quiet company",
     icon: "sparkles-outline",
-  },
-  {
-    id: "grief_emotions",
-    label: "Hard emotions",
-    sub: "Process grief with care",
-    icon: "heart-outline",
-  },
-  {
-    id: "purpose",
-    label: "Purpose",
-    sub: "Find direction for this season",
-    icon: "compass-outline",
-  },
-  {
-    id: "quiet",
-    label: "Quiet company",
-    sub: "Just be with me in the stillness",
-    icon: "flame-outline",
   },
 ];
 
