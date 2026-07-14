@@ -4,19 +4,20 @@ import { useRouter, Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import BackButton from "@/src/components/BackButton";
 import { useTheme } from "@/src/context/ThemeContext";
-import { useAuth } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/features/auth";
 import { api } from "@/src/api/client";
-import GoogleSignInButton, { AuthDivider } from "@/src/components/GoogleSignInButton";
+import { AuthDivider, AppleSignInButton } from "@/src/features/auth";
 import {
   loadOnboardingDraft,
   clearOnboardingDraft,
   draftToApiPayload,
 } from "@/src/utils/onboarding-draft";
+import { validateCognitoPassword } from "@/src/utils/password";
 import { Screen, Button, TextField, ErrorBanner, SectionHeader } from "@/src/components/ui";
 
 export default function SignUp() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { signUp, signInWithApple, appleEnabled } = useAuth();
   const { colors, fonts, spacing } = useTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,14 +37,19 @@ export default function SignUp() {
       setError("Please fill in all fields");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    const pwErr = validateCognitoPassword(password);
+    if (pwErr) {
+      setError(pwErr);
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      await signUp(name.trim(), email.trim(), password);
+      const result = await signUp(name.trim(), email.trim(), password);
+      if (!result.userConfirmed) {
+        router.push({ pathname: "/(auth)/confirm-email", params: { email: result.email } });
+        return;
+      }
       try {
         const draft = await loadOnboardingDraft();
         await api.saveOnboarding(draftToApiPayload(draft));
@@ -71,7 +77,30 @@ export default function SignUp() {
       />
 
       <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
-        <GoogleSignInButton label="Sign up with Google" onError={setError} />
+        <AppleSignInButton
+          label="Sign up with Apple"
+          onPress={async () => {
+            try {
+              await signInWithApple();
+              try {
+                const draft = await loadOnboardingDraft();
+                await api.saveOnboarding(draftToApiPayload(draft));
+                await clearOnboardingDraft();
+              } catch {
+                // ignore
+              }
+              router.replace("/(tabs)/home");
+            } catch (e: any) {
+              if (!appleEnabled) {
+                setError(
+                  "Apple sign-in isn’t linked yet. Use email for now, or add Apple Services ID + key in terraform.tfvars (config/auth/README.md)."
+                );
+              } else {
+                setError(e?.message || "Apple sign-up failed");
+              }
+            }
+          }}
+        />
       </View>
       <AuthDivider text="OR SIGN UP WITH EMAIL" />
 
@@ -102,7 +131,7 @@ export default function SignUp() {
       />
 
       <TextField
-        label="Password (6+ characters)"
+        label="Password (8+ chars, upper, lower, number)"
         placeholder="Create a password"
         value={password}
         onChangeText={setPassword}

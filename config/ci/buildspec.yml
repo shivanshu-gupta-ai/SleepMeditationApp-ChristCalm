@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+  pre_build:
+    commands:
+      - echo "Unpacking backend source..."
+      - mkdir -p backend package
+      - tar -xzf backend.tar.gz -C backend
+  build:
+    commands:
+      - pip install -r backend/requirements-lambda.txt -t package/ --quiet
+      - cp backend/handler.py backend/server.py backend/seed_data.py package/
+      - cp -r backend/auth backend/ai backend/core backend/data package/
+      - echo "AI corpus check:" && find backend/ai -type f -name '*.md' | head -20
+      - test -f package/ai/corpus/Wisdom_Handbook.md || (echo "MISSING ai corpus handbook" && ls -laR backend/ai | head -50 && exit 1)
+      # Legacy wisdom path for older code paths
+      - mkdir -p package/wisdom
+      - if [ -d package/ai/corpus ]; then cp -R package/ai/corpus/. package/wisdom/; fi
+      - cd $CODEBUILD_SRC_DIR/package && zip -r $CODEBUILD_SRC_DIR/lambda.zip . -x '*.pyc' -x '*/__pycache__/*'
+  post_build:
+    commands:
+      - ls -lah $CODEBUILD_SRC_DIR/lambda.zip
+      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://$CODEBUILD_SRC_DIR/lambda.zip
+      - aws lambda wait function-updated --function-name $LAMBDA_FUNCTION_NAME
+      - echo "Lambda deployed successfully"

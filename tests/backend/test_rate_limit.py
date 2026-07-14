@@ -8,7 +8,7 @@ os.environ["RATE_LIMIT_BACKEND"] = "memory"
 
 from backend_path import ensure_backend_path  # noqa: F401 — path setup
 
-from services.rate_limit import InMemoryRateLimiter, RateLimiter
+from core.rate_limit import InMemoryRateLimiter, RateLimiter
 
 
 def test_allows_under_limit():

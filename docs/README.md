@@ -1,6 +1,7 @@
 # ChristCalm documentation
 
-All product, design, and architecture docs live here. Config how-tos stay under [`../config/`](../config/).
+All product, design, architecture, and engineering docs live here.  
+Runtime config templates live under [`../config/`](../config/).
 
 ## Map
 
@@ -8,16 +9,17 @@ All product, design, and architecture docs live here. Config how-tos stay under 
 |--------|----------|
 | [`product/`](product/) | What we build (PRD, roadmap) |
 | [`design/`](design/) | Visual system, Nest/Cooper themes, onboarding UX, principles |
-| [`architecture/`](architecture/) | Stack, scale path, analytics, launch review |
+| [`architecture/`](architecture/) | Stack, **current architecture**, **deploy plan**, scale, analytics, review |
 | [`engineering/`](engineering/) | Testing, day-to-day engineering notes |
 
 ## Start here
 
 1. **Product** → [`product/PRD.md`](product/PRD.md)  
 2. **Design (current UI)** → [`design/system.md`](design/system.md) + [`design/colors.md`](design/colors.md)  
-3. **Architecture** → [`architecture/overview.md`](architecture/overview.md)  
-4. **Scale / cost** → [`architecture/scalability.md`](architecture/scalability.md)  
-5. **Usage analytics** → [`architecture/analytics.md`](architecture/analytics.md)  
+3. **Current architecture** → [`architecture/current-architecture.md`](architecture/current-architecture.md)  
+4. **Deploy plan** → [`architecture/deploy-plan.md`](architecture/deploy-plan.md)  
+5. **Scale / cost** → [`architecture/scalability.md`](architecture/scalability.md)  
+6. **Usage analytics** → [`architecture/analytics.md`](architecture/analytics.md)  
 
 ## Repo media (not docs)
 
@@ -25,5 +27,7 @@ All product, design, and architecture docs live here. Config how-tos stay under 
 |------|---------|
 | [`assets/meditations/covers/`](../assets/meditations/covers/) | Meditation cover images (edit & replace) |
 | [`assets/audio/`](../assets/audio/) | Meditation audio files |
-| [`assets/design-reference/`](../assets/design-reference/) | Video frame references (not shipped in app) |
+| [`assets/design-reference/`](../assets/design-reference/) | Video frame references (not shipped) |
+| [`assets/app-design/`](../assets/app-design/) | Product design screenshots |
 | [`frontend/assets/`](../frontend/assets/) | App-bundled images (icons, covers copy, mascot) |
+| [`backend/ai/corpus/`](../backend/ai/corpus/) | Wisdom RAG markdown corpus |

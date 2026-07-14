@@ -4,7 +4,7 @@ import pytest
 
 from backend_path import ensure_backend_path  # noqa: F401
 
-from services.wisdom_guardrails import enforce_wisdom_scope, is_emotional_concern, GUARDRAIL_REPLY
+from ai.wisdom_guardrails import enforce_wisdom_scope, is_emotional_concern, GUARDRAIL_REPLY
 
 
 def test_allows_anxiety_concern():

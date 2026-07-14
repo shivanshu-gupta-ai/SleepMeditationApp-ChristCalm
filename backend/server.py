@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional, List
 from urllib.parse import quote
 
-from services.config import bootstrap, require_jwt_secret
+from core.config import bootstrap, require_jwt_secret
 
 bootstrap()
 
@@ -23,16 +23,16 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from seed_data import EMOTIONS, MEDITATIONS, PRAYERS, DEVOTIONALS, PRAYER_CATEGORIES
-from services import google_oauth
-from services.dynamodb import db
-from services.llm import generate_wisdom_reply, generate_prayer, LLMError
-from services.wisdom_rag import corpus_stats
-from services.voice_transcribe import (
+from auth import cognito as cognito_auth
+from data.dynamodb import db
+from ai.llm import generate_wisdom_reply, generate_prayer, LLMError
+from ai.wisdom_rag import corpus_stats
+from ai.voice_transcribe import (
     VoiceError,
     create_upload_url,
     start_and_wait_transcript,
 )
-from services.rate_limit import (
+from core.rate_limit import (
     limiter,
     AUTH_LIMIT,
     AUTH_WINDOW,
@@ -40,7 +40,7 @@ from services.rate_limit import (
     AI_WINDOW,
     AI_MONTHLY_LIMIT,
 )
-from services.wisdom_guardrails import enforce_wisdom_scope
+from ai.wisdom_guardrails import enforce_wisdom_scope
 
 JWT_SECRET = require_jwt_secret()
 REVENUECAT_WEBHOOK_AUTHORIZATION = os.environ.get("REVENUECAT_WEBHOOK_AUTHORIZATION", "")
@@ -232,8 +232,18 @@ async def get_current_user(
 ) -> dict:
     if not creds:
         raise HTTPException(status_code=401, detail="Missing auth token")
+    token = creds.credentials
+
+    if cognito_auth.cognito_enabled():
+        try:
+            user = await cognito_auth.resolve_user_from_bearer(token)
+            if user:
+                return user
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
     try:
-        payload = pyjwt.decode(creds.credentials, JWT_SECRET, algorithms=["HS256"])
+        payload = pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = payload["sub"]
     except pyjwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -279,8 +289,38 @@ async def health():
     }
 
 
+@api.get("/auth/config")
+async def auth_config():
+    """Public Cognito settings for the mobile app."""
+    google_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    apple_svc = os.environ.get("APPLE_SERVICES_ID", "")
+    google_ok = bool(google_id and google_id not in ("", "unset"))
+    apple_ok = bool(apple_svc and apple_svc not in ("", "unset"))
+    domain = os.environ.get("COGNITO_DOMAIN") or ""
+    return {
+        "provider": "cognito" if cognito_auth.cognito_enabled() else "legacy",
+        "region": os.environ.get("AWS_REGION", "us-east-1"),
+        "user_pool_id": os.environ.get("COGNITO_USER_POOL_ID"),
+        "client_id": os.environ.get("COGNITO_CLIENT_ID"),
+        "domain": domain,
+        "google_enabled": google_ok,
+        "apple_enabled": apple_ok,
+        # Clients always show social buttons; these flags drive messaging only.
+        "social_setup": {
+            "google": "ready" if google_ok else "needs_oauth_client_in_terraform",
+            "apple": "ready" if apple_ok else "needs_apple_services_id_in_terraform",
+            "docs": "config/auth/README.md",
+        },
+    }
+
+
 @api.post("/auth/signup", response_model=AuthOut)
 async def signup(body: SignUpIn, request: Request):
+    if cognito_auth.cognito_enabled():
+        raise HTTPException(
+            status_code=410,
+            detail="Sign-up uses AWS Cognito in the app. Update the client and try again.",
+        )
     _enforce_rate_limit(f"auth:signup:{_client_ip(request)}", AUTH_LIMIT, AUTH_WINDOW)
     email = body.email.lower().strip()
     existing = await db.get_user_by_email(email)
@@ -313,11 +353,15 @@ async def signup(body: SignUpIn, request: Request):
 
 @api.post("/auth/signin", response_model=AuthOut)
 async def signin(body: SignInIn, request: Request):
+    if cognito_auth.cognito_enabled():
+        raise HTTPException(
+            status_code=410,
+            detail="Sign-in uses AWS Cognito in the app. Update the client and try again.",
+        )
     _enforce_rate_limit(f"auth:signin:{_client_ip(request)}", AUTH_LIMIT, AUTH_WINDOW)
     email = body.email.lower().strip()
     user = await db.get_user_by_email(email)
     if not user or not user.get("password_hash") or not verify_password(body.password, user["password_hash"]):
-        # Constant-ish response — do not reveal whether email exists
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return AuthOut(token=create_token(user["id"]), user=user_to_out(user))
 
@@ -386,13 +430,10 @@ async def _upsert_google_user(profile: dict) -> dict:
 
 @api.get("/auth/google/start")
 async def google_auth_start(redirect_uri: str = Query(...)):
-    if not google_oauth.google_oauth_configured():
-        raise HTTPException(status_code=503, detail="Google OAuth is not configured")
-    try:
-        auth_url = google_oauth.build_authorization_url(redirect_uri)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return RedirectResponse(auth_url)
+    raise HTTPException(
+        status_code=410,
+        detail="Google sign-in uses AWS Cognito Hosted UI. Use the app social login buttons.",
+    )
 
 
 @api.get("/auth/google/callback")
@@ -401,24 +442,12 @@ async def google_auth_callback(
     state: Optional[str] = None,
     error: Optional[str] = None,
 ):
-    if error:
-        raise HTTPException(status_code=400, detail=f"Google OAuth error: {error}")
-    if not code or not state:
-        raise HTTPException(status_code=400, detail="Missing code or state")
-    try:
-        frontend_redirect = google_oauth.decode_state(state)
-        profile = await google_oauth.exchange_code_for_profile(code)
-    except ValueError as e:
-        logger.warning(f"Google OAuth callback failed: {e}")
-        raise HTTPException(status_code=401, detail="Invalid Google session")
-    user_doc = await _upsert_google_user(profile)
-    token = create_token(user_doc["id"])
-    return RedirectResponse(f"{frontend_redirect}#cc_token={quote(token)}")
+    raise HTTPException(status_code=410, detail="Google OAuth callback deprecated — use Cognito.")
 
 
 @api.post("/auth/google", response_model=AuthOut)
 async def google_auth_legacy(body: GoogleAuthIn):
-    raise HTTPException(status_code=410, detail="Use GET /api/auth/google/start")
+    raise HTTPException(status_code=410, detail="Use Cognito federated sign-in (Google).")
 
 
 @api.get("/emotions")
@@ -839,6 +868,11 @@ async def get_optional_user(
 ) -> Optional[dict]:
     if not creds:
         return None
+    if cognito_auth.cognito_enabled():
+        try:
+            return await cognito_auth.resolve_user_from_bearer(creds.credentials)
+        except Exception:
+            return None
     try:
         payload = pyjwt.decode(creds.credentials, JWT_SECRET, algorithms=["HS256"])
         user_id = payload.get("sub")

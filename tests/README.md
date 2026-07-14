@@ -1,16 +1,46 @@
-# Tests
+# Tests & reports
 
-| Path | Type |
-|------|------|
-| `backend/` | API integration tests (pytest, hit live AWS URL) |
-| `reports/` | Archived test run artifacts |
+```
+tests/
+├── backend/          # Pytest (unit + API integration)
+├── reports/          # Archived run artifacts (JSON, JUnit XML)
+│   └── pytest/
+├── conftest.py       # Shared fixtures (loads env, BASE_URL)
+└── README.md
+```
 
-## Run backend API tests
+## Run backend tests
 
 ```bash
-./scripts/sync-env-from-aws.sh   # sets EXPO_PUBLIC_BACKEND_URL
+# From repo root
+./scripts/sync-env-from-aws.sh   # sets EXPO_PUBLIC_BACKEND_URL for HTTP tests
 pip install -r backend/requirements.txt
 pytest tests/backend/ -v
 ```
 
-Requires `frontend/.env` with `EXPO_PUBLIC_BACKEND_URL` pointing at your deployed API.
+### Offline / unit only (no live API)
+
+```bash
+pytest tests/backend/test_wisdom_guardrails.py \
+       tests/backend/test_rate_limit.py \
+       tests/backend/test_llm_validation.py \
+       tests/backend/test_ai_quota.py -v
+```
+
+## Frontend
+
+```bash
+cd frontend && npx tsc --noEmit
+# ESLint: cd frontend && npx eslint .
+```
+
+## Reports
+
+Save CI or local artifacts under `tests/reports/`:
+
+```bash
+mkdir -p tests/reports/pytest
+pytest tests/backend/ -v --junitxml=tests/reports/pytest/pytest_results.xml
+```
+
+HTTP integration tests require `frontend/.env` with `EXPO_PUBLIC_BACKEND_URL` pointing at a deployed API.

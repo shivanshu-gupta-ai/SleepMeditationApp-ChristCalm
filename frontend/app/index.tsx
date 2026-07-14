@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/features/auth";
 import { LoadingState } from "@/src/components/ui";
 
 export default function Index() {

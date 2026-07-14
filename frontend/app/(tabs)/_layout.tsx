@@ -2,7 +2,7 @@ import React from "react";
 import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
-import { useAuth } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/features/auth";
 import { LoadingState } from "@/src/components/ui";
 import { FloatingTabBar } from "@/src/components/ui/FloatingTabBar";
 

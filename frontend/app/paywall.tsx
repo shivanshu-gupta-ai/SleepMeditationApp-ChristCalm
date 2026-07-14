@@ -5,10 +5,10 @@ import { Ionicons } from "@expo/vector-icons";
 import BackButton from "@/src/components/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/src/context/ThemeContext";
-import { useAuth } from "@/src/context/AuthContext";
-import { useRevenueCat } from "@/src/context/RevenueCatContext";
-import { usePremium } from "@/src/hooks/use-premium";
-import type { PlanId } from "@/src/constants/subscriptions";
+import { useAuth } from "@/src/features/auth";
+import { useRevenueCat } from "@/src/features/subscriptions";
+import { usePremium } from "@/src/features/subscriptions";
+import type { PlanId } from "@/src/features/subscriptions";
 import { Screen, Button, ErrorBanner, SectionHeader, PressableScale } from "@/src/components/ui";
 
 const FEATURES = [

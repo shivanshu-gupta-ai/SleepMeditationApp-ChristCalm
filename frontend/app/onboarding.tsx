@@ -11,12 +11,12 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
-import { useAuth } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/features/auth";
 import { useSafeBack } from "@/src/hooks/use-safe-back";
-import OnboardingStepLayout, { useObStyles } from "@/src/components/onboarding/OnboardingStepLayout";
-import { OnboardingQuestion } from "@/src/components/onboarding/OnboardingQuestion";
-import { OnboardingOption } from "@/src/components/onboarding/OnboardingOption";
-import { GraceCompanion } from "@/src/components/onboarding/GraceCompanion";
+import { OnboardingStepLayout, useObStyles } from "@/src/features/onboarding";
+import { OnboardingQuestion } from "@/src/features/onboarding";
+import { OnboardingOption } from "@/src/features/onboarding";
+import { GraceCompanion } from "@/src/features/onboarding";
 import {
   CONCERNS,
   DESIRED_SUPPORT,
@@ -27,7 +27,7 @@ import {
   QUESTIONS,
   TOTAL_ONBOARDING_STEPS,
   getInsightCopy,
-} from "@/src/constants/onboarding";
+} from "@/src/features/onboarding";
 import {
   loadOnboardingDraft,
   saveOnboardingDraft,

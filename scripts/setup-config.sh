@@ -15,9 +15,10 @@ copy_if_missing() {
 }
 
 echo "ChristCalm config setup"
-copy_if_missing "$ROOT/config/backend.env.example" "$ROOT/backend/.env"
-copy_if_missing "$ROOT/config/frontend.env.example" "$ROOT/frontend/.env"
+copy_if_missing "$ROOT/config/env/backend.env.example" "$ROOT/backend/.env"
+copy_if_missing "$ROOT/config/env/frontend.env.example" "$ROOT/frontend/.env"
 echo ""
 echo "Edit backend/.env and frontend/.env with your keys."
-echo "Auth templates: config/auth/"
+echo "Auth templates:   config/auth/"
+echo "Integrations:     config/env/integrations.env.example"
 echo "After deploy:     ./scripts/sync-env-from-aws.sh"

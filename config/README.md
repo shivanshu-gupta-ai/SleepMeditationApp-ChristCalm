@@ -1,7 +1,22 @@
 # Configuration (single folder)
 
-All **env templates**, **API requirements**, and **auth integration samples** live here.  
+All **env templates**, **CI build specs**, **API requirements**, and **auth integration samples**.
+
 Do **not** commit real secrets.
+
+## Layout
+
+```
+config/
+├── env/                      # Environment templates
+│   ├── backend.env.example
+│   ├── frontend.env.example
+│   └── integrations.env.example
+├── auth/                     # Google OAuth, Cognito, RevenueCat samples
+├── ci/
+│   └── buildspec.yml         # AWS CodeBuild Lambda package
+└── API_REQUIREMENTS.md       # Full API routes & limits
+```
 
 ## Quick start
 
@@ -9,29 +24,20 @@ Do **not** commit real secrets.
 ./scripts/setup-config.sh
 ```
 
-Creates `backend/.env` and `frontend/.env` from templates if missing.
-
-## Contents
-
-| Path | Purpose |
-|------|---------|
-| [`API_REQUIREMENTS.md`](./API_REQUIREMENTS.md) | **Full** API routes, env vars, Bedrock/OpenAI, rate limits |
-| [`backend.env.example`](./backend.env.example) | Backend / Lambda env template |
-| [`frontend.env.example`](./frontend.env.example) | Expo public env |
-| [`integrations.env.example`](./integrations.env.example) | RevenueCat + LLM |
-| [`auth/`](./auth/) | Google OAuth, JWT, RevenueCat notes |
+Creates `backend/.env` and `frontend/.env` from `config/env/*` if missing.
 
 ## Production (AWS)
 
 | Concern | Where |
 |---------|--------|
-| Secrets | SSM `/christcalm-preview/*` (Terraform `aws/terraform/ssm.tf`) |
+| Secrets | SSM `/christcalm-preview/*` (`infrastructure/terraform/ssm.tf`) |
 | AI | **Bedrock** via Lambda IAM (`LLM_PROVIDER=bedrock`) |
 | API URL | Terraform output `api_url` → `./scripts/sync-env-from-aws.sh` |
+| CI package | `config/ci/buildspec.yml` |
 
 ## Related
 
-- Deploy: `./scripts/deploy-aws.sh code`
+- Deploy plan: [`docs/architecture/deploy-plan.md`](../docs/architecture/deploy-plan.md)
+- Current architecture: [`docs/architecture/current-architecture.md`](../docs/architecture/current-architecture.md)
 - Preview: `./scripts/preview.sh`
-- Tests: `pytest tests/ -v`
-- Review: [`docs/REVIEW.md`](../docs/REVIEW.md)
+- Tests: `pytest tests/backend -v`

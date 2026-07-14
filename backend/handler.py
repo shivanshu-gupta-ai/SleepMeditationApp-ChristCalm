@@ -2,7 +2,7 @@
 
 from mangum import Mangum
 
-from services.config import bootstrap
+from core.config import bootstrap
 
 bootstrap()
 

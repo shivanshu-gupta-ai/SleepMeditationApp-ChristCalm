@@ -8,9 +8,9 @@ What we implemented in-repo, what you run, and when to use Service Quotas only.
 
 | Item | Where | Status |
 |------|--------|--------|
-| Higher API Gateway throttle | `aws/terraform` → 2000 rps / 1000 burst | Apply Terraform |
+| Higher API Gateway throttle | `infrastructure/terraform` → 2000 rps / 1000 burst | Apply Terraform |
 | DynamoDB rate-limit table | `dynamodb.tf` → `*-rate-limits` | Apply Terraform |
-| Distributed rate limits | `backend/services/rate_limit.py` | Deploy Lambda code |
+| Distributed rate limits | `backend/{auth,ai,core,data}/rate_limit.py` | Deploy Lambda code |
 | AI monthly cap (100) | Dynamo users + `AI_MONTHLY_LIMIT` | Already live |
 | Catalog `Cache-Control` | `server.py` CatalogCacheMiddleware | Deploy Lambda code |
 | Client catalog cache (5 min) | `frontend/src/utils/api-cache.ts` | Expo rebuild |
@@ -21,7 +21,7 @@ What we implemented in-repo, what you run, and when to use Service Quotas only.
 ### 1. Infra (throttle + rate-limits table)
 
 ```bash
-cd aws/terraform
+cd infrastructure/terraform
 terraform plan
 terraform apply
 ```

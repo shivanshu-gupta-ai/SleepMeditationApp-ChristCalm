@@ -4,13 +4,13 @@ import { useRouter, Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import BackButton from "@/src/components/BackButton";
 import { useTheme } from "@/src/context/ThemeContext";
-import { useAuth } from "@/src/context/AuthContext";
-import GoogleSignInButton, { AuthDivider } from "@/src/components/GoogleSignInButton";
+import { useAuth } from "@/src/features/auth";
+import { AuthDivider, AppleSignInButton } from "@/src/features/auth";
 import { Screen, Button, TextField, ErrorBanner, SectionHeader, FadeIn } from "@/src/components/ui";
 
 export default function SignIn() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, signInWithApple, appleEnabled } = useAuth();
   const { colors, fonts, spacing } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +29,10 @@ export default function SignIn() {
       await signIn(email.trim(), password);
       router.replace("/(tabs)/home");
     } catch (e: any) {
+      if (e.message === "USER_NOT_CONFIRMED") {
+        router.push({ pathname: "/(auth)/confirm-email", params: { email: email.trim() } });
+        return;
+      }
       setError(e.message || "Sign in failed");
     } finally {
       setLoading(false);
@@ -50,7 +54,23 @@ export default function SignIn() {
 
       <FadeIn delay={80}>
         <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
-          <GoogleSignInButton label="Sign in with Google" onError={setError} />
+          <AppleSignInButton
+            label="Sign in with Apple"
+            onPress={async () => {
+              try {
+                await signInWithApple();
+                router.replace("/(tabs)/home");
+              } catch (e: any) {
+                if (!appleEnabled) {
+                  setError(
+                    "Apple sign-in isn’t linked yet. Use email for now, or add Apple Services ID + key in terraform.tfvars (config/auth/README.md)."
+                  );
+                } else {
+                  setError(e?.message || "Apple sign-in failed");
+                }
+              }
+            }}
+          />
         </View>
         <AuthDivider text="OR CONTINUE WITH EMAIL" />
 
@@ -98,6 +118,14 @@ export default function SignIn() {
           testID="signin-submit-btn"
           style={{ marginTop: spacing.sm }}
         />
+
+        <TouchableOpacity
+          onPress={() => router.push("/(auth)/forgot-password")}
+          style={{ alignItems: "center", marginTop: spacing.md }}
+          testID="forgot-password-link"
+        >
+          <Text style={{ fontFamily: fonts.body, color: colors.primary }}>Forgot password?</Text>
+        </TouchableOpacity>
 
         <View
           style={{

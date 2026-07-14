@@ -24,13 +24,16 @@ ChristCalm is a **serverless** mobile backend: Expo app → HTTP API → Lambda 
 
 | Path | Role |
 |------|------|
-| `frontend/` | Expo Router app, design tokens, UI |
-| `backend/` | FastAPI routes, Dynamo, LLM, voice |
-| `aws/terraform/` | API Gateway, Lambda, DynamoDB, IAM, CodeBuild, S3 |
-| `wisdom/` | RAG corpus (handbook + voice guide) |
-| `config/` | Env templates (secrets never committed) |
+| `frontend/` | Expo Router app; domains under `src/features/` |
+| `backend/` | FastAPI: `auth/`, `ai/`, `core/`, `data/` |
+| `backend/ai/corpus/` | RAG corpus (handbook + voice guide) |
+| `infrastructure/terraform/` | API Gateway, Lambda, DynamoDB, Cognito, CodeBuild |
+| `config/` | Env templates, auth samples, CI buildspec |
+| `skills/` | Agent skills |
 | `scripts/` | deploy, preview, sync env |
-| `tests/` | Backend pytest |
+| `tests/` | Backend pytest + reports |
+
+Canonical layout: [current-architecture.md](current-architecture.md) · Deploy: [deploy-plan.md](deploy-plan.md)
 
 ## Data stores (DynamoDB)
 

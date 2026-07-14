@@ -4,7 +4,7 @@ import pytest
 
 from backend_path import ensure_backend_path  # noqa: F401
 
-from services.llm import LLMError, _model_chain, validate_prayer_input
+from ai.llm import LLMError, MAX_FEELING_LEN, _model_chain, validate_prayer_input
 
 
 def test_valid_feeling():
@@ -19,9 +19,9 @@ def test_empty_feeling_rejected():
 
 
 def test_feeling_truncated():
-    long = "x" * 500
+    long = "x" * (MAX_FEELING_LEN + 300)
     f, _ = validate_prayer_input(long, None)
-    assert len(f) == 200
+    assert len(f) == MAX_FEELING_LEN
 
 
 def test_control_chars_stripped():

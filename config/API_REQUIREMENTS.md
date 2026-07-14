@@ -62,7 +62,7 @@ Setup:
 - Model default: **`openai.gpt-oss-20b-1:0`** (GPT-OSS 20B). Alternatives: Mistral instruct models.
 - **Do not** use Claude for generation.
 - Lambda role: `bedrock:InvokeModel` + Converse (Terraform `lambda_bedrock`).
-- Corpus: repo `wisdom/*.md` packaged into Lambda.
+- Corpus: `backend/ai/corpus/*.md` packaged into Lambda.
 - SSM: `/christcalm-preview/BEDROCK_MODEL_ID`, `LLM_PROVIDER=bedrock`
 
 ### Google OAuth

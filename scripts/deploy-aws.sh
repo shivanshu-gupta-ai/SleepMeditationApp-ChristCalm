@@ -9,7 +9,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TF_DIR="$ROOT/aws/terraform"
+TF_DIR="$ROOT/infrastructure/terraform"
 
 source "$ROOT/scripts/lib/aws-auth.sh"
 
@@ -27,7 +27,7 @@ deploy_lambda_code() {
   ARCHIVE="$(mktemp -t christcalm-backend.XXXXXX.tar.gz)"
   trap 'rm -f "$ARCHIVE"' RETURN
 
-  echo "Packaging backend source + wisdom corpus (excludes .venv, caches, tests)..."
+  echo "Packaging backend source + AI corpus (excludes .venv, caches, tests)..."
   STAGE="$(mktemp -d -t christcalm-pkg.XXXXXX)"
   trap 'rm -rf "$STAGE" "$ARCHIVE"' RETURN
   # rsync avoids copying local virtualenv into the Lambda source tarball
@@ -39,16 +39,13 @@ deploy_lambda_code() {
     --exclude '.pytest_cache/' \
     --exclude '*.pyc' \
     "$ROOT/backend/" "$STAGE/"
-  if [[ -d "$ROOT/wisdom" ]]; then
-    rsync -a "$ROOT/wisdom/" "$STAGE/wisdom/"
-  fi
-  if [[ ! -f "$STAGE/wisdom/Wisdom_Handbook.md" ]]; then
-    echo "ERROR: wisdom corpus missing from package stage" >&2
+  if [[ ! -f "$STAGE/ai/corpus/Wisdom_Handbook.md" ]]; then
+    echo "ERROR: AI corpus missing (backend/ai/corpus/Wisdom_Handbook.md)" >&2
     exit 1
   fi
   tar -czf "$ARCHIVE" -C "$STAGE" .
-  echo "Package contents (wisdom):"
-  tar -tzf "$ARCHIVE" | grep '^./wisdom/' | head -20
+  echo "Package contents (ai corpus):"
+  tar -tzf "$ARCHIVE" | grep -E '^\./ai/corpus/' | head -20
   echo "Archive size: $(du -h "$ARCHIVE" | awk '{print $1}')"
 
   echo "Uploading to s3://$BUCKET/source/backend.tar.gz ..."

@@ -16,7 +16,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
-import { usePremium } from "@/src/hooks/use-premium";
+import { usePremium } from "@/src/features/subscriptions";
 import { markSoftPaywallShown, shouldShowSoftPaywall } from "@/src/utils/soft-paywall";
 import {
   recordMeditationComplete,

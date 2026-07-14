@@ -6,8 +6,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useAppFonts } from "@/src/hooks/use-app-fonts";
-import { AuthProvider, useAuth } from "@/src/context/AuthContext";
-import { RevenueCatProvider } from "@/src/context/RevenueCatContext";
+import { AuthProvider, useAuth } from "@/src/features/auth";
+import { RevenueCatProvider } from "@/src/features/subscriptions";
 import { ThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { ViewportProvider } from "@/src/context/ViewportContext";
 import { startAnalytics, stopAnalytics } from "@/src/utils/analytics";

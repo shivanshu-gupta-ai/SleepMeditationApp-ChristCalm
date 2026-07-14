@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/src/context/ThemeContext";
-import { usePremium } from "@/src/hooks/use-premium";
+import { usePremium } from "@/src/features/subscriptions";
 import { api } from "@/src/api/client";
 import {
   Screen,

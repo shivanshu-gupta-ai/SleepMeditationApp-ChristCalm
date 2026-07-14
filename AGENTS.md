@@ -31,7 +31,9 @@ Trust-boundary validation, auth, payment integrity, accessibility, error paths t
 
 ## ChristCalm specifics
 
-- Stack: Expo RN (frontend) + FastAPI Lambda (backend) + DynamoDB + Bedrock.
+- Stack: Expo RN (`frontend/`) + FastAPI Lambda (`backend/`) + DynamoDB + Bedrock.
+- Domains: FE `src/features/{auth,ai,subscriptions,onboarding}`; BE `auth/`, `ai/`, `core/`, `data/`.
+- Infra: `infrastructure/terraform/`; config: `config/`; skills: `skills/`; docs: `docs/architecture/`.
 - Prefer existing UI primitives (`Screen`, `PressableScale`, `FadeIn`, theme tokens) over new components.
 - Bedrock: keep the full working fallback chain unless the user asks to change it. No Claude.
 - Don’t reintroduce unused fonts/date libs after Nest Inter consolidation.
