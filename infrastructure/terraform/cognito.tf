@@ -1,7 +1,8 @@
 # Cognito User Pool — production auth (email + Google + Apple federated sign-in)
 
 locals {
-  cognito_domain_prefix = "${var.project_name}-${var.environment}"
+  # Must be globally unique in the region; include account suffix when set
+  cognito_domain_prefix = local.name_prefix
   google_idp_enabled    = var.google_client_id != "" && var.google_client_id != "unset"
   apple_idp_enabled     = var.apple_services_id != "" && var.apple_team_id != "" && var.apple_key_id != "" && var.apple_private_key != ""
   cognito_callback_urls = concat(

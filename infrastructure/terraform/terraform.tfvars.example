@@ -1,25 +1,45 @@
-aws_region  = "us-east-1"
-environment = "preview"
+# Copy to terraform.tfvars (gitignored) OR use:
+#   ./scripts/bootstrap-new-account.sh
+# which generates this file with your AWS account id.
 
-jwt_secret = "REPLACE_WITH_RANDOM_SECRET"
+aws_region   = "us-east-1"
+environment  = "preview"
+project_name = "christcalm"
 
-dynamodb_table_prefix = "christcalm-preview"
+# REQUIRED for multi-account isolation (Cognito domain uniqueness).
+# Bootstrap sets this automatically to your 12-digit AWS account id.
+name_suffix = "123456789012"
 
-# Auth — see config/auth/ for Google OAuth & RevenueCat templates
+# Optional override; empty = use name_prefix (christcalm-preview-<name_suffix>)
+dynamodb_table_prefix = ""
+
+# REQUIRED secret — bootstrap auto-generates one
+jwt_secret = "REPLACE_WITH_RANDOM_SECRET_OR_RUN_BOOTSTRAP"
+
 # Preview: true skips email verification. Production: false.
-cognito_auto_confirm_users = false
+cognito_auto_confirm_users = true
+
+# Optional — Sign in with Apple (Cognito IdP)
+# apple_services_id  = "com.example.app.signin"
+# apple_team_id      = "TEAMID"
+# apple_key_id       = "KEYID"
+# apple_private_key  = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 
 google_client_id     = ""
 google_client_secret = ""
-google_redirect_uri  = ""  # https://<api_url>/api/auth/google/callback
+google_redirect_uri  = ""
 
-cors_origins = ["exp://127.0.0.1:8081", "exp://localhost:8081"]
+cors_origins = [
+  "exp://127.0.0.1:8081",
+  "exp://localhost:8081",
+  "http://localhost:8081",
+  "http://127.0.0.1:8081",
+]
 
-# AI — Bedrock is default (IAM role on Lambda). OpenAI optional fallback.
 llm_provider     = "bedrock"
-bedrock_model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+bedrock_model_id = "openai.gpt-oss-20b-1:0"
 openai_api_key   = ""
 openai_model     = "gpt-4o"
 
-revenuecat_webhook_authorization = "your-webhook-bearer-secret"
-revenuecat_entitlement_id = "christcalm_premium"
+revenuecat_webhook_authorization = ""
+revenuecat_entitlement_id        = "christcalm_premium"

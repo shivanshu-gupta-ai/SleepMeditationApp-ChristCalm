@@ -19,7 +19,26 @@ Today the primary path is **preview stack on AWS + local Expo**.
 - Node 20+ (Expo), Python 3.11+ (tests / local API)
 - Optional: Expo account for device previews
 
-## First-time infrastructure
+## New AWS account (one-shot)
+
+Assumes AWS credentials, laptop tools (terraform/aws/node), and Bedrock model access.
+
+```bash
+./scripts/bootstrap-new-account.sh
+```
+
+This will:
+
+1. Detect **account id** and region  
+2. Write `terraform.tfvars` with `name_suffix = "<account_id>"` and a generated `jwt_secret`  
+3. Create stack + **auto-fill SSM** under `/christcalm-preview-<account_id>/`  
+4. Deploy Lambda code  
+5. Sync local public env + seed `test@christcalm.dev` / `Test1234`  
+
+Re-run with `--force` only if you intentionally want to regenerate `tfvars`.
+
+## First-time infrastructure (manual)
+
 
 ```bash
 ./scripts/setup-config.sh

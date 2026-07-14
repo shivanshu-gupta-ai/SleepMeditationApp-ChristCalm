@@ -44,6 +44,19 @@ ChristCalmApp/
 
 ## Quick start
 
+### 0. New AWS account (recommended one-shot)
+
+Needs: AWS credentials for **that** account, Terraform, Node, Bedrock access in the region.
+
+```bash
+./scripts/bootstrap-new-account.sh
+# creates terraform.tfvars with name_suffix = <your-account-id>
+# apply + Lambda code + SSM + test user + frontend env
+./scripts/preview.sh
+```
+
+Resources are named `christcalm-preview-<account_id>-*` so every account is isolated.
+
 ### 1. Configure (SSM-first — no secrets in local files)
 
 ```bash

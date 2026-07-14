@@ -125,7 +125,7 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE_PREFIX = var.dynamodb_table_prefix
+      DYNAMODB_TABLE_PREFIX = local.dynamodb_table_prefix
       SSM_PREFIX            = local.ssm_prefix
       VOICE_BUCKET          = aws_s3_bucket.voice.bucket
       # DIY scale: shared rate limits across all Lambda instances

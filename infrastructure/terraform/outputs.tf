@@ -69,3 +69,17 @@ output "cognito_region" {
   description = "AWS region for Cognito"
   value       = var.aws_region
 }
+output "aws_account_id" {
+  description = "AWS account where this stack is deployed"
+  value       = data.aws_caller_identity.current.account_id
+}
+
+output "name_prefix" {
+  description = "Resource name prefix (includes account suffix when set)"
+  value       = local.name_prefix
+}
+
+output "dynamodb_table_prefix" {
+  description = "DynamoDB table name prefix used by Lambda"
+  value       = local.dynamodb_table_prefix
+}

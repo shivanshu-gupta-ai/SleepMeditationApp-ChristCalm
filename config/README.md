@@ -34,6 +34,14 @@ config/
 └── API_REQUIREMENTS.md
 ```
 
+## New AWS account (one-shot)
+
+```bash
+./scripts/bootstrap-new-account.sh
+```
+
+Uses **your account id** as `name_suffix` so Cognito domain, SSM path, tables, and Lambda names are isolated (`christcalm-preview-<account_id>`). Generates `jwt_secret`, applies Terraform (SSM auto-filled), deploys code, syncs env, seeds test user.
+
 ## Day-to-day
 
 ```bash

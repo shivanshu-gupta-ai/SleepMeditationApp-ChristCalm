@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "users" {
-  name         = "${var.dynamodb_table_prefix}-users"
+  name         = "${local.dynamodb_table_prefix}-users"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
@@ -34,7 +34,7 @@ resource "aws_dynamodb_table" "users" {
 }
 
 resource "aws_dynamodb_table" "mood_logs" {
-  name         = "${var.dynamodb_table_prefix}-mood-logs"
+  name         = "${local.dynamodb_table_prefix}-mood-logs"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "user_id"
   range_key    = "sk"
@@ -53,7 +53,7 @@ resource "aws_dynamodb_table" "mood_logs" {
 }
 
 resource "aws_dynamodb_table" "journal_entries" {
-  name         = "${var.dynamodb_table_prefix}-journal-entries"
+  name         = "${local.dynamodb_table_prefix}-journal-entries"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "user_id"
   range_key    = "sk"
@@ -72,7 +72,7 @@ resource "aws_dynamodb_table" "journal_entries" {
 }
 
 resource "aws_dynamodb_table" "ai_prayers" {
-  name         = "${var.dynamodb_table_prefix}-ai-prayers"
+  name         = "${local.dynamodb_table_prefix}-ai-prayers"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "user_id"
   range_key    = "sk"
@@ -91,7 +91,7 @@ resource "aws_dynamodb_table" "ai_prayers" {
 }
 
 resource "aws_dynamodb_table" "payment_transactions" {
-  name         = "${var.dynamodb_table_prefix}-payment-transactions"
+  name         = "${local.dynamodb_table_prefix}-payment-transactions"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "session_id"
 
@@ -108,7 +108,7 @@ resource "aws_dynamodb_table" "payment_transactions" {
  * Fixed-window keys + TTL — works across all Lambda instances (unlike in-memory).
  */
 resource "aws_dynamodb_table" "rate_limits" {
-  name         = "${var.dynamodb_table_prefix}-rate-limits"
+  name         = "${local.dynamodb_table_prefix}-rate-limits"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "pk"
 
@@ -134,7 +134,7 @@ resource "aws_dynamodb_table" "rate_limits" {
  * TTL ~90 days (configurable via item ttl attribute)
  */
 resource "aws_dynamodb_table" "usage_events" {
-  name         = "${var.dynamodb_table_prefix}-usage-events"
+  name         = "${local.dynamodb_table_prefix}-usage-events"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "user_id"
   range_key    = "sk"
@@ -187,7 +187,7 @@ resource "aws_dynamodb_table" "usage_events" {
  * sk = event#{name} | users#{user_id} | meta#totals
  */
 resource "aws_dynamodb_table" "usage_daily" {
-  name         = "${var.dynamodb_table_prefix}-usage-daily"
+  name         = "${local.dynamodb_table_prefix}-usage-daily"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "day"
   range_key    = "sk"

@@ -14,10 +14,16 @@ variable "environment" {
   default     = "preview"
 }
 
+variable "name_suffix" {
+  type        = string
+  description = "Optional unique suffix (use AWS account id) so each account gets isolated Cognito domain / resource names"
+  default     = ""
+}
+
 variable "dynamodb_table_prefix" {
   type        = string
-  description = "Prefix for DynamoDB table names (e.g. christcalm-preview)"
-  default     = "christcalm"
+  description = "Prefix for DynamoDB table names (e.g. christcalm-preview-123456789012). Leave empty to use name_prefix."
+  default     = ""
 }
 
 variable "jwt_secret" {
