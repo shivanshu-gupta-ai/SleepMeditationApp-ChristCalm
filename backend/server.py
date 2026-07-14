@@ -151,10 +151,6 @@ class OnboardingIn(BaseModel):
     display_name: Optional[str] = None
 
 
-class GoogleAuthIn(BaseModel):
-    session_id: str
-
-
 class MoodLogIn(BaseModel):
     emotion: str
     note: Optional[str] = None
@@ -292,9 +288,7 @@ async def health():
 @api.get("/auth/config")
 async def auth_config():
     """Public Cognito settings for the mobile app."""
-    google_id = os.environ.get("GOOGLE_CLIENT_ID", "")
     apple_svc = os.environ.get("APPLE_SERVICES_ID", "")
-    google_ok = bool(google_id and google_id not in ("", "unset"))
     apple_ok = bool(apple_svc and apple_svc not in ("", "unset"))
     domain = os.environ.get("COGNITO_DOMAIN") or ""
     return {
@@ -303,11 +297,8 @@ async def auth_config():
         "user_pool_id": os.environ.get("COGNITO_USER_POOL_ID"),
         "client_id": os.environ.get("COGNITO_CLIENT_ID"),
         "domain": domain,
-        "google_enabled": google_ok,
         "apple_enabled": apple_ok,
-        # Clients always show social buttons; these flags drive messaging only.
         "social_setup": {
-            "google": "ready" if google_ok else "needs_oauth_client_in_terraform",
             "apple": "ready" if apple_ok else "needs_apple_services_id_in_terraform",
             "docs": "config/auth/README.md",
         },
@@ -394,60 +385,6 @@ async def save_onboarding(body: OnboardingIn, user: dict = Depends(get_current_u
         updates["name"] = body.display_name.strip()
     updated = await db.update_user(user["id"], updates)
     return user_to_out(updated)
-
-
-async def _upsert_google_user(profile: dict) -> dict:
-    email = profile["email"]
-    name = profile["name"]
-    picture = profile.get("picture")
-    existing = await db.get_user_by_email(email)
-    if existing:
-        updates: dict = {"last_login_at": datetime.now(timezone.utc).isoformat()}
-        if picture and existing.get("picture") != picture:
-            updates["picture"] = picture
-        if name and existing.get("name") != name and not existing.get("password_hash"):
-            updates["name"] = name
-        return await db.update_user(existing["id"], updates)
-
-    user_doc = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "email": email,
-        "picture": picture,
-        "provider": "google",
-        "is_premium": False,
-        "faith_journey": None,
-        "concerns": [],
-        "streak": 0,
-        "minutes_meditated": 0,
-        "prayers_completed": 0,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "last_login_at": datetime.now(timezone.utc).isoformat(),
-    }
-    await db.create_user(user_doc)
-    return user_doc
-
-
-@api.get("/auth/google/start")
-async def google_auth_start(redirect_uri: str = Query(...)):
-    raise HTTPException(
-        status_code=410,
-        detail="Google sign-in uses AWS Cognito Hosted UI. Use the app social login buttons.",
-    )
-
-
-@api.get("/auth/google/callback")
-async def google_auth_callback(
-    code: Optional[str] = None,
-    state: Optional[str] = None,
-    error: Optional[str] = None,
-):
-    raise HTTPException(status_code=410, detail="Google OAuth callback deprecated — use Cognito.")
-
-
-@api.post("/auth/google", response_model=AuthOut)
-async def google_auth_legacy(body: GoogleAuthIn):
-    raise HTTPException(status_code=410, detail="Use Cognito federated sign-in (Google).")
 
 
 @api.get("/emotions")

@@ -65,7 +65,6 @@ export const api = {
       user_pool_id: string | null;
       client_id: string | null;
       domain: string | null;
-      google_enabled?: boolean;
       apple_enabled: boolean;
     }>("/auth/config", { auth: false }),
   signUp: (name: string, email: string, password: string) =>

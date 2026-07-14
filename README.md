@@ -44,14 +44,15 @@ ChristCalmApp/
 
 ## Quick start
 
-### 1. Configure
+### 1. Configure (SSM-first — no secrets in local files)
 
 ```bash
-./scripts/setup-config.sh
-./scripts/deploy-aws.sh apply      # first-time AWS infra
+./scripts/deploy-aws.sh apply      # first-time AWS infra (writes secrets to SSM)
 ./scripts/deploy-aws.sh code       # Lambda package via CodeBuild
-./scripts/sync-env-from-aws.sh     # API URL → frontend/.env
+./scripts/sync-env-from-aws.sh     # disposable public frontend + non-secret backend flags
 ```
+
+Secrets stay in **SSM** (`/christcalm-preview/*`). Local `.env` files are safe to delete and re-sync.
 
 ### 2. Deploy API changes
 
@@ -64,6 +65,12 @@ ChristCalmApp/
 ```bash
 ./scripts/preview.sh
 # or: cd frontend && npx expo start --web --clear
+```
+
+### Optional: local API (secrets still from SSM)
+
+```bash
+./scripts/run-backend-local.sh
 ```
 
 ## Test login (Cognito preview)

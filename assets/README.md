@@ -5,11 +5,11 @@ Canonical place for **content and design media**.
 ```
 assets/
 ├── meditations/
-│   ├── covers/          # Cover images med-1.jpg … med-10.jpg
-│   └── audio/           # Optional local meditation audio
-├── audio/               # General audio uploads
-├── design-reference/    # Research frames (not shipped)
-└── app-design/          # Product design screenshots / mocks
+│   ├── covers/          # Cover images med-1.jpg … med-10.jpg (tracked)
+│   └── audio/           # Optional local audio (gitignored)
+├── audio/               # General audio uploads (gitignored)
+├── app-design/          # Product design screenshots / mocks
+└── design-reference/    # Local research only (gitignored frames)
 ```
 
 ## Meditation covers
@@ -23,6 +23,4 @@ cp assets/meditations/covers/*.jpg frontend/assets/meditations/covers/
 
 3. Restart Expo: `cd frontend && npx expo start --clear`
 
-## App design
-
-`app-design/` holds visual product references. Runtime images for Expo live under `frontend/assets/`.
+Runtime app images live under `frontend/assets/`.

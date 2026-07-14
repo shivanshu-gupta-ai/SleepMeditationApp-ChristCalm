@@ -13,10 +13,12 @@ tests/
 
 ```bash
 # From repo root
-./scripts/sync-env-from-aws.sh   # sets EXPO_PUBLIC_BACKEND_URL for HTTP tests
+./scripts/sync-env-from-aws.sh   # public API URL only (no secrets in files)
 pip install -r backend/requirements.txt
 pytest tests/backend/ -v
 ```
+
+Secrets for any process that boots the API come from **SSM** (`SSM_PREFIX`), not from `.env`.
 
 ### Offline / unit only (no live API)
 

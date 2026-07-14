@@ -90,11 +90,12 @@ uvicorn server:app --reload --port 8000
 
 | Secret / setting | Local | AWS |
 |------------------|-------|-----|
-| Env templates | `config/env/*.example` | — |
-| Auth integration notes | `config/auth/` | Cognito + SSM |
-| Lambda env / IAM | — | `infrastructure/terraform/lambda.tf`, `ssm.tf` |
-| Bedrock | `LLM_PROVIDER=bedrock` | Lambda IAM model invoke |
-| RevenueCat | `frontend/.env` keys | Webhook auth in SSM |
+| **All secrets** | — (never in `.env`) | SSM SecureString via Terraform |
+| Disposable public frontend env | `./scripts/sync-env-from-aws.sh` | Terraform outputs |
+| Disposable backend flags | same script (`SSM_PREFIX` only) | Lambda `SSM_PREFIX` env |
+| Infra inputs (once) | `terraform.tfvars` (gitignored) | apply → SSM |
+| Auth notes | `config/auth/` | Cognito + SSM |
+| Local API | `./scripts/run-backend-local.sh` | loads secrets from SSM |
 
 ## CI / packaging
 

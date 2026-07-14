@@ -82,7 +82,7 @@ ChristCalmApp/
 | AI / Wisdom (server) | `backend/ai/` + corpus `backend/ai/corpus/` |
 | Subscriptions | `frontend/src/features/subscriptions/` + RevenueCat webhook in API |
 | Content media | `assets/` (source) → `frontend/assets/` (bundled) |
-| Secrets / env | `config/env/*` → local `.env`; prod SSM via Terraform |
+| Secrets | **SSM only** (`/christcalm-preview/*`); local `.env` is disposable non-secret flags + public Expo config |
 | Agent skills | `skills/` (symlinked under `.claude/skills/`) |
 | Tests & reports | `tests/backend/`, `tests/reports/` |
 

@@ -9,17 +9,18 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-p
 
 | File | Purpose |
 |------|---------|
-| `backend.env.example` | Server/Lambda env (JWT, AWS, LLM, CORS) |
-| `frontend.env.example` | Expo `EXPO_PUBLIC_*` only |
-| `integrations.env.example` | RevenueCat + LLM extras |
-| `auth/` | Google OAuth, JWT, RevenueCat notes |
+| `env/backend.env.example` | Non-secret local flags only (`SSM_PREFIX`, region) |
+| `env/frontend.env.example` | Public Expo `EXPO_PUBLIC_*` only |
+| `env/integrations.env.example` | Docs: secrets go in `terraform.tfvars` → SSM |
+| `auth/` | Cognito / Apple / RevenueCat notes |
 | `API_REQUIREMENTS.md` | This document |
 
-Setup:
+**Secrets never live in local `.env`.** They are stored in SSM and loaded at runtime.
 
 ```bash
-./scripts/setup-config.sh
-# then edit backend/.env and frontend/.env
+./scripts/sync-env-from-aws.sh    # regenerate disposable local env (no secrets)
+./scripts/run-backend-local.sh    # local API with secrets from SSM
+./scripts/preview.sh              # Expo UI → deployed Lambda
 ```
 
 ---
@@ -33,11 +34,8 @@ Setup:
 | `JWT_SECRET` | **Yes** | — | HS256 signing; SecureString in SSM |
 | `AWS_REGION` | Yes (AWS) | `us-east-1` | DynamoDB + Bedrock |
 | `DYNAMODB_TABLE_PREFIX` | Yes | `christcalm` | Table names |
-| `SSM_PREFIX` | Lambda | `/christcalm-preview` | Loads secrets |
+| `SSM_PREFIX` | **Yes (Lambda + local)** | `/christcalm-preview` | Loads **all secrets** from SSM |
 | `CORS_ORIGINS` | Recommended | — | Comma-separated |
-| `GOOGLE_CLIENT_ID` | For Google auth | — | |
-| `GOOGLE_CLIENT_SECRET` | For Google auth | — | |
-| `GOOGLE_REDIRECT_URI` | For Google auth | — | `…/api/auth/google/callback` |
 | `LLM_PROVIDER` | No | **`bedrock`** | Bedrock only for wisdom |
 | `BEDROCK_MODEL_ID` | No | **`openai.gpt-oss-20b-1:0`** | Or Mistral IDs; **not Claude** |
 | `BEDROCK_MAX_TOKENS` | No | `900` | Converse max tokens |

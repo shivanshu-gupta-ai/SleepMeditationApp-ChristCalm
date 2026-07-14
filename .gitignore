@@ -18,6 +18,7 @@ node_modules/
 
 # Testing
 /coverage
+.pytest_cache/
 
 # Next.js
 /.next/
@@ -25,10 +26,16 @@ node_modules/
 next-env.d.ts
 *.tsbuildinfo
 
-# Production builds
+# Production builds / Lambda artifacts (built on CodeBuild)
 /build
 dist/
 dist
+frontend/.metro-cache/
+frontend/.expo/
+
+# Backups
+*.bak
+*.orig
 
 # Environment files (comprehensive coverage)
 
@@ -108,8 +115,13 @@ infrastructure/terraform/terraform.tfvars
 *.tfvars
 !*.tfvars.example
 
-# Local agent/skill caches (keep skill source optional)
+# Local agent/skill caches
 .claude/skills/**/node_modules/
+skills/**/__pycache__/
+skills/**/node_modules/
 
-# Design research frames (large); keep under assets/design-reference if needed
-# assets/design-reference/video-frames/
+# Design research frames (local only — not shipped)
+assets/design-reference/brainrot-frames/
+assets/design-reference/video-frames/
+assets/design-reference/**/*.{png,jpg,jpeg,webp,mp4}
+!assets/design-reference/README.md
