@@ -177,6 +177,7 @@ export function FirstStepsChecklist() {
           }}
         >
           <View style={{ flex: 1, paddingRight: 8 }}>
+            {/* Personalized for first-time users — simple, not overwhelming */}
             <Text
               style={{
                 fontFamily: fonts.bodyMedium,

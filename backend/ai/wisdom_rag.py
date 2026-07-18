@@ -33,7 +33,11 @@ def load_chunks() -> tuple[dict, ...]:
         return tuple()
 
     for path in sorted(root.glob("*.md")):
-        if path.name.upper() == "README.MD":
+        # Skip docs, AppleDouble (._*), and other non-corpus files
+        name = path.name
+        if name.startswith(".") or name.startswith("._"):
+            continue
+        if name.upper() in ("README.MD", "README.MARKDOWN"):
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         parts = re.split(r"(?=^##\s+)", text, flags=re.MULTILINE)

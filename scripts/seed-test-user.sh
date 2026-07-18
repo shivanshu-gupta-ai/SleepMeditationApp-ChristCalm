@@ -50,8 +50,38 @@ aws cognito-idp initiate-auth \
   --query 'AuthenticationResult.AccessToken' \
   --output text >/dev/null
 
+# Grant full access in DynamoDB (is_premium) so nothing is paywalled
+TABLE_PREFIX="$(terraform output -raw dynamodb_table_prefix 2>/dev/null || echo christcalm-preview)"
+USERS_TABLE="${TABLE_PREFIX}-users"
+echo "  Unlocking premium on table: $USERS_TABLE"
+
+# Find user by email and set is_premium
+USER_ID="$(aws dynamodb scan \
+  --table-name "$USERS_TABLE" \
+  --region "$AWS_REGION" \
+  --filter-expression "email = :e" \
+  --expression-attribute-values "{\":e\":{\"S\":\"$EMAIL\"}}" \
+  --projection-expression "id" \
+  --query 'Items[0].id.S' \
+  --output text 2>/dev/null || true)"
+
+if [[ -n "${USER_ID}" && "${USER_ID}" != "None" && "${USER_ID}" != "null" ]]; then
+  aws dynamodb update-item \
+    --table-name "$USERS_TABLE" \
+    --region "$AWS_REGION" \
+    --key "{\"id\":{\"S\":\"${USER_ID}\"}}" \
+    --update-expression "SET is_premium = :t, #plan = :p, subscription_provider = :s" \
+    --expression-attribute-names "{\"#plan\":\"plan\"}" \
+    --expression-attribute-values "{\":t\":{\"BOOL\":true},\":p\":{\"S\":\"preview\"},\":s\":{\"S\":\"preview\"}}" \
+    >/dev/null
+  echo "  DynamoDB premium unlocked for id=${USER_ID}"
+else
+  echo "  No DynamoDB profile yet — will unlock on first app sign-in"
+fi
+
 echo "OK — sign in with:"
 echo "  Email:    $EMAIL"
 echo "  Password: $PASS"
+echo "  Access:   full (no paywall)"
 echo ""
 echo "Note: password needs upper + lower + number (Cognito policy)."

@@ -38,7 +38,12 @@ deploy_lambda_code() {
     --exclude 'tests/' \
     --exclude '.pytest_cache/' \
     --exclude '*.pyc' \
+    --exclude '._*' \
+    --exclude '.DS_Store' \
+    --exclude '*/._*' \
     "$ROOT/backend/" "$STAGE/"
+  # Strip any macOS AppleDouble leftovers that pollute the AI corpus
+  find "$STAGE" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
   if [[ ! -f "$STAGE/ai/corpus/Wisdom_Handbook.md" ]]; then
     echo "ERROR: AI corpus missing (backend/ai/corpus/Wisdom_Handbook.md)" >&2
     exit 1
@@ -107,7 +112,7 @@ case "$CMD" in
     ;;
   apply)
     terraform init -input=false
-    terraform apply
+    terraform apply -auto-approve -input=false
     echo ""
     terraform output
     echo ""

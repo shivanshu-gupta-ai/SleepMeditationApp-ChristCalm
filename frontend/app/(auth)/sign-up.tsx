@@ -76,38 +76,36 @@ export default function SignUp() {
         large
       />
 
-      <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
-        <AppleSignInButton
-          label="Sign up with Apple"
-          onPress={async () => {
-            try {
-              await signInWithApple();
-              try {
-                const draft = await loadOnboardingDraft();
-                await api.saveOnboarding(draftToApiPayload(draft));
-                await clearOnboardingDraft();
-              } catch {
-                // ignore
-              }
-              router.replace("/(tabs)/home");
-            } catch (e: any) {
-              if (!appleEnabled) {
-                setError(
-                  "Apple sign-in isn’t linked yet. Use email for now, or add Apple Services ID + key in terraform.tfvars (config/auth/README.md)."
-                );
-              } else {
-                setError(e?.message || "Apple sign-up failed");
-              }
-            }
-          }}
-        />
-      </View>
-      <AuthDivider text="OR SIGN UP WITH EMAIL" />
-
       {error ? (
-        <View style={{ marginBottom: spacing.md }}>
+        <View style={{ marginBottom: spacing.md, marginTop: spacing.sm }}>
           <ErrorBanner message={error} onDismiss={() => setError(null)} testID="signup-error" />
         </View>
+      ) : null}
+
+      {appleEnabled ? (
+        <>
+          <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
+            <AppleSignInButton
+              label="Sign up with Apple"
+              onPress={async () => {
+                try {
+                  await signInWithApple();
+                  try {
+                    const draft = await loadOnboardingDraft();
+                    await api.saveOnboarding(draftToApiPayload(draft));
+                    await clearOnboardingDraft();
+                  } catch {
+                    // ignore
+                  }
+                  router.replace("/(tabs)/home");
+                } catch (e: any) {
+                  setError(e?.message || "Apple sign-up failed");
+                }
+              }}
+            />
+          </View>
+          <AuthDivider text="OR SIGN UP WITH EMAIL" />
+        </>
       ) : null}
 
       <TextField

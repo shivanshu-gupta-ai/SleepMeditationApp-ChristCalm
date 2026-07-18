@@ -90,6 +90,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     return opts?.href !== null;
   });
 
+  // Safe area above home indicator; thumb-friendly sizes (min ~44pt tap)
   const bottomPad = Math.max(insets.bottom, Platform.OS === "web" ? 10 : 8);
   const hPad = isCompact ? 12 : isTablet ? 24 : 16;
   const fabSize = isCompact ? 48 : isTablet ? 56 : 52;
@@ -98,6 +99,8 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const labelSize = isCompact ? 10 : isTablet ? 12 : 11;
   const gap = isCompact ? 8 : isTablet ? 14 : 10;
   const activeColor = isDark ? colors.premium : colors.primary;
+  // Inactive: lower opacity (not different colors per tab) — accessible, clean
+  const inactiveColor = isDark ? "rgba(160,160,168,0.72)" : "rgba(92,85,104,0.72)";
 
   return (
     <>
@@ -159,7 +162,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               }
             };
 
-            const color = focused ? activeColor : colors.textMuted;
+            const color = focused ? activeColor : inactiveColor;
             const icon =
               options.tabBarIcon?.({
                 focused,
@@ -167,6 +170,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 size: iconSize,
               }) ?? null;
 
+            // Short single-line labels only (nav best practice)
             const shortLabel =
               isCompact && String(label).length > 8
                 ? String(label).slice(0, 7)
@@ -181,7 +185,11 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 accessibilityState={{ selected: focused }}
                 accessibilityLabel={options.tabBarAccessibilityLabel ?? String(label)}
                 testID={(options as { tabBarButtonTestID?: string }).tabBarButtonTestID}
-                style={[styles.tabItem, isCompact && { minWidth: 0 }]}
+                style={[
+                  styles.tabItem,
+                  isCompact && { minWidth: 0 },
+                  { minHeight: 44, minWidth: 44 },
+                ]}
               >
                 <TabIconWrap focused={focused} activeColor={activeColor}>
                   {icon}

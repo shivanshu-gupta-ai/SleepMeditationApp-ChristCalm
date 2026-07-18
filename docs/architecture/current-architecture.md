@@ -41,7 +41,6 @@ ChristCalmApp/
 │   ├── src/
 │   │   ├── features/         # Domain modules
 │   │   │   ├── auth/         # AuthContext, Cognito, social buttons
-│   │   │   ├── ai/           # Wisdom / AI prayer feature surface
 │   │   │   ├── subscriptions/# RevenueCat + premium hooks
 │   │   │   └── onboarding/   # Onboarding UI + constants
 │   │   ├── components/ui/    # Shared design-system primitives
@@ -54,19 +53,18 @@ ChristCalmApp/
 ├── backend/                  # FastAPI on AWS Lambda
 │   ├── server.py             # Routes
 │   ├── handler.py            # Mangum entrypoint
-│   ├── seed_data.py          # Catalog seed
-│   ├── auth/                 # Cognito + Google OAuth helpers
-│   ├── ai/                   # LLM, RAG, guardrails, voice
-│   │   └── corpus/           # Wisdom handbook + voice guide
+│   ├── seed_data.py          # Catalog seed (emotions, meditations, prayers)
+│   ├── auth/                 # Cognito helpers
+│   ├── ai/                   # LLM, RAG, guardrails, voice + corpus/
 │   ├── core/                 # Config bootstrap, rate limits
-│   ├── data/                 # DynamoDB access layer
-│   │
-├── infrastructure/terraform/ # API GW, Lambda, DynamoDB, Cognito, CodeBuild
+│   └── data/                 # DynamoDB access layer
+│
+├── infrastructure/terraform/ # API GW, Lambda, DynamoDB, Cognito, CodeBuild, voice S3
 ├── config/                   # Env templates, auth samples, CI buildspec
-├── assets/                   # Editable content media + app-design refs
+├── assets/meditations/       # Cover + audio sources (S3 for production audio)
 ├── docs/                     # Product, design, architecture, engineering
-├── skills/                   # Agent skills (ui-ux-pro-max, rules)
-├── tests/                    # Pytest + reports/
+├── skills/                   # Agent skills (ui-ux-pro-max)
+├── tests/                    # Pytest
 ├── scripts/                  # deploy, preview, env sync
 └── pytest.ini
 ```
@@ -78,13 +76,14 @@ ChristCalmApp/
 | Auth (client) | `frontend/src/features/auth/` + routes `frontend/app/(auth)/` |
 | Auth (server) | `backend/auth/` + routes `/api/auth/*` |
 | Auth config | `config/auth/`, Cognito in `infrastructure/terraform/cognito*.tf` |
-| AI / Wisdom (client) | `frontend/src/features/ai/`, screens `wisdom.tsx`, `ai-prayer.tsx` |
+| AI / Wisdom (client) | screens `wisdom.tsx`, `ai-prayer.tsx` + `src/api/client.ts` |
 | AI / Wisdom (server) | `backend/ai/` + corpus `backend/ai/corpus/` |
 | Subscriptions | `frontend/src/features/subscriptions/` + RevenueCat webhook in API |
-| Content media | `assets/` (source) → `frontend/assets/` (bundled) |
-| Secrets | **SSM only** (`/christcalm-preview/*`); local `.env` is disposable non-secret flags + public Expo config |
-| Agent skills | `skills/` (symlinked under `.claude/skills/`) |
-| Tests & reports | `tests/backend/`, `tests/reports/` |
+| Meditation catalog | `backend/seed_data.py` → API `/emotions`, `/meditations` |
+| Content media | `assets/meditations/` (source) → S3 audio + `frontend/assets/` covers |
+| Secrets | **SSM only** (`/christcalm-preview/*`); local `.env` is disposable public config |
+| Agent skills | `skills/` |
+| Tests | `tests/backend/` |
 
 ## Runtime stack
 

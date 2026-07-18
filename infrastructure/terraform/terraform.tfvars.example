@@ -19,15 +19,11 @@ jwt_secret = "REPLACE_WITH_RANDOM_SECRET_OR_RUN_BOOTSTRAP"
 # Preview: true skips email verification. Production: false.
 cognito_auto_confirm_users = true
 
-# Optional — Sign in with Apple (Cognito IdP)
-# apple_services_id  = "com.example.app.signin"
-# apple_team_id      = "TEAMID"
-# apple_key_id       = "KEYID"
-# apple_private_key  = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+# Apple Sign-In secrets live in SSM only (not here):
+#   ./scripts/put-apple-secrets-ssm.sh
+# Then enable Cognito IdP (reads SSM on apply):
+enable_apple_sign_in = false
 
-google_client_id     = ""
-google_client_secret = ""
-google_redirect_uri  = ""
 
 cors_origins = [
   "exp://127.0.0.1:8081",
@@ -38,8 +34,6 @@ cors_origins = [
 
 llm_provider     = "bedrock"
 bedrock_model_id = "openai.gpt-oss-20b-1:0"
-openai_api_key   = ""
-openai_model     = "gpt-4o"
 
 revenuecat_webhook_authorization = ""
 revenuecat_entitlement_id        = "christcalm_premium"

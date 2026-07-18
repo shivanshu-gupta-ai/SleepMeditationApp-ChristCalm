@@ -31,48 +31,36 @@ variable "jwt_secret" {
   sensitive = true
 }
 
-variable "google_client_id" {
-  type      = string
-  sensitive = true
-  default   = ""
+
+
+
+# Apple secrets are NOT in tfvars — they live in SSM.
+# Put with: ./scripts/put-apple-secrets-ssm.sh
+# Then set enable_apple_sign_in = true and apply.
+variable "enable_apple_sign_in" {
+  type        = bool
+  description = "Create Cognito SignInWithApple IdP using credentials from SSM"
+  default     = false
 }
 
-variable "google_client_secret" {
-  type      = string
-  sensitive = true
-  default   = ""
-}
-
-variable "google_redirect_uri" {
-  type        = string
-  description = "Legacy API Gateway OAuth callback (deprecated — use Cognito)"
-  default     = ""
-}
-
+# Deprecated (ignored) — kept so old tfvars don't break
 variable "apple_services_id" {
-  type        = string
-  description = "Apple Services ID for Sign in with Apple (Cognito IdP)"
-  sensitive   = true
-  default     = ""
+  type      = string
+  sensitive = true
+  default   = ""
 }
-
 variable "apple_team_id" {
-  type        = string
-  description = "Apple Team ID"
-  default     = ""
+  type    = string
+  default = ""
 }
-
 variable "apple_key_id" {
-  type        = string
-  description = "Apple Sign in with Apple key ID"
-  default     = ""
+  type    = string
+  default = ""
 }
-
 variable "apple_private_key" {
-  type        = string
-  description = "Apple Sign in with Apple private key (.p8 contents)"
-  sensitive   = true
-  default     = ""
+  type      = string
+  sensitive = true
+  default   = ""
 }
 
 variable "cognito_auto_confirm_users" {
@@ -109,19 +97,10 @@ variable "cors_origins" {
 variable "llm_provider" {
   type        = string
   default     = "bedrock"
-  description = "bedrock (default) | openai"
+  description = "bedrock only"
 }
 
-variable "openai_api_key" {
-  type      = string
-  sensitive = true
-  default   = ""
-}
 
-variable "openai_model" {
-  type    = string
-  default = "gpt-4o"
-}
 
 variable "bedrock_model_id" {
   type        = string

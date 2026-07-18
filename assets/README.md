@@ -1,26 +1,38 @@
-# Assets (media hub)
+# Assets (content media)
 
-Canonical place for **content and design media**.
+Canonical source for meditation media. Runtime bundle copies live under `frontend/assets/`.
 
 ```
 assets/
-├── meditations/
-│   ├── covers/          # Cover images med-1.jpg … med-10.jpg (tracked)
-│   └── audio/           # Optional local audio (gitignored)
-├── audio/               # General audio uploads (gitignored)
-├── app-design/          # Product design screenshots / mocks
-└── design-reference/    # Local research only (gitignored frames)
+└── meditations/
+    ├── covers/   # One unique cover per track (<track>.jpg)
+    └── audio/    # Source audio (hosted on S3 for playback)
 ```
 
-## Meditation covers
+## Covers
 
-1. Replace files in `meditations/covers/` (`med-1.jpg` …).
-2. Copy into the Expo bundle:
+1. Add or replace `meditations/covers/<track>.jpg` (track keys match `backend/seed_data.py`).
+2. Sync into Expo:
 
 ```bash
-cp assets/meditations/covers/*.jpg frontend/assets/meditations/covers/
+./scripts/sync-meditation-covers.sh
+# or: cp assets/meditations/covers/*.jpg frontend/assets/meditations/covers/
 ```
 
-3. Restart Expo: `cd frontend && npx expo start --clear`
+3. Restart Expo with cache clear: `cd frontend && npx expo start --clear`
 
-Runtime app images live under `frontend/assets/`.
+## Audio
+
+Source files live in `meditations/audio/`. Production playback uses S3:
+
+`MEDIA_BASE_URL` → `…/meditations/audio/<file>`
+
+Upload after adding files:
+
+```bash
+aws s3 sync assets/meditations/audio/ \
+  s3://christcalm-preview-media-<account>/meditations/audio/ \
+  --exclude 'README.md' --exclude '.gitkeep'
+```
+
+See `assets/meditations/audio/README.md` and `assets/meditations/covers/README.md`.

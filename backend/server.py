@@ -127,6 +127,11 @@ class UserOut(BaseModel):
     name: str
     email: str
     is_premium: bool = False
+    # free | premium — derived from is_premium for clients
+    subscription_tier: str = "free"
+    plan: Optional[str] = None
+    premium_until: Optional[str] = None
+    provider: Optional[str] = None
     faith_journey: Optional[str] = None
     concerns: List[str] = []
     streak: int = 0
@@ -250,12 +255,42 @@ async def get_current_user(
     return user
 
 
+async def resolve_premium_user(user: dict) -> dict:
+    """Normalize free vs premium: expire lapsed plans and return fresh user row."""
+    if not user or not user.get("id"):
+        return user
+    is_premium = bool(user.get("is_premium"))
+    premium_until = user.get("premium_until")
+    if is_premium and premium_until:
+        try:
+            until = datetime.fromisoformat(str(premium_until).replace("Z", "+00:00"))
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=timezone.utc)
+            if until < datetime.now(timezone.utc):
+                return await db.update_user(
+                    user["id"],
+                    {
+                        "is_premium": False,
+                        "plan": None,
+                        "premium_until": None,
+                    },
+                )
+        except Exception:
+            pass
+    return user
+
+
 def user_to_out(u: dict) -> UserOut:
+    is_premium = bool(u.get("is_premium", False))
     return UserOut(
         id=u["id"],
         name=u["name"],
         email=u["email"],
-        is_premium=u.get("is_premium", False),
+        is_premium=is_premium,
+        subscription_tier="premium" if is_premium else "free",
+        plan=u.get("plan"),
+        premium_until=u.get("premium_until"),
+        provider=u.get("provider"),
         faith_journey=u.get("faith_journey"),
         concerns=u.get("concerns", []),
         streak=u.get("streak", 0),
@@ -359,13 +394,7 @@ async def signin(body: SignInIn, request: Request):
 
 @api.get("/auth/me", response_model=UserOut)
 async def me(user: dict = Depends(get_current_user)):
-    premium_until = user.get("premium_until")
-    if premium_until and user.get("is_premium"):
-        try:
-            if datetime.fromisoformat(premium_until) < datetime.now(timezone.utc):
-                user = await db.update_user(user["id"], {"is_premium": False})
-        except Exception:
-            pass
+    user = await resolve_premium_user(user)
     return user_to_out(user)
 
 
@@ -772,17 +801,22 @@ async def revenuecat_webhook(request: Request):
 async def subscription_status(user: dict = Depends(get_current_user)):
     fresh = await db.get_user_by_id(user["id"])
     if not fresh:
-        return {"active": False, "plan": None}
+        return {
+            "active": False,
+            "is_premium": False,
+            "subscription_tier": "free",
+            "plan": None,
+            "premium_until": None,
+        }
+    fresh = await resolve_premium_user(fresh)
     active = bool(fresh.get("is_premium"))
-    premium_until = fresh.get("premium_until")
-    if premium_until:
-        try:
-            if datetime.fromisoformat(premium_until) < datetime.now(timezone.utc):
-                active = False
-                await db.update_user(user["id"], {"is_premium": False})
-        except Exception:
-            pass
-    return {"active": active, "plan": fresh.get("plan"), "premium_until": premium_until}
+    return {
+        "active": active,
+        "is_premium": active,
+        "subscription_tier": "premium" if active else "free",
+        "plan": fresh.get("plan"),
+        "premium_until": fresh.get("premium_until"),
+    }
 
 
 # ------------------- Usage analytics (DynamoDB for analysis) -------------------
@@ -882,6 +916,17 @@ async def analytics_summary(
 
 
 app.include_router(api)
+
+# Local preview: serve assets/meditations/audio when running uvicorn (not on Lambda)
+try:
+    from fastapi.staticfiles import StaticFiles
+
+    _assets_root = Path(__file__).resolve().parents[1] / "assets"
+    if _assets_root.is_dir() and not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        app.mount("/media", StaticFiles(directory=str(_assets_root)), name="media")
+        logger.info("Mounted local media at /media → %s", _assets_root)
+except Exception as _media_err:  # pragma: no cover
+    logger.warning("Local media mount skipped: %s", _media_err)
 
 _cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
 # Expo web preview uses http://localhost — exp:// origins alone break browser fetch.

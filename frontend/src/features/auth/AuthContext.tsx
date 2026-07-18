@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { storage } from "@/src/utils/storage";
 import { api } from "@/src/api/client";
 import {
+  appleSignInSupported,
   cognitoConfigured,
   confirmForgotPassword,
   confirmSignUp,
@@ -21,6 +22,11 @@ export type User = {
   name: string;
   email: string;
   is_premium: boolean;
+  /** free | premium — from backend */
+  subscription_tier?: "free" | "premium";
+  plan?: string | null;
+  premium_until?: string | null;
+  provider?: string | null;
   faith_journey?: string | null;
   concerns?: string[];
   streak?: number;
@@ -102,7 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const config = await api.authConfig();
         if (mounted && config) {
-          setAppleEnabled(Boolean(config.apple_enabled));
+          // Show Apple when Cognito has SignInWithApple + app has domain/client configured
+          setAppleEnabled(Boolean(config.apple_enabled) && appleSignInSupported());
         }
       } catch {
         // non-blocking

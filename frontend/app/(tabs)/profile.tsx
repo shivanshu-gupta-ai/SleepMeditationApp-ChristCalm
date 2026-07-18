@@ -9,6 +9,11 @@ import { layout } from "@/src/theme/layout";
 import { Screen, PageHeader, Button, Surface, FadeIn, ProgressRing } from "@/src/components/ui";
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { getStreak, getCompletedCount } from "@/src/utils/session-progress";
+import {
+  isFocusPromptEnabled,
+  openSystemFocusSettings,
+  setFocusPromptEnabled,
+} from "@/src/utils/focus-mode";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
   system: "System",
@@ -25,16 +30,18 @@ const THEME_ICONS: Record<ThemePreference, keyof typeof Ionicons.glyphMap> = {
 export default function Profile() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { isPremium } = usePremium();
+  const { isPremium, subscriptionTier, plan } = usePremium();
   const { colors, fonts, spacing, radius, shadows, preference, setPreference, isDark } =
     useTheme();
   const { bottomClearance, isCompact } = useResponsive();
   const [localStreak, setLocalStreak] = useState(0);
   const [completed, setCompleted] = useState(0);
+  const [focusPrompt, setFocusPrompt] = useState(true);
 
   useEffect(() => {
     getStreak().then(setLocalStreak);
     getCompletedCount().then(setCompleted);
+    isFocusPromptEnabled().then(setFocusPrompt);
   }, []);
 
   const cycleTheme = () => {
@@ -112,14 +119,27 @@ export default function Profile() {
                 borderRadius: radius.full,
                 marginTop: spacing.md,
               }}
+              testID="profile-premium-badge"
+              accessibilityLabel={`Subscription tier ${subscriptionTier}${plan ? `, plan ${plan}` : ""}`}
             >
               <Ionicons name="star" size={14} color={colors.premium} />
               <Text style={{ color: colors.premiumDark, fontFamily: fonts.bodyBold, fontSize: 13 }}>
-                Premium Member
+                Premium{plan ? ` · ${plan}` : ""}
               </Text>
             </View>
           ) : (
-            <View style={{ marginTop: spacing.md, width: "72%" }}>
+            <View style={{ marginTop: spacing.md, width: "72%", alignItems: "center" }}>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: colors.textMuted,
+                  marginBottom: spacing.sm,
+                }}
+                testID="profile-free-badge"
+              >
+                Free plan
+              </Text>
               <Button
                 label="Unlock Premium"
                 variant="premium"
@@ -259,6 +279,25 @@ export default function Profile() {
             value={THEME_LABELS[preference]}
             onPress={cycleTheme}
             testID="menu-theme"
+          />
+          <MenuItem
+            icon="notifications-off-outline"
+            label="Silence notifications"
+            value="Focus / DND"
+            onPress={() => void openSystemFocusSettings()}
+            testID="menu-silence-notifications"
+          />
+          <MenuItem
+            icon="moon-outline"
+            label="Remind before sessions"
+            value={focusPrompt ? "On" : "Off"}
+            onPress={async () => {
+              const next = !focusPrompt;
+              setFocusPrompt(next);
+              await setFocusPromptEnabled(next);
+            }}
+            testID="menu-focus-prompt"
+            last
           />
         </Surface>
 

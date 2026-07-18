@@ -97,6 +97,7 @@ jwt_secret = "${JWT_SECRET}"
 
 # Preview: skip email verification for easy testing
 cognito_auto_confirm_users = true
+enable_apple_sign_in = false
 
 # Optional social — leave empty until you have Apple Developer credentials
 # apple_services_id  = ""
@@ -104,10 +105,6 @@ cognito_auto_confirm_users = true
 # apple_key_id       = ""
 # apple_private_key  = ""
 
-# SSM SecureString requires non-empty values
-google_client_id     = "unset"
-google_client_secret = "unset"
-google_redirect_uri  = "unset"
 
 cors_origins = [
   "exp://127.0.0.1:8081",
@@ -118,8 +115,6 @@ cors_origins = [
 
 llm_provider     = "bedrock"
 bedrock_model_id = "openai.gpt-oss-20b-1:0"
-openai_api_key   = ""
-openai_model     = "gpt-4o"
 
 revenuecat_webhook_authorization = ""
 revenuecat_entitlement_id        = "christcalm_premium"

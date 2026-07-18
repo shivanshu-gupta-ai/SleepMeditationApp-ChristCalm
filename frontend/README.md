@@ -8,19 +8,21 @@ Expo Router (React Native) client for ChristCalm.
 frontend/
 ├── app/                      # Routes only (Expo file-based router)
 │   ├── (auth)/               # Sign-in / sign-up / password
-│   ├── (tabs)/               # Main tabs (home, wisdom, …)
+│   ├── (tabs)/               # Home, meditate, wisdom, journal, profile
+│   ├── meditation/[id].tsx   # Player
+│   ├── sos.tsx · paywall.tsx · onboarding.tsx · ai-prayer.tsx
 │   └── …
 ├── src/
 │   ├── features/
 │   │   ├── auth/             # Session, Cognito, social buttons
-│   │   ├── ai/               # Wisdom / AI prayer feature surface
 │   │   ├── subscriptions/    # RevenueCat + premium
 │   │   └── onboarding/       # Onboarding steps UI
 │   ├── components/ui/        # Shared design-system primitives
 │   ├── context/              # Theme, Viewport
 │   ├── api/                  # Backend HTTP client
 │   ├── theme/                # Nest / Cooper tokens
-│   └── utils/
+│   ├── constants/            # Emotion icons, meditation covers
+│   └── utils/                # Storage, analytics, focus mode, …
 └── assets/                   # Bundled media (icons, covers, Grace)
 ```
 
@@ -28,13 +30,16 @@ frontend/
 
 ```bash
 # from repo root
-./scripts/setup-config.sh
-./scripts/sync-env-from-aws.sh   # or set EXPO_PUBLIC_BACKEND_URL
+./scripts/sync-env-from-aws.sh   # public Expo config
 cd frontend && npx expo start --web --clear
+# → http://localhost:8081
 ```
+
+Or: `./scripts/preview.sh` from repo root.
 
 ## Notes
 
 - Prefer importing from `@/src/features/*` for domain code.
 - Shared UI lives in `@/src/components/ui`.
-- Content covers: edit repo `assets/meditations/covers/`, then copy into `frontend/assets/meditations/covers/`.
+- Meditation covers: edit `assets/meditations/covers/`, then `./scripts/sync-meditation-covers.sh`.
+- Wisdom / AI prayer screens call the API directly via `@/src/api/client` (no `features/ai` module).

@@ -30,9 +30,10 @@ SSM_KEYS = (
     "COGNITO_DOMAIN",
     "COGNITO_REGION",
     "APPLE_SERVICES_ID",
+    "APPLE_TEAM_ID",
+    "APPLE_KEY_ID",
+    # APPLE_PRIVATE_KEY stays in SSM for Cognito/terraform only — not needed on Lambda
     "LLM_PROVIDER",
-    "OPENAI_API_KEY",
-    "OPENAI_MODEL",
     "BEDROCK_MODEL_ID",
     "BEDROCK_MODEL_IDS",
     "BEDROCK_INFERENCE_GEO",
@@ -64,8 +65,7 @@ _LOCAL_NON_SECRET_KEYS = frozenset(
 _SECRET_KEY_MARKERS = frozenset(
     {
         "JWT_SECRET",
-            "OPENAI_API_KEY",
-        "REVENUECAT_WEBHOOK_AUTHORIZATION",
+                "REVENUECAT_WEBHOOK_AUTHORIZATION",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_SESSION_TOKEN",

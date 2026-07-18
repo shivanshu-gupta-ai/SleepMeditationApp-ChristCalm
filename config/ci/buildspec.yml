@@ -19,7 +19,10 @@ phases:
       # Legacy wisdom path for older code paths
       - mkdir -p package/wisdom
       - if [ -d package/ai/corpus ]; then cp -R package/ai/corpus/. package/wisdom/; fi
-      - cd $CODEBUILD_SRC_DIR/package && zip -r $CODEBUILD_SRC_DIR/lambda.zip . -x '*.pyc' -x '*/__pycache__/*'
+      # Drop macOS AppleDouble / junk that can pollute RAG corpus
+      - find package -name '._*' -delete 2>/dev/null || true
+      - find package -name '.DS_Store' -delete 2>/dev/null || true
+      - cd $CODEBUILD_SRC_DIR/package && zip -r $CODEBUILD_SRC_DIR/lambda.zip . -x '*.pyc' -x '*/__pycache__/*' -x '*/._*' -x '*/.DS_Store'
   post_build:
     commands:
       - ls -lah $CODEBUILD_SRC_DIR/lambda.zip

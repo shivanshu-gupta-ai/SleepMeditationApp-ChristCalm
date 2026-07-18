@@ -1,38 +1,39 @@
 """
 End-to-end API journey (happy path) against deployed backend.
 
-Covers: signup → onboarding → content → mood → journal → meditation complete
-→ subscription status → (optional) AI prayer if Bedrock configured.
+Covers: Cognito signup → onboarding → content → mood → journal → meditation complete
+→ subscription status → (optional) AI wisdom if Bedrock configured.
 """
 
-import os
 import time
 import uuid
-from pathlib import Path
 
 import pytest
 import requests
-from dotenv import load_dotenv
 
-ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(ROOT / "frontend" / ".env")
-load_dotenv(ROOT / "backend" / ".env")
+from cognito_helpers import (
+    BASE_URL as BASE,
+    auth_headers as auth,
+    cognito_client,
+    cognito_env_ready,
+    signup_and_token,
+    strong_password,
+)
 
-BASE = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "").rstrip("/")
 if not BASE:
     pytest.skip("EXPO_PUBLIC_BACKEND_URL not set", allow_module_level=True)
 
 
-def auth(token: str) -> dict:
-    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-
 class TestE2EUserJourney:
     def test_full_api_journey(self):
+        if not cognito_env_ready():
+            pytest.skip("Cognito env not configured")
+
         s = requests.Session()
         s.headers.update({"Content-Type": "application/json"})
         email = f"e2e_{uuid.uuid4().hex[:12]}@christcalm.app"
-        password = "password123"
+        password = strong_password()
+        cognito = cognito_client()
         timings = {}
 
         # 1 Health
@@ -44,26 +45,21 @@ class TestE2EUserJourney:
         assert body.get("status") == "ok"
         llm = body.get("llm_provider", "unknown")
 
-        # 2 Signup
+        # 2 Cognito signup + access token
         t0 = time.perf_counter()
-        r = s.post(
-            f"{BASE}/api/auth/signup",
-            json={"name": "E2E User", "email": email, "password": password},
-            timeout=30,
-        )
+        token = signup_and_token(cognito, email, password, "E2E User")
         timings["signup_ms"] = (time.perf_counter() - t0) * 1000
-        assert r.status_code == 200, r.text
-        token = r.json()["token"]
-        user_id = r.json()["user"]["id"]
 
-        # 3 Signin
-        r = s.post(
-            f"{BASE}/api/auth/signin",
-            json={"email": email, "password": password},
-            timeout=20,
-        )
-        assert r.status_code == 200
-        assert r.json()["user"]["id"] == user_id
+        me = s.get(f"{BASE}/api/auth/me", headers=auth(token), timeout=20)
+        assert me.status_code == 200, me.text
+        user_id = me.json()["id"]
+
+        # 3 Re-auth via Cognito
+        token2 = signup_and_token(cognito, email, password, "E2E User")
+        me2 = s.get(f"{BASE}/api/auth/me", headers=auth(token2), timeout=20)
+        assert me2.status_code == 200
+        assert me2.json()["id"] == user_id
+        token = token2
 
         # 4 Onboarding
         r = s.post(
@@ -147,11 +143,10 @@ class TestE2EUserJourney:
         blocked = r.json()
         assert blocked.get("blocked") is True
         assert "emotional concern" in (blocked.get("reply") or "").lower()
-        # Blocked turns should not burn monthly quota
         q2 = s.get(f"{BASE}/api/wisdom/quota", headers=auth(token), timeout=20).json()
         assert q2.get("used") == q.get("used")
 
-        # 9c Wisdom chat (Bedrock GPT-OSS / Mistral)
+        # 9c Wisdom chat (Bedrock)
         t0 = time.perf_counter()
         r = s.post(
             f"{BASE}/api/wisdom/chat",
@@ -166,7 +161,6 @@ class TestE2EUserJourney:
             assert "reply" in body and len(body["reply"]) > 20
             assert "conversation_id" in body
             assert "ai_quota" in body
-            # follow-up turn (conversational)
             r2 = s.post(
                 f"{BASE}/api/wisdom/chat",
                 headers=auth(token),

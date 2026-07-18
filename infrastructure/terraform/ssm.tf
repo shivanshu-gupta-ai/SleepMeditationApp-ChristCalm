@@ -7,27 +7,6 @@ resource "aws_ssm_parameter" "jwt_secret" {
   tags  = local.common_tags
 }
 
-resource "aws_ssm_parameter" "google_client_id" {
-  name  = "${local.ssm_prefix}/GOOGLE_CLIENT_ID"
-  type  = "SecureString"
-  value = var.google_client_id
-  tags  = local.common_tags
-}
-
-resource "aws_ssm_parameter" "google_client_secret" {
-  name  = "${local.ssm_prefix}/GOOGLE_CLIENT_SECRET"
-  type  = "SecureString"
-  value = var.google_client_secret
-  tags  = local.common_tags
-}
-
-resource "aws_ssm_parameter" "google_redirect_uri" {
-  name  = "${local.ssm_prefix}/GOOGLE_REDIRECT_URI"
-  type  = "String"
-  value = var.google_redirect_uri
-  tags  = local.common_tags
-}
-
 resource "aws_ssm_parameter" "cors_origins" {
   name  = "${local.ssm_prefix}/CORS_ORIGINS"
   type  = "String"
@@ -56,11 +35,87 @@ resource "aws_ssm_parameter" "cognito_domain" {
   tags  = local.common_tags
 }
 
+# --- Apple Sign-In secrets (source of truth: SSM, not local .env/tfvars) ---
+# Seed placeholders on first create; real values are set with:
+#   ./scripts/seed-apple-ssm-once.sh  (temp Lambda → SSM → delete)
+# lifecycle ignore_changes keeps CLI/console updates from being overwritten.
+
 resource "aws_ssm_parameter" "apple_services_id" {
   name  = "${local.ssm_prefix}/APPLE_SERVICES_ID"
   type  = "SecureString"
-  value = var.apple_services_id != "" ? var.apple_services_id : "unset"
+  value = "unset"
   tags  = local.common_tags
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "apple_team_id" {
+  name  = "${local.ssm_prefix}/APPLE_TEAM_ID"
+  type  = "SecureString"
+  value = "unset"
+  tags  = local.common_tags
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "apple_key_id" {
+  name  = "${local.ssm_prefix}/APPLE_KEY_ID"
+  type  = "SecureString"
+  value = "unset"
+  tags  = local.common_tags
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "apple_private_key" {
+  name  = "${local.ssm_prefix}/APPLE_PRIVATE_KEY"
+  type  = "SecureString"
+  value = "unset"
+  tags  = local.common_tags
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# Live values for Cognito IdP (read current SSM — not terraform state)
+# Fixed names so count/planning does not depend on create-time resource attrs.
+data "aws_ssm_parameter" "apple_services_id" {
+  count           = var.enable_apple_sign_in ? 1 : 0
+  name            = "${local.ssm_prefix}/APPLE_SERVICES_ID"
+  with_decryption = true
+
+  depends_on = [aws_ssm_parameter.apple_services_id]
+}
+
+data "aws_ssm_parameter" "apple_team_id" {
+  count           = var.enable_apple_sign_in ? 1 : 0
+  name            = "${local.ssm_prefix}/APPLE_TEAM_ID"
+  with_decryption = true
+
+  depends_on = [aws_ssm_parameter.apple_team_id]
+}
+
+data "aws_ssm_parameter" "apple_key_id" {
+  count           = var.enable_apple_sign_in ? 1 : 0
+  name            = "${local.ssm_prefix}/APPLE_KEY_ID"
+  with_decryption = true
+
+  depends_on = [aws_ssm_parameter.apple_key_id]
+}
+
+data "aws_ssm_parameter" "apple_private_key" {
+  count           = var.enable_apple_sign_in ? 1 : 0
+  name            = "${local.ssm_prefix}/APPLE_PRIVATE_KEY"
+  with_decryption = true
+
+  depends_on = [aws_ssm_parameter.apple_private_key]
 }
 
 resource "aws_ssm_parameter" "llm_provider" {
@@ -70,19 +125,7 @@ resource "aws_ssm_parameter" "llm_provider" {
   tags  = local.common_tags
 }
 
-resource "aws_ssm_parameter" "openai_api_key" {
-  name  = "${local.ssm_prefix}/OPENAI_API_KEY"
-  type  = "SecureString"
-  value = var.openai_api_key
-  tags  = local.common_tags
-}
 
-resource "aws_ssm_parameter" "openai_model" {
-  name  = "${local.ssm_prefix}/OPENAI_MODEL"
-  type  = "String"
-  value = var.openai_model
-  tags  = local.common_tags
-}
 
 resource "aws_ssm_parameter" "bedrock_model_id" {
   name  = "${local.ssm_prefix}/BEDROCK_MODEL_ID"

@@ -53,31 +53,29 @@ export default function SignIn() {
       </FadeIn>
 
       <FadeIn delay={80}>
-        <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
-          <AppleSignInButton
-            label="Sign in with Apple"
-            onPress={async () => {
-              try {
-                await signInWithApple();
-                router.replace("/(tabs)/home");
-              } catch (e: any) {
-                if (!appleEnabled) {
-                  setError(
-                    "Apple sign-in isn’t linked yet. Use email for now, or add Apple Services ID + key in terraform.tfvars (config/auth/README.md)."
-                  );
-                } else {
-                  setError(e?.message || "Apple sign-in failed");
-                }
-              }
-            }}
-          />
-        </View>
-        <AuthDivider text="OR CONTINUE WITH EMAIL" />
-
         {error ? (
-          <View style={{ marginBottom: spacing.md }}>
+          <View style={{ marginBottom: spacing.md, marginTop: spacing.sm }}>
             <ErrorBanner message={error} onDismiss={() => setError(null)} testID="signin-error" />
           </View>
+        ) : null}
+
+        {appleEnabled ? (
+          <>
+            <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
+              <AppleSignInButton
+                label="Sign in with Apple"
+                onPress={async () => {
+                  try {
+                    await signInWithApple();
+                    router.replace("/(tabs)/home");
+                  } catch (e: any) {
+                    setError(e?.message || "Apple sign-in failed");
+                  }
+                }}
+              />
+            </View>
+            <AuthDivider text="OR CONTINUE WITH EMAIL" />
+          </>
         ) : null}
 
         <TextField

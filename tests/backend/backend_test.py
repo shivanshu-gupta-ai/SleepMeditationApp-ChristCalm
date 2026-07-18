@@ -1,12 +1,9 @@
 """ChristCalm backend integration tests.
 
-Runs against the public preview URL exposed via EXPO_PUBLIC_BACKEND_URL.
-Covers auth, onboarding, content, mood/journal, meditations completion,
-AI prayer (GPT-5.2), and subscription sync.
+Runs against the public preview URL (EXPO_PUBLIC_BACKEND_URL).
+Auth uses Cognito (legacy /api/auth/signup returns 410 when Cognito is on).
 """
 
-import os
-import time
 import uuid
 from pathlib import Path
 
@@ -14,15 +11,25 @@ import pytest
 import requests
 from dotenv import load_dotenv
 
+from cognito_helpers import (
+    BASE_URL,
+    CLIENT_ID,
+    SEEDED_EMAIL,
+    SEEDED_PASSWORD,
+    auth_headers as auth,
+    cognito_client,
+    cognito_env_ready,
+    require_cognito_env,
+    signup_and_token,
+    strong_password,
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / "frontend" / ".env")
 load_dotenv(ROOT / "backend" / ".env")
 
-BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "").rstrip("/")
-assert BASE_URL, "EXPO_PUBLIC_BACKEND_URL must be set in frontend/.env"
-
-SEEDED_EMAIL = "test@christcalm.app"
-SEEDED_PASSWORD = "password123"
+if not BASE_URL:
+    pytest.skip("EXPO_PUBLIC_BACKEND_URL must be set in frontend/.env", allow_module_level=True)
 
 
 # -------------------- Fixtures --------------------
@@ -34,42 +41,24 @@ def session():
 
 
 @pytest.fixture(scope="session")
-def seeded_token(session):
-    """Sign in seeded test user (or sign it up if missing)."""
-    r = session.post(
-        f"{BASE_URL}/api/auth/signin",
-        json={"email": SEEDED_EMAIL, "password": SEEDED_PASSWORD},
-        timeout=30,
-    )
-    if r.status_code == 401:
-        # Register the seeded user if not present
-        signup = session.post(
-            f"{BASE_URL}/api/auth/signup",
-            json={"name": "Seed Tester", "email": SEEDED_EMAIL, "password": SEEDED_PASSWORD},
-            timeout=30,
-        )
-        assert signup.status_code == 200, signup.text
-        return signup.json()["token"]
-    assert r.status_code == 200, r.text
-    return r.json()["token"]
+def cognito():
+    require_cognito_env()
+    return cognito_client()
 
 
 @pytest.fixture(scope="session")
-def fresh_user(session):
-    """A brand-new user for isolated tests (subscription-status, onboarding, etc.)"""
-    email = f"TEST_{uuid.uuid4().hex[:10]}@christcalm.app"
-    r = session.post(
-        f"{BASE_URL}/api/auth/signup",
-        json={"name": "TEST User", "email": email, "password": "password123"},
-        timeout=30,
-    )
-    assert r.status_code == 200, r.text
-    data = r.json()
-    return {"email": email, "token": data["token"], "user": data["user"]}
+def seeded_token(cognito):
+    """Access token for seeded test user (or create if missing)."""
+    return signup_and_token(cognito, SEEDED_EMAIL, SEEDED_PASSWORD, "Seed Tester")
 
 
-def auth(token: str) -> dict:
-    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+@pytest.fixture(scope="session")
+def fresh_user(cognito):
+    """A brand-new Cognito user for isolated tests."""
+    email = f"test_{uuid.uuid4().hex[:10]}@christcalm.app"
+    password = strong_password()
+    token = signup_and_token(cognito, email, password, "TEST User")
+    return {"email": email, "password": password, "token": token}
 
 
 # -------------------- Health --------------------
@@ -82,55 +71,77 @@ class TestHealth:
 
 # -------------------- Auth --------------------
 class TestAuth:
-    def test_signup_and_me(self, session):
-        email = f"TEST_{uuid.uuid4().hex[:8]}@christcalm.app"
-        r = session.post(
-            f"{BASE_URL}/api/auth/signup",
-            json={"name": "Signup Test", "email": email, "password": "password123"},
-            timeout=20,
-        )
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert "token" in body and "user" in body
-        # Backend lowercases email
-        assert body["user"]["email"] == email.lower()
-        assert body["user"]["is_premium"] is False
+    def test_signup_and_me(self, session, cognito):
+        email = f"test_{uuid.uuid4().hex[:8]}@christcalm.app"
+        password = strong_password()
+        token = signup_and_token(cognito, email, password, "Signup Test")
 
-        me = session.get(f"{BASE_URL}/api/auth/me", headers=auth(body["token"]), timeout=15)
-        assert me.status_code == 200
-        assert me.json()["email"] == email.lower()
+        me = session.get(f"{BASE_URL}/api/auth/me", headers=auth(token), timeout=15)
+        assert me.status_code == 200, me.text
+        body = me.json()
+        assert body["email"] == email.lower()
+        assert body["is_premium"] is False
 
-    def test_signup_duplicate_rejected(self, session, fresh_user):
-        r = session.post(
-            f"{BASE_URL}/api/auth/signup",
-            json={"name": "Dup", "email": fresh_user["email"], "password": "password123"},
-            timeout=15,
-        )
-        assert r.status_code == 400
+    def test_signup_duplicate_rejected(self, session, cognito, fresh_user):
+        from botocore.exceptions import ClientError
 
-    def test_signup_short_password(self, session):
-        email = f"TEST_{uuid.uuid4().hex[:8]}@christcalm.app"
-        r = session.post(
-            f"{BASE_URL}/api/auth/signup",
-            json={"name": "Short", "email": email, "password": "123"},
-            timeout=15,
-        )
-        assert r.status_code == 400
+        with pytest.raises(ClientError) as exc_info:
+            cognito.sign_up(
+                ClientId=CLIENT_ID,
+                Username=fresh_user["email"],
+                Password=strong_password(),
+                UserAttributes=[{"Name": "name", "Value": "Dup"}],
+            )
+        assert exc_info.value.response["Error"]["Code"] == "UsernameExistsException"
+
+    def test_signup_short_password(self, session, cognito):
+        from botocore.exceptions import ClientError
+
+        email = f"test_{uuid.uuid4().hex[:8]}@christcalm.app"
+        with pytest.raises(ClientError) as exc_info:
+            cognito.sign_up(
+                ClientId=CLIENT_ID,
+                Username=email,
+                Password="123",
+                UserAttributes=[{"Name": "name", "Value": "Short"}],
+            )
+        code = exc_info.value.response["Error"]["Code"]
+        assert code in ("InvalidPasswordException", "InvalidParameterException")
 
     def test_signin_success(self, session, seeded_token):
-        assert seeded_token  # just ensures fixture worked
+        assert seeded_token
 
-    def test_signin_bad_password(self, session):
-        r = session.post(
-            f"{BASE_URL}/api/auth/signin",
-            json={"email": SEEDED_EMAIL, "password": "wrongpass"},
-            timeout=15,
+    def test_signin_bad_password(self, session, cognito):
+        from botocore.exceptions import ClientError
+
+        with pytest.raises(ClientError) as exc_info:
+            cognito.initiate_auth(
+                ClientId=CLIENT_ID,
+                AuthFlow="USER_PASSWORD_AUTH",
+                AuthParameters={"USERNAME": SEEDED_EMAIL, "PASSWORD": "wrongpass"},
+            )
+        assert exc_info.value.response["Error"]["Code"] in (
+            "NotAuthorizedException",
+            "UserNotFoundException",
         )
-        assert r.status_code == 401
 
     def test_me_without_token(self, session):
         r = session.get(f"{BASE_URL}/api/auth/me", timeout=10)
         assert r.status_code == 401
+
+    def test_legacy_signup_gone(self, session):
+        if not cognito_env_ready():
+            pytest.skip("Cognito not configured")
+        r = session.post(
+            f"{BASE_URL}/api/auth/signup",
+            json={
+                "name": "X",
+                "email": f"x_{uuid.uuid4().hex[:6]}@christcalm.app",
+                "password": "Password1",
+            },
+            timeout=15,
+        )
+        assert r.status_code == 410
 
 
 # -------------------- Onboarding --------------------
@@ -147,7 +158,6 @@ class TestOnboarding:
         assert body["faith_journey"] == "growing"
         assert set(body["concerns"]) == {"anxious", "grief"}
 
-        # Verify persistence via GET /me
         me = session.get(
             f"{BASE_URL}/api/auth/me", headers=auth(fresh_user["token"]), timeout=15
         )
@@ -266,7 +276,7 @@ class TestMeditationCompletion:
         r = session.post(
             f"{BASE_URL}/api/meditations/complete",
             headers=auth(fresh_user["token"]),
-            json={"meditation_id": "med-1", "minutes": 7},
+            json={"meditation_id": "med-anxious-shanti", "minutes": 7},
             timeout=15,
         )
         assert r.status_code == 200, r.text
@@ -278,7 +288,7 @@ class TestMeditationCompletion:
         assert me2["minutes_meditated"] == start_min + 7
 
 
-# -------------------- AI Prayer (GPT-5.2 via emergentintegrations) --------------------
+# -------------------- AI Prayer --------------------
 class TestAIPrayer:
     def test_generate_prayer(self, session, seeded_token):
         r = session.post(
@@ -287,13 +297,11 @@ class TestAIPrayer:
             json={"feeling": "anxious", "context": "work deadline stress"},
             timeout=90,
         )
-        # 200 = Bedrock/OpenAI OK; 503 = model not enabled / temporary; 429 = rate limited
         assert r.status_code in (200, 503, 429), r.text
         if r.status_code == 200:
             body = r.json()
             assert "prayer" in body and isinstance(body["prayer"], str)
             assert len(body["prayer"]) > 40, f"Prayer too short: {body['prayer']!r}"
-            # Errors must not leak provider secrets
             assert "sk-" not in r.text
         else:
             detail = str(r.json().get("detail", "")).lower()

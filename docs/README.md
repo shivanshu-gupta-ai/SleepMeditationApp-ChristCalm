@@ -25,9 +25,7 @@ Runtime config templates live under [`../config/`](../config/).
 
 | Path | Purpose |
 |------|---------|
-| [`assets/meditations/covers/`](../assets/meditations/covers/) | Meditation cover images (edit & replace) |
-| [`assets/audio/`](../assets/audio/) | Meditation audio files |
-| [`assets/design-reference/`](../assets/design-reference/) | Local research only (gitignored frames) |
-| [`assets/app-design/`](../assets/app-design/) | Product design screenshots |
-| [`frontend/assets/`](../frontend/assets/) | App-bundled images (icons, covers copy, mascot) |
+| [`assets/meditations/covers/`](../assets/meditations/covers/) | Unique cover per meditation track |
+| [`assets/meditations/audio/`](../assets/meditations/audio/) | Source audio (served from S3 in production) |
+| [`frontend/assets/`](../frontend/assets/) | App-bundled images (icons, covers, Grace mascot) |
 | [`backend/ai/corpus/`](../backend/ai/corpus/) | Wisdom RAG markdown corpus |

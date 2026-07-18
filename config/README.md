@@ -7,7 +7,7 @@ Local `.env` files are disposable and must not hold secrets.
 
 | What | Where |
 |------|--------|
-| Secrets (JWT, Apple, OpenAI, webhooks, …) | SSM `/christcalm-preview/*` via Terraform `ssm.tf` |
+| Secrets (JWT, Apple, webhooks, …) | SSM `/christcalm-preview/*` via Terraform `ssm.tf` |
 | Infra inputs (once) | `infrastructure/terraform/terraform.tfvars` (**gitignored**) |
 | Frontend public config | Auto: `./scripts/sync-env-from-aws.sh` → `frontend/.env` |
 | Backend local flags | Auto: same script → `backend/.env` (`SSM_PREFIX`, region, table prefix only) |

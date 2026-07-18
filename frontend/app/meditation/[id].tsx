@@ -26,6 +26,10 @@ import { track } from "@/src/utils/analytics";
 import { playHaptic } from "@/src/utils/haptics";
 import { LoadingState, ErrorState, Button } from "@/src/components/ui";
 import { meditationCoverSource } from "@/src/constants/meditation-covers";
+import {
+  openSystemFocusSettings,
+  promptSilenceBeforeSession,
+} from "@/src/utils/focus-mode";
 
 type Meditation = {
   id: string;
@@ -143,13 +147,18 @@ export default function MeditationPlayer() {
     }
   }, [status?.currentTime, status?.duration, med, completed, isPremium, router, celebrateOpacity]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!player) return;
-    if (status?.playing) player.pause();
-    else {
-      void track("meditation_start", { id: med?.id });
-      player.play();
+    if (status?.playing) {
+      player.pause();
+      return;
     }
+    // First play: offer system Focus / DND so notifications don’t interrupt
+    if (!status?.currentTime || status.currentTime < 1) {
+      await promptSilenceBeforeSession();
+    }
+    void track("meditation_start", { id: med?.id });
+    player.play();
   };
 
   const formatTime = (s: number) => {
@@ -178,7 +187,7 @@ export default function MeditationPlayer() {
 
   return (
     <ImageBackground
-      source={meditationCoverSource(med.id, med.cover)}
+      source={meditationCoverSource(med.id, med.cover, med.cover_file)}
       style={{ flex: 1 }}
       blurRadius={30}
     >
@@ -209,7 +218,14 @@ export default function MeditationPlayer() {
             >
               Now Playing
             </Text>
-            <View style={{ width: 30 }} />
+            <TouchableOpacity
+              onPress={() => void openSystemFocusSettings()}
+              accessibilityLabel="Silence phone notifications"
+              testID="med-silence-notifications"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="notifications-off-outline" size={24} color={colors.white} />
+            </TouchableOpacity>
           </View>
 
           <View
@@ -231,7 +247,7 @@ export default function MeditationPlayer() {
               }}
             >
               <ImageBackground
-                source={meditationCoverSource(med.id, med.cover)}
+                source={meditationCoverSource(med.id, med.cover, med.cover_file)}
                 style={{ width: "100%", height: "100%" }}
                 imageStyle={{ borderRadius: artSize / 2 }}
               />

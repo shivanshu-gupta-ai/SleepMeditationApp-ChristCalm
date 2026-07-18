@@ -1,8 +1,7 @@
 # ChristCalm Onboarding — Brainrot-inspired redesign
 
-**Source video:** `brainrot.mp4` (repo root)  
-**Frames:** `assets/design-reference/brainrot-frames/tick_001.png` … `tick_032.png`  
-**Analysis method:** `ffprobe` + `ffmpeg -vf fps=1/2` (every 2s)
+**Source video:** historical research clip (not kept in repo)  
+**Analysis method:** frame sampling for motion/typography patterns
 
 ---
 

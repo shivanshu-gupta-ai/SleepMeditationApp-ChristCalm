@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,12 +19,19 @@ import {
   PressableScale,
   FirstStepsChecklist,
   markFirstStep,
+  JourneyStats,
 } from "@/src/components/ui";
 import { TodaysPath } from "@/src/components/ui/TodaysPath";
 import { emotionIcon } from "@/src/constants/emotion-icons";
 import { iconSize } from "@/src/theme/primitives";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
+import {
+  getUserStage,
+  stageEmotionPrompt,
+  stageHomeOverline,
+  type UserStage,
+} from "@/src/utils/user-stage";
 
 type Emotion = { id: string; label: string; color: string; emoji?: string };
 type Devotional = { verse: string; reference: string; reflection: string };
@@ -40,13 +47,23 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stage, setStage] = useState<UserStage>("new");
+  const [localCompleted, setLocalCompleted] = useState(0);
+  const [localStreak, setLocalStreak] = useState(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     try {
       setError(null);
-      const [e, d] = await Promise.all([api.emotions(), api.devotional()]);
+      const [e, d, stageSnap] = await Promise.all([
+        api.emotions(force),
+        api.devotional(),
+        getUserStage(),
+      ]);
       setEmotions(e.emotions || []);
       setDevotional(d);
+      setStage(stageSnap.stage);
+      setLocalCompleted(stageSnap.completed);
+      setLocalStreak(stageSnap.streak);
     } catch (err: any) {
       setError(err?.message || "Unable to load your home feed.");
     } finally {
@@ -56,21 +73,26 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    load();
+    // Force refresh so new catalog feelings are not stuck in the 5‑min cache
+    load(true);
   }, [load]);
 
   useFocusEffect(
     useCallback(() => {
       refreshUser();
+      getUserStage().then((s) => {
+        setStage(s.stage);
+        setLocalCompleted(s.completed);
+        setLocalStreak(s.streak);
+      });
     }, [refreshUser])
   );
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
-  };
+  const overline = stageHomeOverline(stage, new Date().getHours());
+  const emotionCopy = stageEmotionPrompt(stage);
+  const minutes = user?.minutes_meditated ?? 0;
+  const sessions = Math.max(user?.prayers_completed ?? 0, localCompleted);
+  const streak = Math.max(user?.streak ?? 0, localStreak);
 
   const selectEmotion = async (em: Emotion) => {
     try {
@@ -100,7 +122,7 @@ export default function Home() {
         message={error}
         onRetry={() => {
           setLoading(true);
-          load();
+          load(true);
         }}
       />
     );
@@ -112,7 +134,7 @@ export default function Home() {
       refreshing={refreshing}
       onRefresh={() => {
         setRefreshing(true);
-        load();
+        load(true);
       }}
       contentStyle={{
         paddingTop: isCompact ? 12 : layout.pageTop,
@@ -121,7 +143,7 @@ export default function Home() {
     >
       <FadeIn>
         <PageHeader
-          overline={greeting()}
+          overline={overline}
           title={user?.name || "Friend"}
           testID="home-greeting"
           right={
@@ -135,11 +157,20 @@ export default function Home() {
         />
       </FadeIn>
 
-      <FirstStepsChecklist />
+      {/* Stage: new → first steps; engaged → stats to optimize */}
+      {stage === "new" ? <FirstStepsChecklist /> : null}
+      {stage === "engaged" ? (
+        <JourneyStats minutes={minutes} streak={streak} sessions={sessions} />
+      ) : null}
 
-      <TodaysPath emotions={emotions} />
+      <TodaysPath
+        emotions={emotions}
+        stage={stage}
+        completed={localCompleted}
+        streak={streak}
+      />
 
-      {/* Emotion grid — Nest: sparse labels, borderless cards, roomy cells */}
+      {/* Emotion categories — color-coded tiles, clear hierarchy, scan in seconds */}
       <FadeIn delay={40}>
         <Text
           style={{
@@ -150,7 +181,7 @@ export default function Home() {
             marginBottom: 8,
           }}
         >
-          How are you feeling?
+          {emotionCopy.title}
         </Text>
         <Text
           style={{
@@ -159,10 +190,10 @@ export default function Home() {
             lineHeight: isTablet ? 24 : 20,
             color: colors.textMuted,
             marginBottom: spacing.lg,
-            maxWidth: isTablet ? 480 : 320,
+            maxWidth: isTablet ? 480 : 340,
           }}
         >
-          Choose a feeling for a guided session
+          {emotionCopy.sub}
         </Text>
 
         <View
@@ -192,17 +223,21 @@ export default function Home() {
                   accessibilityLabel={`${em.label}. Open meditations for this feeling`}
                   style={{
                     width: "100%",
-                    minHeight: isCompact ? 76 : isTablet ? 96 : 84,
+                    minHeight: isCompact ? 80 : isTablet ? 100 : 88,
                     borderRadius: layout.surfaceRadius,
-                    backgroundColor: colors.surface,
-                    // Nest: no borders — pure elevated fill
+                    // Soft solid well from emotion color — category rhythm, not stock chaos
+                    backgroundColor: isDark
+                      ? colors.surface
+                      : em.color + "18",
                     borderWidth: isDark ? 0 : 1,
-                    borderColor: isDark ? "transparent" : colors.borderSoft,
+                    borderColor: isDark ? "transparent" : em.color + "33",
+                    borderLeftWidth: 4,
+                    borderLeftColor: em.color,
                     paddingVertical: 16,
-                    paddingHorizontal: 16,
+                    paddingHorizontal: 14,
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 14,
+                    gap: 12,
                     ...(isDark ? null : shadows.soft),
                   }}
                 >
@@ -221,11 +256,12 @@ export default function Home() {
                     <Ionicons name={icon} size={iconSize.md} color={em.color} />
                   </View>
                   <Text
-                    numberOfLines={1}
+                    numberOfLines={2}
                     style={{
                       flex: 1,
                       fontFamily: fonts.headingBold,
-                      fontSize: 16,
+                      fontSize: isCompact ? 14 : 15,
+                      lineHeight: isCompact ? 18 : 20,
                       color: colors.textPrimary,
                       letterSpacing: -0.3,
                       paddingRight: 2,
@@ -298,9 +334,7 @@ export default function Home() {
       ) : null}
 
       {/*
-        Quick paths —
-        Dark Nest: quiet charcoal wells + gold/violet icon accents
-        Light Cooper: soft pastel tiles + one ink contrast tile
+        Quick paths — fewer for new users (less overwhelm); full grid when returning+
       */}
       <FadeIn delay={200}>
         <Text
@@ -312,7 +346,7 @@ export default function Home() {
             marginBottom: spacing.md,
           }}
         >
-          Quick paths
+          {stage === "new" ? "Start here" : "Quick paths"}
         </Text>
         <View
           style={{
@@ -329,27 +363,14 @@ export default function Home() {
               {
                 id: "meditate",
                 title: "Meditate",
-                sub: "Sessions",
+                sub: stage === "new" ? "Begin gently" : "Sessions",
                 icon: "leaf-outline" as const,
                 bg: isDark ? colors.surface : colors.tileA,
                 color: colors.primary,
                 inverted: false,
                 onPress: () => router.push("/(tabs)/meditate"),
                 testID: "home-tile-meditate",
-              },
-              {
-                id: "wisdom",
-                title: "Wisdom",
-                sub: "Talk it through",
-                icon: "chatbubbles-outline" as const,
-                bg: isDark ? colors.surface : colors.tileB,
-                color: isDark ? colors.premium : colors.primaryDark,
-                inverted: false,
-                onPress: () => {
-                  void markFirstStep("wisdom");
-                  router.push("/(tabs)/wisdom");
-                },
-                testID: "home-tile-wisdom",
+                newOnly: false,
               },
               {
                 id: "sos",
@@ -364,6 +385,22 @@ export default function Home() {
                   router.push("/sos");
                 },
                 testID: "home-sos-btn",
+                newOnly: false,
+              },
+              {
+                id: "wisdom",
+                title: "Wisdom",
+                sub: "Talk it through",
+                icon: "chatbubbles-outline" as const,
+                bg: isDark ? colors.surface : colors.tileB,
+                color: isDark ? colors.premium : colors.primaryDark,
+                inverted: false,
+                onPress: () => {
+                  void markFirstStep("wisdom");
+                  router.push("/(tabs)/wisdom");
+                },
+                testID: "home-tile-wisdom",
+                newOnly: false,
               },
               {
                 id: "journal",
@@ -378,9 +415,13 @@ export default function Home() {
                   router.push("/(tabs)/journal");
                 },
                 testID: "home-journal-btn",
+                // New users: two primary paths only — less choice paralysis
+                newOnly: true,
               },
             ] as const
-          ).map((tile) => {
+          )
+            .filter((tile) => stage !== "new" || !tile.newOnly)
+            .map((tile) => {
             const titleColor = tile.inverted ? colors.white : colors.textPrimary;
             const subColor = tile.inverted
               ? "rgba(255,255,255,0.72)"

@@ -18,9 +18,9 @@ async function authHeaders() {
 
 async function request<T = any>(
   path: string,
-  opts: { method?: string; body?: any; auth?: boolean } = {}
+  opts: { method?: string; body?: any; auth?: boolean; cache?: RequestCache } = {}
 ): Promise<T> {
-  const { method = "GET", body, auth = true } = opts;
+  const { method = "GET", body, auth = true, cache } = opts;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (auth) {
     Object.assign(headers, await authHeaders());
@@ -37,6 +37,8 @@ async function request<T = any>(
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      // Avoid browser HTTP cache serving stale catalog (Cache-Control max-age on API)
+      ...(cache ? { cache } : null),
     });
   } catch {
     throw new Error(
@@ -85,23 +87,29 @@ export const api = {
   }) => request("/auth/onboarding", { method: "POST", body: payload }),
 
 
-  /** Cached 5 min — static catalog, DIY scale (no AWS Support) */
-  emotions: async () => {
+  /** Cached 5 min in-memory; force bypasses memory + browser HTTP cache */
+  emotions: async (force = false) => {
     const key = "catalog:emotions";
-    const hit = cacheGet<any>(key);
-    if (hit) return hit;
-    const data = await request("/emotions", { auth: false });
+    if (!force) {
+      const hit = cacheGet<any>(key);
+      if (hit) return hit;
+    }
+    const bust = force ? `?_=${Date.now()}` : "";
+    const data = await request(`/emotions${bust}`, { auth: false, cache: "no-store" });
     cacheSet(key, data);
     return data;
   },
-  meditations: async (emotion?: string) => {
+  meditations: async (emotion?: string, force = false) => {
     const key = `catalog:meditations:${emotion || "all"}`;
-    const hit = cacheGet<any>(key);
-    if (hit) return hit;
-    const data = await request(
-      `/meditations${emotion ? `?emotion=${emotion}` : ""}`,
-      { auth: false }
-    );
+    if (!force) {
+      const hit = cacheGet<any>(key);
+      if (hit) return hit;
+    }
+    const params = new URLSearchParams();
+    if (emotion) params.set("emotion", emotion);
+    if (force) params.set("_", String(Date.now()));
+    const q = params.toString() ? `?${params}` : "";
+    const data = await request(`/meditations${q}`, { auth: false, cache: "no-store" });
     cacheSet(key, data);
     return data;
   },

@@ -15,14 +15,14 @@ export const EMOTION_ICONS: Record<string, IonIconName> = {
   overwhelmed: "sync-outline",
   lonely: "moon-outline",
   grateful: "leaf-outline",
-  joyful: "sunny-outline",
   hopeful: "sparkles-outline",
   peaceful: "flower-outline",
+  cant_sleep: "bed-outline",
   // onboarding heart states
   weary: "moon-outline",
   numb: "remove-circle-outline",
   hopeful_tired: "partly-sunny-outline",
-  // concerns / support
+  // onboarding concerns / desired support / practices
   anxiety: "water-outline",
   panic: "alert-circle-outline",
   sleep: "bed-outline",
@@ -41,7 +41,6 @@ export const EMOTION_ICONS: Record<string, IonIconName> = {
   quiet: "flame-outline",
   breathe: "fitness-outline",
   share: "chatbubble-ellipses-outline",
-  // how the app works
   emotions: "happy-outline",
   sos: "heart",
   devotional: "book-outline",

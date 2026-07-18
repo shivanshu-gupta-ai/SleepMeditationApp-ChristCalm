@@ -70,6 +70,9 @@ async def ensure_user_from_claims(claims: dict) -> dict:
         or (email.split("@")[0] if email else "Friend")
     )
 
+    email_norm = (email or "").strip().lower()
+    is_test = email_norm in {"test@christcalm.dev"}
+
     existing = await db.get_user_by_cognito_sub(sub)
     if existing:
         updates: dict = {"last_login_at": datetime.now(timezone.utc).isoformat()}
@@ -77,6 +80,11 @@ async def ensure_user_from_claims(claims: dict) -> dict:
             updates["email"] = email
         if name and not existing.get("name"):
             updates["name"] = name
+        # Keep test account fully unlocked on every login
+        if is_test and not existing.get("is_premium"):
+            updates["is_premium"] = True
+            updates["plan"] = "preview"
+            updates["subscription_provider"] = "preview"
         if updates:
             return await db.update_user(existing["id"], updates)
         return existing
@@ -84,22 +92,28 @@ async def ensure_user_from_claims(claims: dict) -> dict:
     if email:
         by_email = await db.get_user_by_email(email)
         if by_email:
-            return await db.update_user(
-                by_email["id"],
-                {
-                    "cognito_sub": sub,
-                    "provider": _provider_from_claims(claims),
-                    "last_login_at": datetime.now(timezone.utc).isoformat(),
-                },
-            )
+            updates = {
+                "cognito_sub": sub,
+                "provider": _provider_from_claims(claims),
+                "last_login_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if is_test:
+                updates["is_premium"] = True
+                updates["plan"] = "preview"
+                updates["subscription_provider"] = "preview"
+            return await db.update_user(by_email["id"], updates)
 
+    # Preview test accounts get full access; others free until RevenueCat / sync.
     user_doc = {
         "id": str(uuid.uuid4()),
         "cognito_sub": sub,
         "name": str(name).strip() or "Friend",
         "email": email or f"{sub}@users.christcalm.app",
         "provider": _provider_from_claims(claims),
-        "is_premium": False,
+        "is_premium": is_test,
+        "plan": "preview" if is_test else None,
+        "premium_until": None,
+        "subscription_provider": "preview" if is_test else None,
         "faith_journey": None,
         "concerns": [],
         "streak": 0,

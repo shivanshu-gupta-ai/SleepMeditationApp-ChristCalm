@@ -23,10 +23,10 @@ ChristCalmApp/
 │   ├── env/
 │   ├── auth/
 │   └── ci/buildspec.yml
-├── assets/                   # Content media + app-design references
+├── assets/meditations/       # Covers + audio sources (sync covers → frontend)
 ├── docs/                     # Product · design · architecture · engineering
-├── skills/                   # Agent skills (ui-ux-pro-max, rules)
-├── tests/                    # Pytest + reports/
+├── skills/                   # Agent skills (ui-ux-pro-max)
+├── tests/                    # Pytest
 └── scripts/                  # deploy · preview · env sync
 ```
 
@@ -146,13 +146,13 @@ Secrets stay in **SSM** for that account. Local `.env` files are safe to delete 
 
 ## Test login (Cognito preview)
 
-| Email | Password |
-|-------|----------|
-| `test@christcalm.dev` | `Test1234` |
+| Email | Password | Access |
+|-------|----------|--------|
+| `test@christcalm.dev` | `Test1234` | Full (premium unlocked, no paywall) |
 
 Password policy: **8+ characters, uppercase, lowercase, and a number** (AWS Cognito).
 
-Recreate / reset the user anytime:
+Preview unlocks all content by default (`EXPO_PUBLIC_UNLOCK_ALL=1`). Recreate / reset the test user anytime:
 
 ```bash
 ./scripts/seed-test-user.sh
@@ -172,20 +172,20 @@ Reports land under [`tests/reports/`](tests/reports/).
 | Domain | Frontend | Backend | Config |
 |--------|----------|---------|--------|
 | Auth | `frontend/src/features/auth/` | `backend/auth/` | `config/auth/` |
-| AI / Wisdom | `frontend/src/features/ai/` + `app/(tabs)/wisdom.tsx` | `backend/ai/` | Bedrock via Terraform IAM |
+| AI / Wisdom | `app/(tabs)/wisdom.tsx`, `app/ai-prayer.tsx` | `backend/ai/` | Bedrock via Terraform IAM |
 | Subscriptions | `frontend/src/features/subscriptions/` | webhook in `server.py` | RevenueCat env |
-| Content media | `frontend/assets/` (bundle) | seed URLs | `assets/` (source) |
+| Content media | `frontend/assets/` (bundle) | `seed_data.py` + S3 | `assets/meditations/` |
 
-## Meditation pictures
+## Meditation media
 
-1. Edit **`assets/meditations/covers/`** (`med-1.jpg` … `med-10.jpg`).
-2. Copy into the app bundle:
+**Covers** — one unique image per session (`assets/meditations/covers/<track>.jpg`):
 
 ```bash
-cp assets/meditations/covers/*.jpg frontend/assets/meditations/covers/
+./scripts/sync-meditation-covers.sh
+cd frontend && npx expo start --clear
 ```
 
-3. Restart Expo: `cd frontend && npx expo start --clear`
+**Audio** — source files in `assets/meditations/audio/`; production URLs use S3 `MEDIA_BASE_URL`.
 
 ## Design snapshot
 
@@ -201,7 +201,3 @@ cp assets/meditations/covers/*.jpg frontend/assets/meditations/covers/
 - Idle cost near-zero; main future cost is Bedrock (Wisdom)
 
 Details: [`docs/architecture/`](docs/architecture/).
-
-## Agent notes
-
-Lean coding rules: [`AGENTS.md`](AGENTS.md) · skills: [`skills/`](skills/)

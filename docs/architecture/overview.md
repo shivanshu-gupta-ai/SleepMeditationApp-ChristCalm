@@ -80,8 +80,6 @@ Chain is **Converse-probed** and ordered **cheaper → stronger** (no Claude; Le
 
 Validate: `./scripts/check-bedrock-models.sh us-east-1`
 
-Agent lean rules (no runtime impact): [AGENTS.md](../../AGENTS.md) (ponytail).
-
 ## Related
 
 - [analytics.md](analytics.md) — usage event pipeline  

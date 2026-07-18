@@ -91,6 +91,6 @@ Loaded via `frontend/src/hooks/use-app-fonts.ts`.
 
 ## Media
 
-- Meditation covers: `assets/meditations/covers/` (canonical) + bundled copy under `frontend/assets/meditations/covers/`  
-- Replace JPGs in place; keep filenames `med-1.jpg` … `med-10.jpg`  
+- Meditation covers: `assets/meditations/covers/<track>.jpg` (one unique image per session)  
+- Bundle copy: `frontend/assets/meditations/covers/` via `./scripts/sync-meditation-covers.sh`  
 - See `assets/meditations/covers/README.md`

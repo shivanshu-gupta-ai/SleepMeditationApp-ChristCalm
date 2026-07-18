@@ -1,10 +1,15 @@
-# Cognito User Pool — production auth (email + Google + Apple federated sign-in)
+# Cognito User Pool — email/password + optional Apple Sign-In (from SSM)
 
 locals {
   # Must be globally unique in the region; include account suffix when set
   cognito_domain_prefix = local.name_prefix
-  google_idp_enabled    = var.google_client_id != "" && var.google_client_id != "unset"
-  apple_idp_enabled     = var.apple_services_id != "" && var.apple_team_id != "" && var.apple_key_id != "" && var.apple_private_key != ""
+
+  # Apple IdP — credentials always from SSM when enable_apple_sign_in = true
+  apple_services_id = var.enable_apple_sign_in ? data.aws_ssm_parameter.apple_services_id[0].value : "unset"
+  apple_team_id     = var.enable_apple_sign_in ? data.aws_ssm_parameter.apple_team_id[0].value : "unset"
+  apple_key_id      = var.enable_apple_sign_in ? data.aws_ssm_parameter.apple_key_id[0].value : "unset"
+  apple_private_key = var.enable_apple_sign_in ? data.aws_ssm_parameter.apple_private_key[0].value : "unset"
+  apple_idp_enabled = var.enable_apple_sign_in
   cognito_callback_urls = concat(
     var.cognito_callback_urls,
     [for o in var.cors_origins : o if startswith(o, "http")]
@@ -76,31 +81,6 @@ resource "aws_cognito_user_pool_domain" "main" {
   user_pool_id = aws_cognito_user_pool.main.id
 }
 
-resource "aws_cognito_identity_provider" "google" {
-  count = local.google_idp_enabled ? 1 : 0
-
-  user_pool_id  = aws_cognito_user_pool.main.id
-  provider_name = "Google"
-  provider_type = "Google"
-
-  provider_details = {
-    authorize_scopes              = "openid email profile"
-    client_id                     = var.google_client_id
-    client_secret                 = var.google_client_secret
-    attributes_url                = "https://people.googleapis.com/v1/people/me?personFields="
-    attributes_url_add_attributes = "true"
-    authorize_url                 = "https://accounts.google.com/o/oauth2/v2/auth"
-    oidc_issuer                   = "https://accounts.google.com"
-    token_request_method          = "POST"
-    token_url                     = "https://oauth2.googleapis.com/token"
-  }
-
-  attribute_mapping = {
-    email    = "email"
-    name     = "name"
-    username = "sub"
-  }
-}
 
 resource "aws_cognito_identity_provider" "apple" {
   count = local.apple_idp_enabled ? 1 : 0
@@ -109,11 +89,12 @@ resource "aws_cognito_identity_provider" "apple" {
   provider_name = "SignInWithApple"
   provider_type = "SignInWithApple"
 
+  # Fetched from SSM at apply time — never required in local .env
   provider_details = {
-    client_id   = var.apple_services_id
-    team_id     = var.apple_team_id
-    key_id      = var.apple_key_id
-    private_key = var.apple_private_key
+    client_id        = local.apple_services_id
+    team_id          = local.apple_team_id
+    key_id           = local.apple_key_id
+    private_key      = local.apple_private_key
     authorize_scopes = "email name"
   }
 
@@ -121,6 +102,12 @@ resource "aws_cognito_identity_provider" "apple" {
     email    = "email"
     name     = "name"
     username = "sub"
+  }
+
+  # AWS does not return private_key and injects authorize_url / oidc_issuer, etc.
+  # That causes a permanent plan diff. Secrets live in SSM; re-seed + replace if keys change.
+  lifecycle {
+    ignore_changes = [provider_details]
   }
 }
 
@@ -138,7 +125,6 @@ resource "aws_cognito_user_pool_client" "app" {
 
   supported_identity_providers = compact(concat(
     ["COGNITO"],
-    local.google_idp_enabled ? ["Google"] : [],
     local.apple_idp_enabled ? ["SignInWithApple"] : [],
   ))
 
@@ -163,7 +149,6 @@ resource "aws_cognito_user_pool_client" "app" {
   }
 
   depends_on = [
-    aws_cognito_identity_provider.google,
     aws_cognito_identity_provider.apple,
   ]
 }

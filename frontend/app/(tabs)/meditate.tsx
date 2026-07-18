@@ -22,6 +22,7 @@ import { emotionIcon } from "@/src/constants/emotion-icons";
 import { meditationCoverSource } from "@/src/constants/meditation-covers";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
+import { getLastEmotionId } from "@/src/utils/session-progress";
 
 type Emotion = { id: string; label: string; color: string; emoji?: string };
 type Meditation = {
@@ -48,18 +49,21 @@ export default function Meditate() {
   const [meds, setMeds] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastEmotionId, setLastEmotionId] = useState<string | null>(null);
 
   useEffect(() => {
     api
       .emotions()
       .then((e) => setEmotions(e.emotions || []))
       .catch(() => {});
+    getLastEmotionId().then(setLastEmotionId);
   }, []);
 
   useEffect(() => {
     if (params.emotion && typeof params.emotion === "string") {
       setSelected(params.emotion);
       void storage.setItem("cc_last_emotion", params.emotion);
+      setLastEmotionId(params.emotion);
       void track("meditate_open", { emotion: params.emotion, from: "home" });
     } else {
       void track("meditate_open", { from: "tab" });
@@ -88,18 +92,42 @@ export default function Meditate() {
     [emotions, selected]
   );
 
-  const headerTitle = activeEmotion ? activeEmotion.label : "Meditations";
+  const headerTitle = activeEmotion ? activeEmotion.label : "Find rest";
   const headerSubtitle = activeEmotion
-    ? "Same feeling you chose on Home — Scripture-guided rest for this moment."
-    : "Scripture-guided calm for every emotion. Filter to find your moment.";
+    ? "Scripture-guided calm for this feeling — press play when you’re ready."
+    : "Filter by how you feel, or start from a suggestion below.";
 
   const onSelectEmotion = (id: string | null) => {
     setSelected(id);
     if (id) {
       void storage.setItem("cc_last_emotion", id);
+      setLastEmotionId(id);
       void track("emotion_selected", { emotion: id, surface: "meditate_filter" });
     }
   };
+
+  // Smart discovery when no filter — recent + popular (not a blank dead end)
+  const lastEmotion = lastEmotionId
+    ? emotions.find((e) => e.id === lastEmotionId) || null
+    : null;
+  const suggestions = useMemo(() => {
+    const popularIds = ["anxious", "cant_sleep", "peaceful", "grateful"];
+    const out: { id: string; label: string; color: string; kind: "recent" | "popular" }[] = [];
+    if (lastEmotion) {
+      out.push({
+        id: lastEmotion.id,
+        label: lastEmotion.label,
+        color: lastEmotion.color,
+        kind: "recent",
+      });
+    }
+    for (const id of popularIds) {
+      if (id === lastEmotion?.id) continue;
+      const em = emotions.find((e) => e.id === id);
+      if (em) out.push({ id: em.id, label: em.label, color: em.color, kind: "popular" });
+    }
+    return out.slice(0, 5);
+  }, [emotions, lastEmotion]);
 
   return (
     <Screen
@@ -110,11 +138,76 @@ export default function Meditate() {
     >
       <FadeIn>
         <PageHeader
-          overline="Emotion · Scripture · Rest"
+          overline={activeEmotion ? "For this feeling" : "Emotion · Scripture · Rest"}
           title={headerTitle}
           subtitle={headerSubtitle}
         />
       </FadeIn>
+
+      {/* Smarter browse — suggestions before a blank list */}
+      {!selected && suggestions.length > 0 ? (
+        <FadeIn delay={20}>
+          <Text
+            style={{
+              fontFamily: fonts.bodyMedium,
+              fontSize: 13,
+              letterSpacing: 0.15,
+              color: colors.textMuted,
+              marginBottom: spacing.sm,
+            }}
+          >
+            Suggested for you
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: spacing.lg,
+            }}
+          >
+            {suggestions.map((s) => (
+              <PressableScale
+                key={`${s.kind}-${s.id}`}
+                haptic="light"
+                onPress={() => onSelectEmotion(s.id)}
+                testID={`meditate-suggest-${s.id}`}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 14,
+                  borderRadius: 999,
+                  backgroundColor: s.color + (isDark ? "28" : "22"),
+                  borderWidth: 1,
+                  borderColor: s.color + "44",
+                }}
+              >
+                <Ionicons name={emotionIcon(s.id)} size={16} color={s.color} />
+                <Text
+                  style={{
+                    fontFamily: fonts.bodyBold,
+                    fontSize: 13,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {s.label}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 11,
+                    color: colors.textMuted,
+                  }}
+                >
+                  {s.kind === "recent" ? "Recent" : "Popular"}
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+        </FadeIn>
+      ) : null}
 
       {/* Full-bleed filter row — own stacking context so FlatList below can't steal pans */}
       <View
@@ -256,7 +349,7 @@ export default function Meditate() {
                   }}
                 >
                   <Image
-                    source={meditationCoverSource(item.id, item.cover)}
+                    source={meditationCoverSource(item.id, item.cover, item.cover_file)}
                     style={{ width: "100%", height: "100%" }}
                     resizeMode="cover"
                   />
@@ -343,6 +436,42 @@ export default function Meditate() {
                   >
                     {item.subtitle}
                   </Text>
+                  <View
+                    style={{
+                      marginTop: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 12,
+                        color: colors.textMuted,
+                      }}
+                    >
+                      {item.duration_min} min · free
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: fonts.bodyBold,
+                          fontSize: 13,
+                          color: colors.primary,
+                        }}
+                      >
+                        Begin
+                      </Text>
+                      <Ionicons name="play" size={12} color={colors.primary} />
+                    </View>
+                  </View>
                 </View>
               </PressableScale>
             </FadeIn>
