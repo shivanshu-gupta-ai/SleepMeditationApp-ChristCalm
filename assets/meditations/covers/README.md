@@ -17,6 +17,7 @@ One unique Imagine-generated cover per session track.
 | `happy.jpg` | Joy of the Lord |
 | `laugh-sing-2.jpg` | Songs of Thanksgiving |
 | `bamboo-flute.jpg` | Lie Down in Peace |
+| `yoga-nidra.jpg` | Rest in His Presence |
 
 Sync to the app bundle:
 

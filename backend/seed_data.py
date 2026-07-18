@@ -153,6 +153,12 @@ _TRACKS = {
         "subtitle": "Gentle stillness in His peace",
         "duration_min": 10,
     },
+    "yoga-nidra": {
+        "file": "yoga-nidra.mp3",
+        "title": "Rest in His Presence",
+        "subtitle": "Deep body rest for a quiet night with Him",
+        "duration_min": 20,
+    },
 }
 
 # Emotion → tracks. Each track is exclusive to exactly one emotion (no cross-listing).
@@ -165,7 +171,7 @@ _EMOTION_TRACKS: dict[str, list[str]] = {
     "overwhelmed": ["panchakosha", "tick-tick"],  # Drained
     "peaceful": ["space", "ambient-track"],
     "grateful": ["happy", "laugh-sing-2"],
-    "cant_sleep": ["bamboo-flute"],
+    "cant_sleep": ["bamboo-flute", "yoga-nidra"],
 }
 
 # Guard: one track → one emotion only

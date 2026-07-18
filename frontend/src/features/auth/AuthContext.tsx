@@ -191,6 +191,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Stop any meditation audio so it cannot keep playing after logout
+    try {
+      const { stopActiveMeditationPlayer } = await import(
+        "@/src/utils/meditation-audio"
+      );
+      stopActiveMeditationPlayer();
+    } catch {
+      // ignore
+    }
     if (cognitoConfigured()) signOutCognito();
     await clearTokens();
     setUser(null);

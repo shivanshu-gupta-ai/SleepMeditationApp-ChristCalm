@@ -17,6 +17,7 @@ Source files for sessions. **App titles** are Christian names in `backend/seed_d
 | `happy.mp3` | Joy of the Lord | Grateful |
 | `laugh-sing-2.mp3` | Songs of Thanksgiving | Grateful |
 | `bamboo-flute.mp3` | Lie Down in Peace | Can't sleep |
+| `yoga-nidra.mp3` | Rest in His Presence | Can't sleep |
 
 ## Hosting
 

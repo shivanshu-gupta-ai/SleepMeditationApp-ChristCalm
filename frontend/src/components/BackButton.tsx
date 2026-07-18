@@ -12,6 +12,8 @@ type Props = {
   size?: number;
   style?: ViewStyle;
   testID?: string;
+  /** Run before navigate (e.g. stop audio). */
+  onBeforeBack?: () => void;
 };
 
 export default function BackButton({
@@ -21,13 +23,17 @@ export default function BackButton({
   size = 26,
   style,
   testID = "back-button",
+  onBeforeBack,
 }: Props) {
   const goBack = useSafeBack(fallback);
   const { colors } = useTheme();
 
   return (
     <TouchableOpacity
-      onPress={goBack}
+      onPress={() => {
+        onBeforeBack?.();
+        goBack();
+      }}
       style={[styles.btn, style]}
       testID={testID}
       accessibilityRole="button"

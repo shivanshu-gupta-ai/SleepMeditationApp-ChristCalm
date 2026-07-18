@@ -22,6 +22,7 @@ export type AnalyticsEvent =
   | "meditate_open"
   | "meditation_start"
   | "meditation_complete"
+  | "meditation_rated"
   | "sos_start"
   | "sos_stop"
   | "wisdom_send"

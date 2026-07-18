@@ -20,6 +20,7 @@ const LOCAL: Record<string, ImageSourcePropType> = {
   "transforming-emotions": require("../../assets/meditations/covers/transforming-emotions.jpg"),
   "tick-tick": require("../../assets/meditations/covers/tick-tick.jpg"),
   "ambient-track": require("../../assets/meditations/covers/ambient-track.jpg"),
+  "yoga-nidra": require("../../assets/meditations/covers/yoga-nidra.jpg"),
 };
 
 /** Full meditation ids → same art as their track */
@@ -37,6 +38,7 @@ const BY_MED_ID: Record<string, ImageSourcePropType> = {
   "med-grateful-happy": LOCAL.happy,
   "med-grateful-laugh-sing-2": LOCAL["laugh-sing-2"],
   "med-cant_sleep-bamboo-flute": LOCAL["bamboo-flute"],
+  "med-cant_sleep-yoga-nidra": LOCAL["yoga-nidra"],
 };
 
 /** Prefer bundled asset; fall back to remote cover URL from API. */
