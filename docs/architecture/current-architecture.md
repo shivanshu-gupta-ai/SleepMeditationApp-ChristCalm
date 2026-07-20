@@ -81,7 +81,7 @@ ChristCalmApp/
 | Subscriptions | `frontend/src/features/subscriptions/` + RevenueCat webhook in API |
 | Meditation catalog | `backend/seed_data.py` → API `/emotions`, `/meditations` |
 | Content media | `assets/meditations/` (source) → S3 audio + `frontend/assets/` covers |
-| Secrets | **SSM only** (`/christcalm-preview/*`); local `.env` is disposable public config |
+| Secrets | **SSM only** (`/christcalm-dev/*`); local `.env` is disposable public config |
 | Agent skills | `skills/` |
 | Tests | `tests/backend/` |
 

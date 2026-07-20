@@ -7,7 +7,7 @@ How ChristCalm ships to AWS (API) and how you run / preview the mobile client.
 | Env | API | App | Notes |
 |-----|-----|-----|-------|
 | **Local** | Optional local uvicorn *or* remote preview API | Expo web/iOS/Android | `frontend/.env` → `EXPO_PUBLIC_BACKEND_URL` |
-| **Preview / staging** | Lambda + API Gateway (`christcalm-preview`) | Expo against that URL | Cognito auto-confirm may be on |
+| **Dev** | Lambda + API Gateway (`christcalm-dev`) | Expo against that URL | Cognito auto-confirm may be on |
 | **Production** | Same pattern, prod Terraform workspace/vars | Store builds | Email verification required |
 
 Today the primary path is **preview stack on AWS + local Expo**.
@@ -31,7 +31,7 @@ This will:
 
 1. Detect **account id** and region  
 2. Write `terraform.tfvars` with `name_suffix = "<account_id>"` and a generated `jwt_secret`  
-3. Create stack + **auto-fill SSM** under `/christcalm-preview-<account_id>/`  
+3. Create stack + **auto-fill SSM** under `/christcalm-dev/`  
 4. Deploy Lambda code  
 5. Sync local public env + seed `test@christcalm.dev` / `Test1234`  
 

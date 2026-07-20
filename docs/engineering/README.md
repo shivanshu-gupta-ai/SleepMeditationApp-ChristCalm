@@ -1,22 +1,7 @@
-# Engineering
+# Engineering notes
 
-| Doc | Description |
-|-----|-------------|
-| [testing.md](testing.md) | Test protocol & commands |
-| Config templates | [`../../config/README.md`](../../config/README.md) |
+Stack-specific testing for the **current** reference app: [testing.md](testing.md).
 
-## Commands
+RevenueCat + App Store paywall (iOS): [revenuecat-ios-app-store-guide.md](revenuecat-ios-app-store-guide.md).
 
-```bash
-# Backend tests
-pytest tests/backend/ -v
-
-# Frontend typecheck
-cd frontend && npx tsc --noEmit
-
-# Local UI (API on AWS)
-./scripts/preview.sh
-
-# Deploy API code
-./scripts/deploy-aws.sh code
-```
+Product rebuild guidance (any stack): [`../../product/11-rebuild-playbook.md`](../../product/11-rebuild-playbook.md)

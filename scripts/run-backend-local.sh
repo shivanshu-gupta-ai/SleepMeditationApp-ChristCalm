@@ -27,8 +27,8 @@ if [[ -f "$ROOT/backend/.env" ]]; then
   set +a
 fi
 
-export SSM_PREFIX="${SSM_PREFIX:-/christcalm-preview}"
-export DYNAMODB_TABLE_PREFIX="${DYNAMODB_TABLE_PREFIX:-christcalm-preview}"
+export SSM_PREFIX="${SSM_PREFIX:-/christcalm-dev}"
+export DYNAMODB_TABLE_PREFIX="${DYNAMODB_TABLE_PREFIX:-christcalm-dev}"
 # Strip leading path quirks
 SSM_PREFIX="${SSM_PREFIX%/}"
 [[ "$SSM_PREFIX" == /* ]] || SSM_PREFIX="/$SSM_PREFIX"
@@ -63,7 +63,7 @@ fi
 python3 - <<'PY'
 import os, sys
 sys.path.insert(0, ".")
-os.environ.setdefault("SSM_PREFIX", os.environ.get("SSM_PREFIX", "/christcalm-preview"))
+os.environ.setdefault("SSM_PREFIX", os.environ.get("SSM_PREFIX", "/christcalm-dev"))
 from core.config import bootstrap, require_jwt_secret
 bootstrap()
 require_jwt_secret()

@@ -26,7 +26,7 @@ ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 TF_DIR="$ROOT/infrastructure/terraform"
 cd "$TF_DIR"
 terraform init -input=false >/dev/null 2>&1 || true
-SSM_PREFIX="$(terraform output -raw ssm_prefix 2>/dev/null || echo "/christcalm-preview")"
+SSM_PREFIX="$(terraform output -raw ssm_prefix 2>/dev/null || echo "/christcalm-dev")"
 SSM_PREFIX="${SSM_PREFIX%/}"
 [[ "$SSM_PREFIX" == /* ]] || SSM_PREFIX="/$SSM_PREFIX"
 

@@ -1,36 +1,47 @@
 {
-  "framework": "expo",
+  "project_id": "proj43f1dce8",
+  "project_name": "ChristCalm",
+  "platform": "ios_only",
   "ios": {
     "bundle_id": "com.christcalm.app",
-    "public_api_key": "appl_xxxxxxxx"
-  },
-  "android": {
-    "package": "com.christcalm.app",
-    "public_api_key": "goog_xxxxxxxx"
+    "public_api_key_test_store": "test_iOFZidqNcAXQabRbTcHHYiAEKug",
+    "public_api_key_app_store": "appl_xxxxxxxx",
+    "note": "Use Test Store key for sandbox. Create an App Store app in RC + ASC products for production (appl_ key)."
   },
   "entitlement": {
     "id": "christcalm_premium",
+    "rc_id": "entl6f7711a266",
     "description": "Unlocks all premium meditations, prayers, and AI features"
   },
   "offering": {
     "id": "default",
-    "packages": ["monthly", "annual"]
+    "rc_id": "ofrngd353e9c397",
+    "is_current": true,
+    "packages": [
+      { "lookup_key": "$rc_monthly", "rc_id": "pkgeb6071eac85", "product": "christcalm_monthly" },
+      { "lookup_key": "$rc_annual", "rc_id": "pkgebf71b1f837", "product": "christcalm_annual" }
+    ]
   },
   "products": {
     "monthly": {
-      "store_product_id_ios": "christcalm_monthly",
-      "store_product_id_android": "christcalm_monthly",
-      "billing_period": "P1M"
+      "store_product_id": "christcalm_monthly",
+      "rc_id": "prod8399690caf",
+      "billing_period": "P1M",
+      "app": "Test Store (app1d119d1b47)"
     },
     "annual": {
-      "store_product_id_ios": "christcalm_annual",
-      "store_product_id_android": "christcalm_annual",
-      "billing_period": "P1Y"
+      "store_product_id": "christcalm_annual",
+      "rc_id": "prod0df9e00c63",
+      "billing_period": "P1Y",
+      "app": "Test Store (app1d119d1b47)"
     }
   },
   "webhook": {
-    "url": "https://YOUR_API_GATEWAY_URL/api/revenuecat/webhook",
+    "url": "https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com/api/revenuecat/webhook",
     "authorization_header": "Bearer YOUR_WEBHOOK_SECRET"
   },
-  "notes": "Give your agent: iOS public key, Android public key, entitlement ID, offering ID, monthly/annual product IDs, and webhook authorization secret."
+  "mcp": {
+    "url": "https://mcp.revenuecat.ai/mcp",
+    "configured_in": "~/.grok/config.toml [mcp_servers.revenuecat]"
+  }
 }

@@ -2,7 +2,28 @@
 
 Christian faith-based meditation & mental wellness app.
 
-**Stack:** Expo (React Native) · FastAPI on AWS Lambda · DynamoDB · Cognito · Bedrock Wisdom
+**Stack (reference):** Expo (React Native) · FastAPI on AWS Lambda · DynamoDB · Cognito · Bedrock Wisdom
+
+---
+
+## Complete product & engineering pack
+
+**Everything in one place** — product, UX, design, API, AI, **architecture, repo structure, deploy, config, testing** — so an AI agent can recreate the app in **any stack** (Swift, Kotlin, RN, Flutter, …) or operate this monorepo.
+
+### → [`product/`](product/) (start here)
+
+| # | Doc | Purpose |
+|---|-----|---------|
+| — | [`product/README.md`](product/README.md) | Full index |
+| 01–06 | Vision → design → content | Product & UX |
+| 07–11 | Data, API, AI, auth, rebuild playbook | Contracts |
+| **12** | [`12-repository-structure.md`](product/12-repository-structure.md) | **Full monorepo tree** |
+| **13** | [`13-system-architecture.md`](product/13-system-architecture.md) | **System + AWS architecture** |
+| **14** | [`14-frontend-architecture.md`](product/14-frontend-architecture.md) | Expo client architecture |
+| **15** | [`15-backend-architecture.md`](product/15-backend-architecture.md) | FastAPI / Lambda architecture |
+| **16** | [`16-infrastructure-and-deploy.md`](product/16-infrastructure-and-deploy.md) | Terraform, bootstrap, deploy |
+| **17** | [`17-config-secrets-and-scripts.md`](product/17-config-secrets-and-scripts.md) | SSM, env, every script |
+| **18** | [`18-testing-ops-and-scalability.md`](product/18-testing-ops-and-scalability.md) | Tests, analytics, scale |
 
 ---
 
@@ -10,35 +31,29 @@ Christian faith-based meditation & mental wellness app.
 
 ```
 ChristCalmApp/
-├── frontend/                 # Expo app
+├── product/                  # ★ Canonical product docs (any-stack rebuild)
+├── frontend/                 # Expo app (reference client)
 │   ├── app/                  # Routes (Expo Router)
-│   └── src/features/         # auth · ai · subscriptions · onboarding
-├── backend/                  # FastAPI + Lambda
-│   ├── auth/                 # Cognito / OAuth
-│   ├── ai/                   # LLM, RAG, guardrails, voice + corpus/
-│   ├── core/                 # config, rate limits
-│   └── data/                 # DynamoDB
+│   └── src/features/         # auth · subscriptions · onboarding
+├── backend/                  # FastAPI + Lambda (reference API)
+│   ├── auth/ · ai/ · core/ · data/
+│   └── ai/corpus/            # Wisdom RAG markdown
 ├── infrastructure/terraform/ # AWS infra as code
-├── config/                   # Env templates, auth samples, CI buildspec
-│   ├── env/
-│   ├── auth/
-│   └── ci/buildspec.yml
-├── assets/meditations/       # Covers + audio sources (sync covers → frontend)
-├── docs/                     # Product · design · architecture · engineering
-├── skills/                   # Agent skills (ui-ux-pro-max)
+├── config/                   # Env templates, auth samples, CI
+├── assets/meditations/       # Covers + audio sources
+├── docs/                     # Redirects + stack-specific notes
+├── skills/                   # Agent skills
 ├── tests/                    # Pytest
 └── scripts/                  # deploy · preview · env sync
 ```
 
 | Need | Open |
 |------|------|
-| **Full architecture** | [`docs/architecture/current-architecture.md`](docs/architecture/current-architecture.md) |
+| **Product (rebuild anywhere)** | [`product/README.md`](product/README.md) |
+| **Reference architecture** | [`docs/architecture/current-architecture.md`](docs/architecture/current-architecture.md) |
 | **Deploy plan** | [`docs/architecture/deploy-plan.md`](docs/architecture/deploy-plan.md) |
-| Product / PRD | [`docs/product/PRD.md`](docs/product/PRD.md) |
-| UI design system | [`docs/design/system.md`](docs/design/system.md) |
-| Config / secrets | [`config/README.md`](config/README.md) |
-| Testing | [`docs/engineering/testing.md`](docs/engineering/testing.md) |
-| Docs index | [`docs/README.md`](docs/README.md) |
+| **Config / secrets** | [`config/README.md`](config/README.md) |
+| **Testing** | [`docs/engineering/testing.md`](docs/engineering/testing.md) |
 
 ---
 
@@ -80,9 +95,10 @@ That **`Account`** value becomes `name_suffix` so stacks look like:
 
 | Kind | Pattern |
 |------|---------|
-| Resource names | `christcalm-preview-<account_id>-…` |
-| Cognito domain | `christcalm-preview-<account_id>` |
-| SSM secrets | `/christcalm-preview-<account_id>/*` |
+| Resource names | `christcalm-dev-…` |
+| Cognito domain | `christcalm-dev` |
+| SSM secrets | `/christcalm-dev/*` |
+| Media (audio/covers) | `christcalm-preview-media-<account_id>` |
 
 ### 2. One-shot bootstrap (recommended)
 
@@ -105,7 +121,7 @@ Optional:
 2. Writes `infrastructure/terraform/terraform.tfvars` (gitignored) with  
    `name_suffix = "<account_id>"` and a generated `jwt_secret`  
 3. `terraform apply` → API Gateway, Lambda, DynamoDB, Cognito, S3, CodeBuild  
-4. **Populates SSM automatically** under `/christcalm-preview-<account_id>/`  
+4. **Populates SSM automatically** under `/christcalm-dev/`  
 5. Builds & deploys Lambda code (CodeBuild)  
 6. Syncs disposable `frontend/.env` + `backend/.env` (public / non-secret only)  
 7. Seeds Cognito test user  

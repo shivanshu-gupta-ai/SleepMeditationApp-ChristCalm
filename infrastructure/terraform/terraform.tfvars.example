@@ -3,24 +3,27 @@
 # which generates this file with your AWS account id.
 
 aws_region   = "us-east-1"
-environment  = "preview"
+environment  = "dev"   # → resource prefix christcalm-dev
 project_name = "christcalm"
 
 # REQUIRED for multi-account isolation (Cognito domain uniqueness).
 # Bootstrap sets this automatically to your 12-digit AWS account id.
 name_suffix = "123456789012"
 
-# Optional override; empty = use name_prefix (christcalm-preview-<name_suffix>)
+# Optional override; empty = use name_prefix (christcalm-dev or christcalm-dev-<suffix>)
 dynamodb_table_prefix = ""
+
+# Public meditation audio + covers (S3)
+media_base_url = "https://christcalm-preview-media-500696805306.s3.us-east-1.amazonaws.com"
 
 # REQUIRED secret — bootstrap auto-generates one
 jwt_secret = "REPLACE_WITH_RANDOM_SECRET_OR_RUN_BOOTSTRAP"
 
-# Preview: true skips email verification. Production: false.
+# Dev/preview: true skips email verification. Production: false.
 cognito_auto_confirm_users = true
 
 # Apple Sign-In secrets live in SSM only (not here):
-#   ./scripts/put-apple-secrets-ssm.sh
+#   ./scripts/seed-apple-ssm-once.sh
 # Then enable Cognito IdP (reads SSM on apply):
 enable_apple_sign_in = false
 

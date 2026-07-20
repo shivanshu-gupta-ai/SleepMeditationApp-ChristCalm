@@ -1,7 +1,9 @@
 # ChristCalm — API & configuration requirements
 
-Single source of truth for **env vars**, **external APIs**, and **backend routes**.  
-Templates live in this folder; production values live in **SSM** (`/christcalm-preview/*`).
+**Product API contract (stack-agnostic):** [`../product/08-api-contract.md`](../product/08-api-contract.md)
+
+This file documents **env vars**, **external APIs**, and routes for the **current AWS reference backend**.  
+Templates live in this folder; production values live in **SSM** (`/christcalm-dev/*`).
 
 ---
 
@@ -34,7 +36,7 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-p
 | `JWT_SECRET` | **Yes** | — | HS256 signing; SecureString in SSM |
 | `AWS_REGION` | Yes (AWS) | `us-east-1` | DynamoDB + Bedrock |
 | `DYNAMODB_TABLE_PREFIX` | Yes | `christcalm` | Table names |
-| `SSM_PREFIX` | **Yes (Lambda + local)** | `/christcalm-preview` | Loads **all secrets** from SSM |
+| `SSM_PREFIX` | **Yes (Lambda + local)** | `/christcalm-dev` | Loads **all secrets** from SSM |
 | `CORS_ORIGINS` | Recommended | — | Comma-separated |
 | `LLM_PROVIDER` | No | **`bedrock`** | Bedrock only for wisdom |
 | `BEDROCK_MODEL_ID` | No | **`openai.gpt-oss-20b-1:0`** | Or Mistral IDs; **not Claude** |
@@ -61,7 +63,7 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-p
 - **Do not** use Claude for generation.
 - Lambda role: `bedrock:InvokeModel` + Converse (Terraform `lambda_bedrock`).
 - Corpus: `backend/ai/corpus/*.md` packaged into Lambda.
-- SSM: `/christcalm-preview/BEDROCK_MODEL_ID`, `LLM_PROVIDER=bedrock`
+- SSM: `/christcalm-dev/BEDROCK_MODEL_ID`, `LLM_PROVIDER=bedrock`
 
 ### Google OAuth
 

@@ -10,8 +10,14 @@ variable "project_name" {
 
 variable "environment" {
   type        = string
-  description = "preview | staging | prod"
-  default     = "preview"
+  description = "dev | preview | staging | prod"
+  default     = "dev"
+}
+
+variable "media_base_url" {
+  type        = string
+  description = "Public HTTPS base for meditation audio + covers (no trailing slash)"
+  default     = "https://christcalm-preview-media-500696805306.s3.us-east-1.amazonaws.com"
 }
 
 variable "name_suffix" {
@@ -22,7 +28,7 @@ variable "name_suffix" {
 
 variable "dynamodb_table_prefix" {
   type        = string
-  description = "Prefix for DynamoDB table names (e.g. christcalm-preview-123456789012). Leave empty to use name_prefix."
+  description = "Prefix for DynamoDB table names (e.g. christcalm-dev). Leave empty to use name_prefix."
   default     = ""
 }
 

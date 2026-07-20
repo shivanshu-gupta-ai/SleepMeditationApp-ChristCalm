@@ -51,7 +51,7 @@ aws cognito-idp initiate-auth \
   --output text >/dev/null
 
 # Grant full access in DynamoDB (is_premium) so nothing is paywalled
-TABLE_PREFIX="$(terraform output -raw dynamodb_table_prefix 2>/dev/null || echo christcalm-preview)"
+TABLE_PREFIX="$(terraform output -raw dynamodb_table_prefix 2>/dev/null || echo christcalm-dev)"
 USERS_TABLE="${TABLE_PREFIX}-users"
 echo "  Unlocking premium on table: $USERS_TABLE"
 

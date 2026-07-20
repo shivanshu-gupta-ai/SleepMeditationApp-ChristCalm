@@ -34,8 +34,8 @@ echo ""
 cat > "$ROOT/backend/.env" <<'EOF'
 # Placeholder — no secrets. Prefer: ./scripts/sync-env-from-aws.sh
 AWS_REGION=us-east-1
-SSM_PREFIX=/christcalm-preview
-DYNAMODB_TABLE_PREFIX=christcalm-preview
+SSM_PREFIX=/christcalm-dev
+DYNAMODB_TABLE_PREFIX=christcalm-dev
 EOF
 
 if [[ ! -f "$ROOT/frontend/.env" ]]; then

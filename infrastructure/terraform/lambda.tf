@@ -128,6 +128,8 @@ resource "aws_lambda_function" "api" {
       DYNAMODB_TABLE_PREFIX = local.dynamodb_table_prefix
       SSM_PREFIX            = local.ssm_prefix
       VOICE_BUCKET          = aws_s3_bucket.voice.bucket
+      # Meditation audio + covers (existing shared public media bucket)
+      MEDIA_BASE_URL = var.media_base_url
       # DIY scale: shared rate limits across all Lambda instances
       RATE_LIMIT_BACKEND = "dynamo"
       AI_MONTHLY_LIMIT   = tostring(var.ai_monthly_limit)

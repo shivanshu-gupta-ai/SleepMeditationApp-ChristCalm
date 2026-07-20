@@ -83,3 +83,8 @@ output "dynamodb_table_prefix" {
   description = "DynamoDB table name prefix used by Lambda"
   value       = local.dynamodb_table_prefix
 }
+
+output "media_base_url" {
+  description = "Public base URL for meditation audio and covers"
+  value       = var.media_base_url
+}

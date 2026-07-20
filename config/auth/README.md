@@ -64,14 +64,14 @@ API: validates access token with `GetUser`, then loads DynamoDB user.
 
 Your **AWS side is already wired** if `enable_apple_sign_in = true` and SSM has keys:
 
-| Piece | Current preview value |
-|-------|------------------------|
-| Cognito domain | `christcalm-preview.auth.us-east-1.amazoncognito.com` |
+| Piece | Current ChristCalm-Dev value |
+|-------|------------------------------|
+| Cognito domain | `christcalm-dev.auth.us-east-1.amazoncognito.com` |
 | App client ID | from `terraform output cognito_client_id` |
 | Apple Services ID (client_id) | `com.christcalm.app.signin` |
 | Team ID | `A978T8YCZZ` |
 | Key ID | `DRL78NBCUL` |
-| **Return URL (must match exactly)** | `https://christcalm-preview.auth.us-east-1.amazoncognito.com/oauth2/idpresponse` |
+| **Return URL (must match exactly)** | `https://christcalm-dev.auth.us-east-1.amazoncognito.com/oauth2/idpresponse` |
 
 `invalid_client` almost always means **Apple Developer** is missing or mismatches that return URL / Services ID / key — not that Cognito is “broken.”
 
@@ -84,10 +84,10 @@ Your **AWS side is already wired** if `enable_apple_sign_in = true` and SSM has 
    - Enable **Sign in with Apple** → **Configure**
    - **Primary App ID:** your app id  
    - **Domains and Subdomains:**  
-     `christcalm-preview.auth.us-east-1.amazoncognito.com`  
+     `christcalm-dev.auth.us-east-1.amazoncognito.com`  
      *(no `https://`)*  
    - **Return URLs:**  
-     `https://christcalm-preview.auth.us-east-1.amazoncognito.com/oauth2/idpresponse`  
+     `https://christcalm-dev.auth.us-east-1.amazoncognito.com/oauth2/idpresponse`  
      *(must be exact — trailing slash wrong will fail)*  
 4. **Keys** → create or use a key with **Sign in with Apple**
    - Note **Key ID** (e.g. `DRL78NBCUL`)
@@ -178,8 +178,8 @@ Do **not** implement raw Apple token verification in Lambda unless you leave Cog
 | Check | Expected |
 |-------|----------|
 | Services ID | Exactly `com.christcalm.app.signin` (matches Cognito IdP `client_id`) |
-| Return URL | `https://christcalm-preview.auth.us-east-1.amazoncognito.com/oauth2/idpresponse` |
-| Domain | `christcalm-preview.auth.us-east-1.amazoncognito.com` |
+| Return URL | `https://christcalm-dev.auth.us-east-1.amazoncognito.com/oauth2/idpresponse` |
+| Domain | `christcalm-dev.auth.us-east-1.amazoncognito.com` |
 | Key ID / Team ID / .p8 | Match the key enabled for Sign in with Apple |
 | .p8 format in SSM | PEM with `-----BEGIN PRIVATE KEY-----` |
 | App redirect after Cognito | Listed on Cognito app client Callback URLs |
@@ -195,7 +195,21 @@ aws cognito-idp describe-identity-provider \
 
 ---
 
-## RevenueCat
+## RevenueCat (iOS only)
 
-Public SDK keys → `EXPO_PUBLIC_REVENUECAT_*` (optional).  
-Webhook secret → SSM.
+**Full guide (App Store Connect + RC + app + webhook):**  
+→ [`docs/engineering/revenuecat-ios-app-store-guide.md`](../../docs/engineering/revenuecat-ios-app-store-guide.md)
+
+**Project:** `proj43f1dce8` (ChristCalm)  
+**Catalog:** entitlement `christcalm_premium`, offering `default`, products `christcalm_monthly` / `christcalm_annual`  
+**MCP:** `~/.grok/config.toml` → `[mcp_servers.revenuecat]`
+
+| Env | Purpose |
+|-----|---------|
+| `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` | Public SDK key (`test_…` Test Store, or `appl_…` after App Store app) |
+| `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID` | `christcalm_premium` |
+| `EXPO_PUBLIC_REVENUECAT_OFFERING_ID` | `default` |
+
+Webhook secret → SSM (`REVENUECAT_WEBHOOK_AUTHORIZATION`). See `config/auth/revenuecat.example.json`.
+
+**Production iOS:** add an **App Store** app in RC (bundle `com.christcalm.app`), create matching IAP products in App Store Connect, attach them to the same entitlement/packages, then swap the public key to `appl_…`.

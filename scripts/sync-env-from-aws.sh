@@ -21,8 +21,28 @@ POOL_ID="$(terraform output -raw cognito_user_pool_id)"
 CLIENT_ID="$(terraform output -raw cognito_client_id)"
 COGNITO_DOMAIN="$(terraform output -raw cognito_domain)"
 COGNITO_REGION="$(terraform output -raw cognito_region)"
-SSM_PREFIX="$(terraform output -raw ssm_prefix 2>/dev/null || echo "/christcalm-preview")"
-TABLE_PREFIX="$(terraform output -json dynamodb_tables 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("users","").rsplit("-users",1)[0] if d else "christcalm-preview")' 2>/dev/null || echo "christcalm-preview")"
+SSM_PREFIX="$(terraform output -raw ssm_prefix 2>/dev/null || echo "/christcalm-dev")"
+TABLE_PREFIX="$(terraform output -json dynamodb_tables 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("users","").rsplit("-users",1)[0] if d else "christcalm-dev")' 2>/dev/null || echo "christcalm-dev")"
+
+# Preserve existing public RevenueCat keys if present (not in Terraform)
+RC_IOS_KEY=""
+RC_ENT=""
+RC_OFF=""
+RC_MONTHLY=""
+RC_ANNUAL=""
+if [[ -f "$ROOT/frontend/.env" ]]; then
+  RC_IOS_KEY="$(grep -E '^EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_ENT="$(grep -E '^EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_OFF="$(grep -E '^EXPO_PUBLIC_REVENUECAT_OFFERING_ID=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_MONTHLY="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_ANNUAL="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+fi
+# Defaults for ChristCalm iOS (Test Store) if unset
+RC_IOS_KEY="${RC_IOS_KEY:-test_iOFZidqNcAXQabRbTcHHYiAEKug}"
+RC_ENT="${RC_ENT:-christcalm_premium}"
+RC_OFF="${RC_OFF:-default}"
+RC_MONTHLY="${RC_MONTHLY:-christcalm_monthly}"
+RC_ANNUAL="${RC_ANNUAL:-christcalm_annual}"
 
 # --- Frontend: public Expo vars only (shipped in the client bundle) ---
 cat > "$ROOT/frontend/.env" <<EOF
@@ -33,6 +53,13 @@ EXPO_PUBLIC_COGNITO_USER_POOL_ID=${POOL_ID}
 EXPO_PUBLIC_COGNITO_CLIENT_ID=${CLIENT_ID}
 EXPO_PUBLIC_COGNITO_DOMAIN=${COGNITO_DOMAIN}
 EXPO_PUBLIC_COGNITO_REGION=${COGNITO_REGION}
+
+# RevenueCat — iOS only (public SDK key; Test Store for sandbox)
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=${RC_IOS_KEY}
+EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=${RC_ENT}
+EXPO_PUBLIC_REVENUECAT_OFFERING_ID=${RC_OFF}
+EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=${RC_MONTHLY}
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=${RC_ANNUAL}
 EOF
 
 # --- Backend: non-secret local flags only; secrets load from SSM at runtime ---

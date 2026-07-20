@@ -20,7 +20,7 @@ data "aws_caller_identity" "current" {}
 
 locals {
   # Per-account isolation: set name_suffix = AWS account id (bootstrap does this).
-  # Empty suffix keeps legacy single-tenant names (christcalm-preview).
+  # Empty suffix keeps single-tenant names (christcalm-dev).
   name_prefix = (
     var.name_suffix != ""
     ? "${var.project_name}-${var.environment}-${var.name_suffix}"

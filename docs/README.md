@@ -1,31 +1,28 @@
-# ChristCalm documentation
+# Documentation (redirect)
 
-All product, design, architecture, and engineering docs live here.  
-Runtime config templates live under [`../config/`](../config/).
+**Canonical product documentation** now lives in one folder:
 
-## Map
+## → [`../product/`](../product/)
 
-| Folder | Contents |
-|--------|----------|
-| [`product/`](product/) | What we build (PRD, roadmap) |
-| [`design/`](design/) | Visual system, Nest/Cooper themes, onboarding UX, principles |
-| [`architecture/`](architecture/) | Stack, **current architecture**, **deploy plan**, scale, analytics, review |
-| [`engineering/`](engineering/) | Testing, day-to-day engineering notes |
+That pack is written so an AI agent (or team) can **recreate ChristCalm in any stack** (Swift, Kotlin, React Native, Flutter, web, etc.).
 
-## Start here
+| Start with | File |
+|------------|------|
+| Index | [`product/README.md`](../product/README.md) |
+| Vision | [`product/01-vision-and-principles.md`](../product/01-vision-and-principles.md) |
+| PRD | [`product/02-product-requirements.md`](../product/02-product-requirements.md) |
+| Screens | [`product/03-user-flows-and-screens.md`](../product/03-user-flows-and-screens.md) |
+| Rebuild order | [`product/11-rebuild-playbook.md`](../product/11-rebuild-playbook.md) |
 
-1. **Product** → [`product/PRD.md`](product/PRD.md)  
-2. **Design (current UI)** → [`design/system.md`](design/system.md) + [`design/colors.md`](design/colors.md)  
-3. **Current architecture** → [`architecture/current-architecture.md`](architecture/current-architecture.md)  
-4. **Deploy plan** → [`architecture/deploy-plan.md`](architecture/deploy-plan.md)  
-5. **Scale / cost** → [`architecture/scalability.md`](architecture/scalability.md)  
-6. **Usage analytics** → [`architecture/analytics.md`](architecture/analytics.md)  
+### Historical / implementation notes (this tree)
 
-## Repo media (not docs)
+Older, stack-specific notes remain under subfolders for the **current** Expo + AWS reference app:
 
-| Path | Purpose |
-|------|---------|
-| [`assets/meditations/covers/`](../assets/meditations/covers/) | Unique cover per meditation track |
-| [`assets/meditations/audio/`](../assets/meditations/audio/) | Source audio (served from S3 in production) |
-| [`frontend/assets/`](../frontend/assets/) | App-bundled images (icons, covers, Grace mascot) |
-| [`backend/ai/corpus/`](../backend/ai/corpus/) | Wisdom RAG markdown corpus |
+| Folder | Status |
+|--------|--------|
+| [`product/PRD.md`](product/PRD.md) | Superseded → use `../product/02-product-requirements.md` |
+| [`design/`](design/) | Superseded → use `../product/05-design-system.md` + `04-onboarding.md` |
+| [`architecture/`](architecture/) | Reference implementation only (not required to rebuild) |
+| [`engineering/`](engineering/) | Current-repo testing notes |
+
+Prefer **`product/`** for product truth. Prefer **code** for the live reference implementation when they diverge.
