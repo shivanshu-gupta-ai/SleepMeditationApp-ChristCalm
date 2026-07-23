@@ -19,6 +19,8 @@ output "dynamodb_tables" {
     users                = aws_dynamodb_table.users.name
     mood_logs            = aws_dynamodb_table.mood_logs.name
     journal_entries      = aws_dynamodb_table.journal_entries.name
+    meditation_ratings   = aws_dynamodb_table.meditation_ratings.name
+    user_feedback        = aws_dynamodb_table.user_feedback.name
     ai_prayers           = aws_dynamodb_table.ai_prayers.name
     payment_transactions = aws_dynamodb_table.payment_transactions.name
     rate_limits          = aws_dynamodb_table.rate_limits.name

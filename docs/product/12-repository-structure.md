@@ -270,7 +270,7 @@ backend/
 | `main.tf` | Provider, naming, shared bits |
 | `variables.tf` | Region, name_suffix, throttle, flags |
 | `outputs.tf` | `api_url`, Cognito ids, prefixes |
-| `dynamodb.tf` | users, journal, ai-prayers, mood, payments, rate-limits, usage-* |
+| `dynamodb.tf` | users, journal, meditation-ratings, user-feedback, ai-prayers, mood, payments, rate-limits, usage-* |
 | `lambda.tf` | Function, IAM (DynamoDB, SSM, Bedrock, S3, Transcribe), API GW |
 | `cognito.tf` | User pool, app client, domain, Google/Apple IdP |
 | `cognito_triggers.tf` | Optional triggers |

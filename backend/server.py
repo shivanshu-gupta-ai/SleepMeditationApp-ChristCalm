@@ -194,6 +194,29 @@ class MeditationCompleteIn(BaseModel):
     minutes: int
 
 
+class MeditationRateIn(BaseModel):
+    """1–5 star rating after a meditation session (stored per user in DynamoDB)."""
+    meditation_id: str = Field(..., min_length=1, max_length=128)
+    stars: int = Field(..., ge=1, le=5)
+    minutes: Optional[int] = Field(default=None, ge=0, le=240)
+
+
+class FeedbackIn(BaseModel):
+    """
+    Product feedback from Me tab.
+    Free-text lives in user-feedback table (durable domain), not usage-events.
+    """
+    category: str = Field(..., min_length=2, max_length=32)
+    message: str = Field(..., min_length=3, max_length=2000)
+    stars: Optional[int] = Field(default=None, ge=1, le=5)
+    platform: Optional[str] = Field(default=None, max_length=32)
+
+
+FEEDBACK_CATEGORIES = frozenset(
+    {"praise", "suggestion", "bug", "spiritual", "other"}
+)
+
+
 class SubscriptionSyncIn(BaseModel):
     active: bool
     plan: Optional[str] = None
@@ -427,6 +450,37 @@ async def list_meditations(emotion: Optional[str] = None):
     return {"meditations": items}
 
 
+# Static paths must be registered before /meditations/{med_id}
+@api.get("/meditations/ratings")
+async def list_meditation_ratings(user: dict = Depends(get_current_user)):
+    """All meditation session ratings for the current user (newest first)."""
+    return {"ratings": await db.list_meditation_ratings(user["id"], limit=200)}
+
+
+@api.post("/meditations/rate")
+async def rate_meditation(body: MeditationRateIn, user: dict = Depends(get_current_user)):
+    """
+    Persist a per-session meditation rating (1–5) for the authenticated user in DynamoDB.
+    Each submit creates a new row so re-listens can be rated independently.
+    """
+    entry = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "meditation_id": body.meditation_id.strip(),
+        "stars": int(body.stars),
+        "minutes": body.minutes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.insert_meditation_rating(entry)
+    return {"ok": True, "rating": entry}
+
+
+@api.post("/meditations/complete")
+async def complete_meditation(body: MeditationCompleteIn, user: dict = Depends(get_current_user)):
+    updated = await db.increment_user_stats(user["id"], body.minutes)
+    return {"ok": True, "minutes_meditated": updated.get("minutes_meditated", 0)}
+
+
 @api.get("/meditations/{med_id}")
 async def get_meditation(med_id: str):
     for m in MEDITATIONS:
@@ -483,10 +537,57 @@ async def list_journal(user: dict = Depends(get_current_user)):
     return {"entries": await db.list_journal_entries(user["id"], limit=200)}
 
 
-@api.post("/meditations/complete")
-async def complete_meditation(body: MeditationCompleteIn, user: dict = Depends(get_current_user)):
-    updated = await db.increment_user_stats(user["id"], body.minutes)
-    return {"ok": True, "minutes_meditated": updated.get("minutes_meditated", 0)}
+@api.post("/feedback")
+async def submit_feedback(
+    body: FeedbackIn,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Persist Me-tab product feedback for the authenticated user.
+    Durable domain row in DynamoDB; free-text is never written to usage-events.
+    """
+    _enforce_rate_limit(f"feedback:{user['id']}", limit=12, window=3600)
+    _enforce_rate_limit(f"feedback_ip:{_client_ip(request)}", limit=30, window=3600)
+
+    category = (body.category or "").strip().lower()
+    if category not in FEEDBACK_CATEGORIES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"category must be one of: {', '.join(sorted(FEEDBACK_CATEGORIES))}",
+        )
+    message = (body.message or "").strip()
+    if len(message) < 3:
+        raise HTTPException(status_code=422, detail="message is too short")
+
+    entry = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "category": category,
+        "message": message[:2000],
+        "stars": int(body.stars) if body.stars is not None else None,
+        "platform": (body.platform or "unknown")[:32],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "status": "new",
+    }
+    await db.insert_user_feedback(entry)
+    # Return without echoing huge payloads twice; client has the body
+    return {
+        "ok": True,
+        "feedback": {
+            "id": entry["id"],
+            "category": entry["category"],
+            "stars": entry["stars"],
+            "created_at": entry["created_at"],
+            "status": entry["status"],
+        },
+    }
+
+
+@api.get("/feedback")
+async def list_feedback(user: dict = Depends(get_current_user)):
+    """User's own past feedback submissions (newest first)."""
+    return {"items": await db.list_user_feedback(user["id"], limit=50)}
 
 
 @api.get("/wisdom/status")

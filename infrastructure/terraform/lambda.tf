@@ -45,6 +45,8 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
         "${aws_dynamodb_table.users.arn}/index/*",
         aws_dynamodb_table.mood_logs.arn,
         aws_dynamodb_table.journal_entries.arn,
+        aws_dynamodb_table.meditation_ratings.arn,
+        aws_dynamodb_table.user_feedback.arn,
         aws_dynamodb_table.ai_prayers.arn,
         aws_dynamodb_table.payment_transactions.arn,
         aws_dynamodb_table.rate_limits.arn,

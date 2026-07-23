@@ -71,6 +71,46 @@ resource "aws_dynamodb_table" "journal_entries" {
   tags = local.common_tags
 }
 
+# Per-user meditation session ratings (1–5 stars after each completed practice)
+resource "aws_dynamodb_table" "meditation_ratings" {
+  name         = "${local.dynamodb_table_prefix}-meditation-ratings"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+  range_key    = "sk"
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  tags = local.common_tags
+}
+
+# In-app product feedback from Me tab (durable; free-text kept out of usage-events)
+resource "aws_dynamodb_table" "user_feedback" {
+  name         = "${local.dynamodb_table_prefix}-user-feedback"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+  range_key    = "sk"
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  tags = local.common_tags
+}
+
 resource "aws_dynamodb_table" "ai_prayers" {
   name         = "${local.dynamodb_table_prefix}-ai-prayers"
   billing_mode = "PAY_PER_REQUEST"

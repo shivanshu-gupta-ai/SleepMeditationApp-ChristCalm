@@ -315,8 +315,13 @@ export default function MeditationPlayer() {
     if (!med || ratingSaved) return;
     setRating(stars);
     try {
-      await saveMeditationRating(med.id, stars);
-      void track("meditation_rated", { id: med.id, stars });
+      // Local + DynamoDB (per user) — see session-rating / POST /meditations/rate
+      await saveMeditationRating(med.id, stars, med.duration_min);
+      void track("meditation_rated", {
+        id: med.id,
+        stars,
+        meditation_id: med.id,
+      });
       void playHaptic("success");
       setRatingSaved(true);
     } catch {

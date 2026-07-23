@@ -6,7 +6,15 @@ import { useTheme, type ThemePreference } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/features/auth";
 import { usePremium, useRevenueCat } from "@/src/features/subscriptions";
 import { layout } from "@/src/theme/layout";
-import { Screen, PageHeader, Button, Surface, FadeIn, ProgressRing } from "@/src/components/ui";
+import {
+  Screen,
+  PageHeader,
+  Button,
+  Surface,
+  FadeIn,
+  ProgressRing,
+  FeedbackCard,
+} from "@/src/components/ui";
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { getStreak, getCompletedCount } from "@/src/utils/session-progress";
 import {
@@ -302,6 +310,19 @@ export default function Profile() {
             last
           />
         </Surface>
+
+        <Text
+          style={{
+            fontFamily: fonts.bodyMedium,
+            fontSize: 13,
+            letterSpacing: 0.2,
+            color: colors.textMuted,
+            marginBottom: spacing.md,
+          }}
+        >
+          Support
+        </Text>
+        <FeedbackCard />
 
         <Text
           style={{

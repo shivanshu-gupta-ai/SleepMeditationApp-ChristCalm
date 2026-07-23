@@ -35,7 +35,9 @@ export type AnalyticsEvent =
   | "first_step_complete"
   | "fab_start_calm"
   | "start_calm_action"
-  | "screen_view";
+  | "screen_view"
+  | "feedback_submit"
+  | "feedback_open";
 
 export type AnalyticsProps = Record<string, string | number | boolean | null | undefined>;
 

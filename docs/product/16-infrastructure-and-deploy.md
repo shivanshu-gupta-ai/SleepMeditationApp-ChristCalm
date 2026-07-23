@@ -12,7 +12,7 @@ Orchestration: `scripts/deploy-aws.sh`, `scripts/bootstrap-new-account.sh`
 | **API Gateway HTTP API** | Public HTTPS entry → Lambda |
 | **Lambda function** | FastAPI via Mangum |
 | **IAM role** | DynamoDB, SSM read, Bedrock invoke, S3 voice, Transcribe, logs |
-| **DynamoDB tables** | users (+ email GSI), mood-logs, journal-entries, ai-prayers, payment-transactions, rate-limits, usage-events, usage-daily |
+| **DynamoDB tables** | users (+ email GSI), mood-logs, journal-entries, meditation-ratings, user-feedback, ai-prayers, payment-transactions, rate-limits, usage-events, usage-daily |
 | **Cognito User Pool** | Email users + federation |
 | **Cognito App Client** | Mobile/public client |
 | **Cognito Domain** | Hosted UI (`christcalm-dev`) |

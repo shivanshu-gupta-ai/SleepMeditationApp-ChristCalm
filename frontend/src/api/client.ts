@@ -123,6 +123,36 @@ export const api = {
   },
   completeMeditation: (meditation_id: string, minutes: number) =>
     request("/meditations/complete", { method: "POST", body: { meditation_id, minutes } }),
+  /** Persist 1–5 star rating for a meditation session (DynamoDB per user). */
+  rateMeditation: (meditation_id: string, stars: number, minutes?: number) =>
+    request<{
+      ok: boolean;
+      rating: {
+        id: string;
+        user_id: string;
+        meditation_id: string;
+        stars: number;
+        minutes?: number | null;
+        created_at: string;
+      };
+    }>("/meditations/rate", {
+      method: "POST",
+      body: {
+        meditation_id,
+        stars,
+        ...(typeof minutes === "number" ? { minutes } : {}),
+      },
+    }),
+  listMeditationRatings: () =>
+    request<{
+      ratings: {
+        id: string;
+        meditation_id: string;
+        stars: number;
+        minutes?: number | null;
+        created_at: string;
+      }[];
+    }>("/meditations/ratings"),
   prayers: async (category?: string) => {
     const key = `catalog:prayers:${category || "all"}`;
     const hit = cacheGet<any>(key);
@@ -150,6 +180,38 @@ export const api = {
   createJournal: (content: string, mood?: string) =>
     request("/journal", { method: "POST", body: { content, mood } }),
   listJournal: () => request("/journal"),
+
+  /**
+   * Product feedback (Me tab) → DynamoDB user-feedback table (durable free-text).
+   * Analytics should only track category/stars, not the message body.
+   */
+  submitFeedback: (body: {
+    category: "praise" | "suggestion" | "bug" | "spiritual" | "other";
+    message: string;
+    stars?: number;
+    platform?: string;
+  }) =>
+    request<{
+      ok: boolean;
+      feedback: {
+        id: string;
+        category: string;
+        stars?: number | null;
+        created_at: string;
+        status: string;
+      };
+    }>("/feedback", { method: "POST", body }),
+  listFeedback: () =>
+    request<{
+      items: {
+        id: string;
+        category: string;
+        message?: string;
+        stars?: number | null;
+        created_at: string;
+        status?: string;
+      }[];
+    }>("/feedback"),
 
   /** Conversational wisdom (RAG + Bedrock) */
   wisdomChat: (message: string, conversation_id?: string | null) =>

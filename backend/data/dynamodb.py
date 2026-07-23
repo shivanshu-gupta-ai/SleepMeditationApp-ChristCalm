@@ -18,6 +18,8 @@ TABLE_SUFFIXES = {
     "users": "users",
     "mood_logs": "mood-logs",
     "journal_entries": "journal-entries",
+    "meditation_ratings": "meditation-ratings",
+    "user_feedback": "user-feedback",
     "ai_prayers": "ai-prayers",
     "payment_transactions": "payment-transactions",
     "usage_events": "usage-events",
@@ -347,6 +349,75 @@ class Database:
     async def list_journal_entries(self, user_id: str, limit: int = 200) -> list[dict]:
         def _query():
             resp = self._table("journal_entries").query(
+                KeyConditionExpression="user_id = :uid",
+                ExpressionAttributeValues={":uid": user_id},
+                ScanIndexForward=False,
+                Limit=limit,
+            )
+            items = [_from_dynamo(i) for i in resp.get("Items", [])]
+            for item in items:
+                item.pop("sk", None)
+            return items
+
+        return await _run(_query)
+
+    # --- Meditation session ratings (per user, per practice) ---
+    async def insert_meditation_rating(self, entry: dict) -> dict:
+        """
+        Persist a 1–5 star rating for a completed meditation session.
+
+        Keys: user_id (hash), sk = created_at#id (range) — same pattern as mood/journal
+        so every rating is stored per user and queryable newest-first.
+        """
+        item = {
+            "user_id": entry["user_id"],
+            "sk": _sort_key(entry["created_at"], entry["id"]),
+            **_to_dynamo({k: v for k, v in entry.items() if k not in ("user_id",)}),
+        }
+
+        def _put():
+            self._table("meditation_ratings").put_item(Item=item)
+
+        await _run(_put)
+        return entry
+
+    async def list_meditation_ratings(self, user_id: str, limit: int = 200) -> list[dict]:
+        def _query():
+            resp = self._table("meditation_ratings").query(
+                KeyConditionExpression="user_id = :uid",
+                ExpressionAttributeValues={":uid": user_id},
+                ScanIndexForward=False,
+                Limit=limit,
+            )
+            items = [_from_dynamo(i) for i in resp.get("Items", [])]
+            for item in items:
+                item.pop("sk", None)
+            return items
+
+        return await _run(_query)
+
+    # --- User product feedback (Me tab; durable free-text) ---
+    async def insert_user_feedback(self, entry: dict) -> dict:
+        """
+        Store intentional product feedback per user.
+        Separate from usage-events so free-text is durable and not mixed with
+        high-volume behavioral analytics (which use 90-day TTL).
+        """
+        item = {
+            "user_id": entry["user_id"],
+            "sk": _sort_key(entry["created_at"], entry["id"]),
+            **_to_dynamo({k: v for k, v in entry.items() if k not in ("user_id",)}),
+        }
+
+        def _put():
+            self._table("user_feedback").put_item(Item=item)
+
+        await _run(_put)
+        return entry
+
+    async def list_user_feedback(self, user_id: str, limit: int = 50) -> list[dict]:
+        def _query():
+            resp = self._table("user_feedback").query(
                 KeyConditionExpression="user_id = :uid",
                 ExpressionAttributeValues={":uid": user_id},
                 ScanIndexForward=False,

@@ -287,6 +287,109 @@ class TestMeditationCompletion:
         ).json()
         assert me2["minutes_meditated"] == start_min + 7
 
+    def test_rating_persists_per_user(self, session, fresh_user):
+        """Each session rating is stored in DynamoDB for the authenticated user."""
+        me = session.get(
+            f"{BASE_URL}/api/auth/me", headers=auth(fresh_user["token"]), timeout=15
+        )
+        assert me.status_code == 200, me.text
+        user_id = me.json()["id"]
+
+        r = session.post(
+            f"{BASE_URL}/api/meditations/rate",
+            headers=auth(fresh_user["token"]),
+            json={"meditation_id": "med-anxious-shanti", "stars": 5, "minutes": 7},
+            timeout=15,
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body.get("ok") is True
+        rating = body.get("rating") or {}
+        assert rating.get("meditation_id") == "med-anxious-shanti"
+        assert rating.get("stars") == 5
+        assert rating.get("user_id") == user_id
+        assert rating.get("id")
+
+        listed = session.get(
+            f"{BASE_URL}/api/meditations/ratings",
+            headers=auth(fresh_user["token"]),
+            timeout=15,
+        )
+        assert listed.status_code == 200, listed.text
+        ratings = listed.json().get("ratings") or []
+        assert any(
+            x.get("id") == rating["id"] and x.get("stars") == 5 for x in ratings
+        )
+
+    def test_rating_requires_auth(self, session):
+        r = session.post(
+            f"{BASE_URL}/api/meditations/rate",
+            json={"meditation_id": "med-anxious-shanti", "stars": 4},
+            timeout=10,
+        )
+        assert r.status_code == 401
+
+    def test_rating_validates_stars(self, session, fresh_user):
+        r = session.post(
+            f"{BASE_URL}/api/meditations/rate",
+            headers=auth(fresh_user["token"]),
+            json={"meditation_id": "med-anxious-shanti", "stars": 9},
+            timeout=15,
+        )
+        assert r.status_code == 422
+
+
+# -------------------- Product feedback (Me tab) --------------------
+class TestFeedback:
+    def test_submit_and_list_feedback(self, session, fresh_user):
+        r = session.post(
+            f"{BASE_URL}/api/feedback",
+            headers=auth(fresh_user["token"]),
+            json={
+                "category": "suggestion",
+                "message": "Please add evening calm reminders.",
+                "stars": 5,
+                "platform": "ios",
+            },
+            timeout=15,
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body.get("ok") is True
+        fb = body.get("feedback") or {}
+        assert fb.get("category") == "suggestion"
+        assert fb.get("stars") == 5
+        assert fb.get("id")
+
+        listed = session.get(
+            f"{BASE_URL}/api/feedback",
+            headers=auth(fresh_user["token"]),
+            timeout=15,
+        )
+        assert listed.status_code == 200, listed.text
+        items = listed.json().get("items") or []
+        assert any(i.get("id") == fb["id"] for i in items)
+        # free-text returned on list for the owner
+        match = next(i for i in items if i.get("id") == fb["id"])
+        assert "evening calm" in (match.get("message") or "")
+
+    def test_feedback_requires_auth(self, session):
+        r = session.post(
+            f"{BASE_URL}/api/feedback",
+            json={"category": "praise", "message": "Thank you for this app"},
+            timeout=10,
+        )
+        assert r.status_code == 401
+
+    def test_feedback_rejects_bad_category(self, session, fresh_user):
+        r = session.post(
+            f"{BASE_URL}/api/feedback",
+            headers=auth(fresh_user["token"]),
+            json={"category": "spam", "message": "hello world here"},
+            timeout=15,
+        )
+        assert r.status_code == 422
+
 
 # -------------------- AI Prayer --------------------
 class TestAIPrayer:

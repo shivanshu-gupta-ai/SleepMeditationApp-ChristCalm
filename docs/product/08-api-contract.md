@@ -121,6 +121,75 @@ Server updates streak, minutes, practices_completed.
 
 ---
 
+## Meditation session rating
+
+| Method | Path | Auth |
+|--------|------|------|
+| POST | `/meditations/rate` | Yes |
+| GET | `/meditations/ratings` | Yes |
+
+```json
+// POST request
+{ "meditation_id": "med-anxious-shanti", "stars": 5, "minutes": 10 }
+
+// POST response
+{
+  "ok": true,
+  "rating": {
+    "id": "uuid",
+    "user_id": "…",
+    "meditation_id": "med-anxious-shanti",
+    "stars": 5,
+    "minutes": 10,
+    "created_at": "2026-07-23T12:00:00+00:00"
+  }
+}
+
+// GET response
+{ "ratings": [ /* same rating objects, newest first */ ] }
+```
+
+`stars` must be an integer **1–5**. Server writes one DynamoDB row per submit for the authenticated user (`{prefix}-meditation-ratings`).
+
+---
+
+## Product feedback (Me tab)
+
+| Method | Path | Auth |
+|--------|------|------|
+| POST | `/feedback` | Yes |
+| GET | `/feedback` | Yes |
+
+```json
+// POST request
+{
+  "category": "suggestion",
+  "message": "I would love evening reminders…",
+  "stars": 5,
+  "platform": "ios"
+}
+
+// POST response
+{
+  "ok": true,
+  "feedback": {
+    "id": "uuid",
+    "category": "suggestion",
+    "stars": 5,
+    "created_at": "…",
+    "status": "new"
+  }
+}
+
+// GET response
+{ "items": [ /* feedback rows for this user, newest first */ ] }
+```
+
+`category` ∈ `praise` | `suggestion` | `bug` | `spiritual` | `other`.  
+Rate-limited per user (~12/hour). Message stored only in `{prefix}-user-feedback`.
+
+---
+
 ## Wisdom / AI
 
 | Method | Path | Auth | Rate |

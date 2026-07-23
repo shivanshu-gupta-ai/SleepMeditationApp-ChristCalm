@@ -98,6 +98,46 @@ On complete:
 
 ---
 
+## Meditation session rating
+
+Every completed practice may collect a **1–5 star** rating. Persist **per user** in DynamoDB (not device-only) so ratings survive reinstall and can be analyzed.
+
+Table: `{prefix}-meditation-ratings` · keys: `user_id` (hash) + `sk` = `{created_at}#{id}` (range)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `id` | string | UUID |
+| `user_id` | string | Authenticated user |
+| `meditation_id` | string | Catalog track id |
+| `stars` | int | 1–5 |
+| `minutes` | int? | Optional session length |
+| `created_at` | datetime | ISO-8601 UTC |
+
+Each submit is a **new row** (re-listens can be rated again). Client may also cache last stars per `meditation_id` locally for UI.
+
+---
+
+## Product feedback (Me tab)
+
+Intentional free-text feedback. **Durable domain table** — do **not** put message body into `usage-events`.
+
+Table: `{prefix}-user-feedback` · keys: `user_id` + `sk` = `{created_at}#{id}`
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `id` | string | UUID |
+| `user_id` | string | Authenticated user |
+| `category` | string | `praise` \| `suggestion` \| `bug` \| `spiritual` \| `other` |
+| `message` | string | 3–2000 chars |
+| `stars` | int? | Optional overall 1–5 |
+| `platform` | string? | ios / android / web |
+| `status` | string | e.g. `new` |
+| `created_at` | datetime | ISO-8601 UTC |
+
+Analytics companion (optional): event `feedback_submit` with props `{ category, stars }` only.
+
+---
+
 ## Subscription / payment transaction
 
 | Field | Type |
@@ -155,6 +195,8 @@ Counts per `event#{name}`, DAU markers `user#{id}`, totals `meta#totals`.
 | `emotion_select` | Home/meditate |
 | `meditation_start` | Player open |
 | `meditation_complete` | Finish |
+| `meditation_rated` | 1–5 stars after session (also stored in DynamoDB) |
+| `feedback_open` / `feedback_submit` | Me feedback UI (scalars only; body in user-feedback table) |
 | `sos_start` / `sos_complete` | SOS |
 | `wisdom_send` | User message |
 | `journal_create` | Saved |

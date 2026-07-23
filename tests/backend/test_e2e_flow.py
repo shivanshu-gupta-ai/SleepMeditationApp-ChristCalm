@@ -111,7 +111,7 @@ class TestE2EUserJourney:
         assert r.status_code == 200
         assert any("E2E journal" in (e.get("content") or "") for e in r.json().get("entries", []))
 
-        # 7 Complete meditation
+        # 7 Complete meditation + per-session rating (DynamoDB)
         r = s.post(
             f"{BASE}/api/meditations/complete",
             headers=auth(token),
@@ -119,6 +119,21 @@ class TestE2EUserJourney:
             timeout=20,
         )
         assert r.status_code == 200
+
+        r = s.post(
+            f"{BASE}/api/meditations/rate",
+            headers=auth(token),
+            json={"meditation_id": med_id, "stars": 4, "minutes": 5},
+            timeout=20,
+        )
+        assert r.status_code == 200, r.text
+        assert r.json().get("rating", {}).get("stars") == 4
+        r = s.get(f"{BASE}/api/meditations/ratings", headers=auth(token), timeout=20)
+        assert r.status_code == 200
+        assert any(
+            e.get("meditation_id") == med_id and e.get("stars") == 4
+            for e in (r.json().get("ratings") or [])
+        )
 
         # 8 Subscription status
         r = s.get(f"{BASE}/api/subscription/status", headers=auth(token), timeout=20)

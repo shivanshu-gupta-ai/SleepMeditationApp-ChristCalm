@@ -180,6 +180,8 @@ Prefix: `{DYNAMODB_TABLE_PREFIX}` e.g. `christcalm-dev`
 | `users` | Accounts, premium, AI quota, stats | `id` PK; GSI `email-index` |
 | `mood-logs` | Emotion logs | user_id + timestamp |
 | `journal-entries` | Journal | user_id + id/timestamp |
+| `meditation-ratings` | Per-session 1–5 star ratings | user_id + created_at#id |
+| `user-feedback` | Me-tab product feedback (free-text) | user_id + created_at#id |
 | `ai-prayers` | Wisdom turns / prayer history | user_id + timestamp |
 | `payment-transactions` | RevenueCat-related events | id / user_id |
 | `rate-limits` | Distributed burst counters | key + window |
