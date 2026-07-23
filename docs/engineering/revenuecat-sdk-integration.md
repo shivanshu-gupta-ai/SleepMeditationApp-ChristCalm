@@ -56,19 +56,8 @@ Verified live (2026-07):
 - Products `cc_999_1m` / `cc_1999_1y_1w0` on entitlement + current offering
 - Webhook → Lambda API
 
-**You still must do on a physical iPhone:**
-
-1. ASC → Users and Access → Sandbox → Testers → create tester  
-2. Device: Settings → App Store → Sandbox Account → sign in  
-3. ```bash
-   CHRISTCALM_RC_MODE=appstore ./scripts/sync-env-from-aws.sh
-   cd frontend
-   npx expo prebuild --platform ios --clean
-   npx expo run:ios --device
-   # or: npm run build:ios:preview   # EAS → install via QR
-   ```  
-4. Sign in to the app → open Paywall → buy monthly/annual  
-5. Confirm RC Customers + backend `is_premium`
+**Full click-by-click + command manual:**  
+→ **[ios-sandbox-iap-manual.md](./ios-sandbox-iap-manual.md)** (sandbox tester, env, USB/EAS build, purchase, verify).
 
 ---
 
