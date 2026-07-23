@@ -16,7 +16,7 @@ Use this as the **implementation order** for an AI agent or human team rebuildin
 | AI | OpenAI | Bedrock | Gemini / local |
 | Payments | RevenueCat | StoreKit+Play Billing | Stripe (web) |
 
-**Constraint:** Match `product/` contracts — not the reference folder names.
+**Constraint:** Match `docs/product/` contracts — not the reference folder names.
 
 ---
 
@@ -160,13 +160,13 @@ Write these as unit/integration tests in your stack:
 Paste when starting a greenfield rebuild:
 
 ```
-You are rebuilding ChristCalm from the product pack in /product.
+You are rebuilding ChristCalm from the product pack in docs/product.
 Stack: {YOUR_STACK}.
-Follow product/README.md priority order.
-Implement phases 0–6 from product/11-rebuild-playbook.md.
+Follow docs/product/README.md priority order.
+Implement phases 0–6 from docs/product/11-rebuild-playbook.md.
 Do not invent fear-based monetization or clinical claims.
-Use content IDs and API paths exactly from product/06 and product/08.
-Ship dual theme Nest dark + Cooper light from product/05.
+Use content IDs and API paths exactly from docs/product/06 and docs/product/08.
+Ship dual theme Nest dark + Cooper light from docs/product/05.
 ```
 
 ---

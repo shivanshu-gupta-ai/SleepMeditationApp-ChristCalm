@@ -1,3 +1,3 @@
-# Onboarding (moved)
+# Onboarding
 
-**Canonical:** [`../../product/04-onboarding.md`](../../product/04-onboarding.md)
+**Canonical:** [`../product/04-onboarding.md`](../product/04-onboarding.md)

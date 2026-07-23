@@ -407,29 +407,35 @@ export default function Home() {
                 title: "Journal",
                 sub: "Write freely",
                 icon: "create-outline" as const,
-                bg: isDark ? colors.surface : colors.tileC,
-                color: isDark ? colors.secondary : colors.premium,
+                // Light: ink card (white on dark). Dark: elevated charcoal + gold
+                // so the tile never collapses into pure black background.
+                bg: isDark ? colors.surfaceAlt : colors.tileC,
+                color: colors.premium,
                 inverted: !isDark,
                 onPress: () => {
                   void markFirstStep("journal");
                   router.push("/(tabs)/journal");
                 },
                 testID: "home-journal-btn",
-                // New users: two primary paths only — less choice paralysis
-                newOnly: true,
+                newOnly: false,
               },
             ] as const
           )
             .filter((tile) => stage !== "new" || !tile.newOnly)
             .map((tile) => {
+            // Inverted = light-mode ink card (white type on dark fill).
+            // Dark mode always uses light type on elevated charcoal — never white-on-white
+            // or dark-on-dark for title/subcopy.
             const titleColor = tile.inverted ? colors.white : colors.textPrimary;
             const subColor = tile.inverted
               ? "rgba(255,255,255,0.72)"
-              : colors.textMuted;
+              : colors.textSecondary;
             const iconWellBg = tile.inverted
               ? "rgba(255,255,255,0.12)"
               : isDark
-                ? "rgba(255,255,255,0.06)"
+                ? tile.id === "journal"
+                  ? colors.premiumSoft
+                  : "rgba(255,255,255,0.06)"
                 : "rgba(255,255,255,0.72)";
             return (
               <PressableScale
@@ -442,11 +448,16 @@ export default function Home() {
                   minHeight: isCompact ? 108 : 120,
                   borderRadius: layout.surfaceRadius,
                   backgroundColor: tile.bg,
-                  borderWidth: isDark || tile.inverted ? 0 : 1,
-                  borderColor: tile.inverted ? "transparent" : colors.borderSoft,
+                  // Dark: whisper border so charcoal tiles separate from pure black canvas
+                  borderWidth: tile.inverted ? 0 : 1,
+                  borderColor: tile.inverted
+                    ? "transparent"
+                    : isDark
+                      ? "rgba(255,255,255,0.10)"
+                      : colors.borderSoft,
                   padding: spacing.lg,
                   justifyContent: "space-between",
-                  ...(isDark ? null : shadows.soft),
+                  ...shadows.soft,
                 }}
               >
                 <View

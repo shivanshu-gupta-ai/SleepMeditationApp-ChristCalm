@@ -1,6 +1,6 @@
 # ChristCalm — API & configuration requirements
 
-**Product API contract (stack-agnostic):** [`../product/08-api-contract.md`](../product/08-api-contract.md)
+**Product API contract (stack-agnostic):** [`../docs/product/08-api-contract.md`](../docs/product/08-api-contract.md)
 
 This file documents **env vars**, **external APIs**, and routes for the **current AWS reference backend**.  
 Templates live in this folder; production values live in **SSM** (`/christcalm-dev/*`).

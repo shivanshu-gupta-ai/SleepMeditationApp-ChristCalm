@@ -408,7 +408,7 @@ PRODUCT_IDS.monthly / .annual
 ### 6.4 Where the paywall opens
 
 - Route: `frontend/app/paywall.tsx`
-- Triggers: soft paywall after first practice / premium content (see product docs `product/10-auth-and-monetization.md`).
+- Triggers: soft paywall after first practice / premium content (see [`../product/10-auth-and-monetization.md`](../product/10-auth-and-monetization.md)).
 
 ---
 

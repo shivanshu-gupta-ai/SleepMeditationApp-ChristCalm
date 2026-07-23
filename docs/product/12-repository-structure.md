@@ -11,8 +11,12 @@ Root path: `ChristCalmApp/` (also published as SleepMeditationApp-ChristCalm).
 
 ```
 ChristCalmApp/
-├── product/                      # ★ Canonical product + architecture docs (this pack)
-├── README.md                     # Quick start + links into product/
+├── docs/                         # ★ Documentation hub
+│   ├── product/                  # Canonical product + architecture pack (this folder)
+│   ├── design/                   # Design redirects → product/03–05
+│   ├── architecture/             # Stack notes → product/12–18
+│   └── engineering/              # Testing, RevenueCat, ops
+├── README.md                     # Quick start + links into docs/product/
 │
 ├── frontend/                     # Mobile/web client (Expo Router + React Native)
 │   ├── app/                      # File-based routes only
@@ -91,7 +95,6 @@ ChristCalmApp/
 │   ├── conftest.py
 │   └── README.md
 │
-├── docs/                         # Redirects + legacy notes → product/
 ├── skills/                       # Agent skills (ui-ux-pro-max)
 ├── .github/workflows/            # Optional CI hooks
 └── pytest.ini
@@ -103,7 +106,7 @@ ChristCalmApp/
 
 | Concern | Path |
 |---------|------|
-| Product truth (any stack) | `product/` |
+| Product truth (any stack) | `docs/product/` |
 | Client routes / screens | `frontend/app/` |
 | Auth (client) | `frontend/src/features/auth/` |
 | Subscriptions (client) | `frontend/src/features/subscriptions/` |
@@ -350,4 +353,4 @@ tests/
 | `backend/ai` | AI service package |
 | `backend/seed_data.py` | Content CMS or seed JSON |
 | `infrastructure/terraform` | IaC of choice |
-| `product/` | Keep as-is — product truth |
+| `docs/product/` | Keep as-is — product truth |

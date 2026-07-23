@@ -1,28 +1,33 @@
-# Documentation (redirect)
+# Documentation
 
-**Canonical product documentation** now lives in one folder:
+All product and engineering documentation for ChristCalm lives under **`docs/`**.
 
-## → [`../product/`](../product/)
+## Start here
 
-That pack is written so an AI agent (or team) can **recreate ChristCalm in any stack** (Swift, Kotlin, React Native, Flutter, web, etc.).
+| Need | Location |
+|------|----------|
+| **Full product pack (any-stack rebuild)** | [`product/README.md`](product/README.md) |
+| Vision & principles | [`product/01-vision-and-principles.md`](product/01-vision-and-principles.md) |
+| PRD / requirements | [`product/02-product-requirements.md`](product/02-product-requirements.md) |
+| Screens & flows | [`product/03-user-flows-and-screens.md`](product/03-user-flows-and-screens.md) |
+| Rebuild playbook | [`product/11-rebuild-playbook.md`](product/11-rebuild-playbook.md) |
 
-| Start with | File |
-|------------|------|
-| Index | [`product/README.md`](../product/README.md) |
-| Vision | [`product/01-vision-and-principles.md`](../product/01-vision-and-principles.md) |
-| PRD | [`product/02-product-requirements.md`](../product/02-product-requirements.md) |
-| Screens | [`product/03-user-flows-and-screens.md`](../product/03-user-flows-and-screens.md) |
-| Rebuild order | [`product/11-rebuild-playbook.md`](../product/11-rebuild-playbook.md) |
+## Folder map
 
-### Historical / implementation notes (this tree)
+| Folder | Role |
+|--------|------|
+| [`product/`](product/) | **Canonical** product + architecture pack (docs 01–18). Source of truth for rebuilds. |
+| [`design/`](design/) | Design index → Nest/Cooper system, onboarding, screens (points into `product/`). |
+| [`architecture/`](architecture/) | Reference-stack notes (Expo + AWS) + links to product architecture docs 12–18. |
+| [`engineering/`](engineering/) | Current-repo testing, RevenueCat, e2e for this monorepo. |
 
-Older, stack-specific notes remain under subfolders for the **current** Expo + AWS reference app:
+### Conflict priority
 
-| Folder | Status |
-|--------|--------|
-| [`product/PRD.md`](product/PRD.md) | Superseded → use `../product/02-product-requirements.md` |
-| [`design/`](design/) | Superseded → use `../product/05-design-system.md` + `04-onboarding.md` |
-| [`architecture/`](architecture/) | Reference implementation only (not required to rebuild) |
-| [`engineering/`](engineering/) | Current-repo testing notes |
+1. Vision & principles (`product/01`)
+2. API + data contracts (`product/07–08`)
+3. Screens, onboarding, design (`product/03–05`)
+4. Content catalog (`product/06`)
+5. Architecture / repo of *this* monorepo (`product/12–18`)
+6. Live code last
 
-Prefer **`product/`** for product truth. Prefer **code** for the live reference implementation when they diverge.
+Prefer **`docs/product/`** for product truth. Prefer **code** for the live reference implementation when they diverge.

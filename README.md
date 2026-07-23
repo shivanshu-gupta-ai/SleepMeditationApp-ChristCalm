@@ -8,22 +8,24 @@ Christian faith-based meditation & mental wellness app.
 
 ## Complete product & engineering pack
 
-**Everything in one place** — product, UX, design, API, AI, **architecture, repo structure, deploy, config, testing** — so an AI agent can recreate the app in **any stack** (Swift, Kotlin, RN, Flutter, …) or operate this monorepo.
+**Everything under [`docs/`](docs/)** — product, UX, design, API, AI, **architecture, repo structure, deploy, config, testing** — so an AI agent can recreate the app in **any stack** (Swift, Kotlin, RN, Flutter, …) or operate this monorepo.
 
-### → [`product/`](product/) (start here)
+### → [`docs/product/`](docs/product/) (start here)
 
 | # | Doc | Purpose |
 |---|-----|---------|
-| — | [`product/README.md`](product/README.md) | Full index |
+| — | [`docs/product/README.md`](docs/product/README.md) | Full index |
 | 01–06 | Vision → design → content | Product & UX |
 | 07–11 | Data, API, AI, auth, rebuild playbook | Contracts |
-| **12** | [`12-repository-structure.md`](product/12-repository-structure.md) | **Full monorepo tree** |
-| **13** | [`13-system-architecture.md`](product/13-system-architecture.md) | **System + AWS architecture** |
-| **14** | [`14-frontend-architecture.md`](product/14-frontend-architecture.md) | Expo client architecture |
-| **15** | [`15-backend-architecture.md`](product/15-backend-architecture.md) | FastAPI / Lambda architecture |
-| **16** | [`16-infrastructure-and-deploy.md`](product/16-infrastructure-and-deploy.md) | Terraform, bootstrap, deploy |
-| **17** | [`17-config-secrets-and-scripts.md`](product/17-config-secrets-and-scripts.md) | SSM, env, every script |
-| **18** | [`18-testing-ops-and-scalability.md`](product/18-testing-ops-and-scalability.md) | Tests, analytics, scale |
+| **12** | [`12-repository-structure.md`](docs/product/12-repository-structure.md) | **Full monorepo tree** |
+| **13** | [`13-system-architecture.md`](docs/product/13-system-architecture.md) | **System + AWS architecture** |
+| **14** | [`14-frontend-architecture.md`](docs/product/14-frontend-architecture.md) | Expo client architecture |
+| **15** | [`15-backend-architecture.md`](docs/product/15-backend-architecture.md) | FastAPI / Lambda architecture |
+| **16** | [`16-infrastructure-and-deploy.md`](docs/product/16-infrastructure-and-deploy.md) | Terraform, bootstrap, deploy |
+| **17** | [`17-config-secrets-and-scripts.md`](docs/product/17-config-secrets-and-scripts.md) | SSM, env, every script |
+| **18** | [`18-testing-ops-and-scalability.md`](docs/product/18-testing-ops-and-scalability.md) | Tests, analytics, scale |
+
+Docs hub: [`docs/README.md`](docs/README.md)
 
 ---
 
@@ -31,7 +33,11 @@ Christian faith-based meditation & mental wellness app.
 
 ```
 ChristCalmApp/
-├── product/                  # ★ Canonical product docs (any-stack rebuild)
+├── docs/                     # ★ All documentation
+│   ├── product/              # Canonical product pack (any-stack rebuild)
+│   ├── design/               # Design index → product
+│   ├── architecture/         # Stack notes + product 12–18
+│   └── engineering/          # Testing, RevenueCat, ops
 ├── frontend/                 # Expo app (reference client)
 │   ├── app/                  # Routes (Expo Router)
 │   └── src/features/         # auth · subscriptions · onboarding
@@ -41,7 +47,6 @@ ChristCalmApp/
 ├── infrastructure/terraform/ # AWS infra as code
 ├── config/                   # Env templates, auth samples, CI
 ├── assets/meditations/       # Covers + audio sources
-├── docs/                     # Redirects + stack-specific notes
 ├── skills/                   # Agent skills
 ├── tests/                    # Pytest
 └── scripts/                  # deploy · preview · env sync
@@ -49,7 +54,8 @@ ChristCalmApp/
 
 | Need | Open |
 |------|------|
-| **Product (rebuild anywhere)** | [`product/README.md`](product/README.md) |
+| **Product (rebuild anywhere)** | [`docs/product/README.md`](docs/product/README.md) |
+| **Docs hub** | [`docs/README.md`](docs/README.md) |
 | **Reference architecture** | [`docs/architecture/current-architecture.md`](docs/architecture/current-architecture.md) |
 | **Deploy plan** | [`docs/architecture/deploy-plan.md`](docs/architecture/deploy-plan.md) |
 | **Config / secrets** | [`config/README.md`](config/README.md) |

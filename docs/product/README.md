@@ -64,8 +64,8 @@ User can: complete onboarding → auth → emotion → meditation complete → S
 
 | Path | Role |
 |------|------|
-| [`../backend/ai/corpus/jesus_voice.md`](../backend/ai/corpus/jesus_voice.md) | Pastoral voice rules |
-| [`../backend/ai/corpus/Wisdom_Handbook.md`](../backend/ai/corpus/Wisdom_Handbook.md) | RAG handbook |
+| [`../../backend/ai/corpus/jesus_voice.md`](../../backend/ai/corpus/jesus_voice.md) | Pastoral voice rules |
+| [`../../backend/ai/corpus/Wisdom_Handbook.md`](../../backend/ai/corpus/Wisdom_Handbook.md) | RAG handbook |
 
 ---
 
@@ -121,18 +121,21 @@ Any equivalent stack is valid if **01–11** are satisfied.
 
 ```
 ChristCalmApp/
-├── product/           ★ You are here — complete pack
+├── docs/              ★ Documentation hub
+│   ├── product/       ★ You are here — complete product pack (01–18)
+│   ├── design/        → product design system + onboarding
+│   ├── architecture/  Stack notes + links to product 12–18
+│   └── engineering/   Testing, RevenueCat, ops for this repo
 ├── frontend/          Expo app
 ├── backend/           FastAPI + AI corpus
 ├── infrastructure/    Terraform AWS
 ├── config/            Env templates, auth, buildspec
 ├── assets/            Meditation media sources
 ├── scripts/           deploy, preview, sync, bootstrap
-├── tests/             Pytest
-└── docs/              Redirects → product/
+└── tests/             Pytest
 ```
 
-Detail: [12-repository-structure.md](./12-repository-structure.md)
+Detail: [12-repository-structure.md](./12-repository-structure.md) · Docs hub: [../README.md](../README.md)
 
 ---
 
@@ -152,7 +155,7 @@ Detail: [12-repository-structure.md](./12-repository-structure.md)
 ## Agent prompt (full rebuild)
 
 ```
-You are rebuilding ChristCalm using only the docs in /product (01–18).
+You are rebuilding ChristCalm using only the docs in docs/product (01–18).
 Stack: {YOUR_STACK}.
 
 1. Follow product principles in 01 and MVP in 02.
@@ -171,7 +174,6 @@ Stack: {YOUR_STACK}.
 | Path | Why separate |
 |------|----------------|
 | Live source code | Implementation; prefer product contracts if docs and code diverge temporarily |
+| `docs/architecture/`, `docs/design/`, `docs/engineering/` | Stack notes + redirects into this pack |
 | `terraform.tfstate` / secrets | Never document real secrets here |
 | `node_modules` / `.venv` | Generated |
-
-Older notes under `docs/` redirect here.

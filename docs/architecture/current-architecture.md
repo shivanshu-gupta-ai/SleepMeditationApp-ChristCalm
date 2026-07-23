@@ -62,7 +62,9 @@ ChristCalmApp/
 ├── infrastructure/terraform/ # API GW, Lambda, DynamoDB, Cognito, CodeBuild, voice S3
 ├── config/                   # Env templates, auth samples, CI buildspec
 ├── assets/meditations/       # Cover + audio sources (S3 for production audio)
-├── docs/                     # Product, design, architecture, engineering
+├── docs/                     # Documentation hub
+│   ├── product/              # Canonical product pack (01–18)
+│   ├── design/ · architecture/ · engineering/
 ├── skills/                   # Agent skills (ui-ux-pro-max)
 ├── tests/                    # Pytest
 ├── scripts/                  # deploy, preview, env sync
@@ -73,6 +75,7 @@ ChristCalmApp/
 
 | Concern | Location |
 |---------|----------|
+| Product truth (any stack) | `docs/product/` (01–18) |
 | Auth (client) | `frontend/src/features/auth/` + routes `frontend/app/(auth)/` |
 | Auth (server) | `backend/auth/` + routes `/api/auth/*` |
 | Auth config | `config/auth/`, Cognito in `infrastructure/terraform/cognito*.tf` |
