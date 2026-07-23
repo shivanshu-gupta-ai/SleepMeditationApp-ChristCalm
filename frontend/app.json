@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "ChristCalm",
+    "slug": "christcalm",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "christcalm",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.christcalm.app",
+      "buildNumber": "1",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "ChristCalm uses the microphone so you can speak a concern and convert it to text for Wisdom.",
         "UIRequiresFullScreen": false

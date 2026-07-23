@@ -27,25 +27,48 @@ npx expo run:ios
 
 ## 2. Environment (public keys only)
 
-`frontend/.env`:
+### Quick switch (recommended)
 
 ```bash
-# Test Store (RC simulated products)
-EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=test_iOFZidqNcAXQabRbTcHHYiAEKug
+# Local web / content preview — Test Store + unlock all
+./scripts/sync-env-from-aws.sh
 
-# Production / ASC sandbox device builds:
-# EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=appl_…
-
-EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=christcalm_premium
-EXPO_PUBLIC_REVENUECAT_OFFERING_ID=default
-EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=cc_999_1m
-EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=cc_1999_1y_1w0
-
-# 0 = real paywall gating
-EXPO_PUBLIC_UNLOCK_ALL=0
+# Physical device StoreKit sandbox / EAS — appl_ key + paywall ON
+CHRISTCALM_RC_MODE=appstore ./scripts/sync-env-from-aws.sh
 ```
 
+| Mode | Key | `UNLOCK_ALL` | Use for |
+|------|-----|--------------|---------|
+| `preview` (default) | `test_…` | `1` | Web, content QA |
+| `appstore` | `appl_…` | `0` | Device IAP, TestFlight, App Store |
+
+Also: `frontend/env.device.example`, `frontend/eas.json` profiles `preview` / `production` bake in `appl_` + `UNLOCK_ALL=0`.
+
 Never put `sk_` secret keys in the app.
+
+### Device sandbox purchase (next step after config)
+
+Verified live (2026-07):
+
+- ASC app `6788769964` · bundle `com.christcalm.app`
+- Apple Server Notifications **V2** → RevenueCat (prod + sandbox)
+- RC App Store app: IAP key ✓ · ASC API key ✓
+- Products `cc_999_1m` / `cc_1999_1y_1w0` on entitlement + current offering
+- Webhook → Lambda API
+
+**You still must do on a physical iPhone:**
+
+1. ASC → Users and Access → Sandbox → Testers → create tester  
+2. Device: Settings → App Store → Sandbox Account → sign in  
+3. ```bash
+   CHRISTCALM_RC_MODE=appstore ./scripts/sync-env-from-aws.sh
+   cd frontend
+   npx expo prebuild --platform ios --clean
+   npx expo run:ios --device
+   # or: npm run build:ios:preview   # EAS → install via QR
+   ```  
+4. Sign in to the app → open Paywall → buy monthly/annual  
+5. Confirm RC Customers + backend `is_premium`
 
 ---
 

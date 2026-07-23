@@ -72,10 +72,15 @@ def main() -> None:
     if bundle != EXPECTED_BUNDLE:
         die(f"bundle_id {bundle} != {EXPECTED_BUNDLE}")
     ok(f"App Store app {app.get('id')} bundle={bundle}")
-    if (app.get("app_store") or {}).get("app_store_connect_api_key_configured"):
+    store_cfg = app.get("app_store") or {}
+    if store_cfg.get("app_store_connect_api_key_configured"):
         ok("ASC API key configured on RC app")
     else:
         print("WARN ASC API key not configured on RC (receipt import may be limited)")
+    if store_cfg.get("subscription_key_configured"):
+        ok("In-App Purchase (StoreKit 2) key configured on RC app")
+    else:
+        print("WARN subscription_key not configured — upload IAP .p8 in RC Apps & providers")
 
     products = rc(f"/projects/{PROJECT}/products").get("items") or []
     store_ids = {

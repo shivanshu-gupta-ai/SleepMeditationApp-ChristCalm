@@ -1,0 +1,68 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_iOFZidqNcAXQabRbTcHHYiAEKug",
+        "EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID": "christcalm_premium",
+        "EXPO_PUBLIC_REVENUECAT_OFFERING_ID": "default",
+        "EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY": "cc_999_1m",
+        "EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL": "cc_1999_1y_1w0",
+        "EXPO_PUBLIC_UNLOCK_ALL": "1"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com",
+        "EXPO_PUBLIC_COGNITO_USER_POOL_ID": "us-east-1_s3yaiKaxE",
+        "EXPO_PUBLIC_COGNITO_CLIENT_ID": "3rs6ec1grum0erfmhsk8hqvhp4",
+        "EXPO_PUBLIC_COGNITO_DOMAIN": "christcalm-dev.auth.us-east-1.amazoncognito.com",
+        "EXPO_PUBLIC_COGNITO_REGION": "us-east-1",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_cccgVPkKesnGrFTnzfXMEjQvfRA",
+        "EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID": "christcalm_premium",
+        "EXPO_PUBLIC_REVENUECAT_OFFERING_ID": "default",
+        "EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY": "cc_999_1m",
+        "EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL": "cc_1999_1y_1w0",
+        "EXPO_PUBLIC_UNLOCK_ALL": "0"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com",
+        "EXPO_PUBLIC_COGNITO_USER_POOL_ID": "us-east-1_s3yaiKaxE",
+        "EXPO_PUBLIC_COGNITO_CLIENT_ID": "3rs6ec1grum0erfmhsk8hqvhp4",
+        "EXPO_PUBLIC_COGNITO_DOMAIN": "christcalm-dev.auth.us-east-1.amazoncognito.com",
+        "EXPO_PUBLIC_COGNITO_REGION": "us-east-1",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_cccgVPkKesnGrFTnzfXMEjQvfRA",
+        "EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID": "christcalm_premium",
+        "EXPO_PUBLIC_REVENUECAT_OFFERING_ID": "default",
+        "EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY": "cc_999_1m",
+        "EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL": "cc_1999_1y_1w0",
+        "EXPO_PUBLIC_UNLOCK_ALL": "0"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6788769964"
+      }
+    }
+  }
+}
