@@ -37,12 +37,12 @@ if [[ -f "$ROOT/frontend/.env" ]]; then
   RC_MONTHLY="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
   RC_ANNUAL="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
 fi
-# Defaults for ChristCalm iOS (Test Store) if unset
+# Defaults: Test Store key for local; product ids match ASC + RC (aliases supported in app)
 RC_IOS_KEY="${RC_IOS_KEY:-test_iOFZidqNcAXQabRbTcHHYiAEKug}"
 RC_ENT="${RC_ENT:-christcalm_premium}"
 RC_OFF="${RC_OFF:-default}"
-RC_MONTHLY="${RC_MONTHLY:-christcalm_monthly}"
-RC_ANNUAL="${RC_ANNUAL:-christcalm_annual}"
+RC_MONTHLY="${RC_MONTHLY:-cc_999_1m}"
+RC_ANNUAL="${RC_ANNUAL:-cc_1999_1y_1w0}"
 
 # --- Frontend: public Expo vars only (shipped in the client bundle) ---
 cat > "$ROOT/frontend/.env" <<EOF

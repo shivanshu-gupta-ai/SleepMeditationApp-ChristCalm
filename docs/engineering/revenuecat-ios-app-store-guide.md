@@ -83,8 +83,8 @@ Use the **same strings** everywhere.
 | Bundle ID | `com.christcalm.app` | Xcode / Expo `app.json` → `ios.bundleIdentifier` · ASC · RC App Store app |
 | Entitlement | `christcalm_premium` | RC Product catalog → Entitlements · app `ENTITLEMENT_ID` · backend `REVENUECAT_ENTITLEMENT_ID` |
 | Offering | `default` | RC Offerings · app `OFFERING_ID` |
-| Monthly product ID | `christcalm_monthly` | ASC subscription product · RC product store identifier · app `PRODUCT_IDS.monthly` |
-| Annual product ID | `christcalm_annual` | Same as above for annual |
+| Monthly product ID | `cc_999_1m` | ASC subscription product · RC product store identifier · app `PRODUCT_IDS.monthly` |
+| Annual product ID | `cc_1999_1y_1w0` | ASC annual (Ready to Submit) · RC App Store product · app `PRODUCT_IDS.annual` |
 | Package types | `$rc_monthly`, `$rc_annual` | RC packages inside offering `default` |
 | iOS public SDK key | `appl_…` (prod) or `test_…` (Test Store) | RC App → API keys · `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` |
 | Secret API key (server/MCP) | `sk_…` (v2) | RC Project settings → API keys · **never** in the app |
@@ -170,7 +170,7 @@ Same steps:
 |-------|--------|
 | Product ID | **`christcalm_annual`** |
 | Duration | **1 Year** |
-| Example price | $59.99 USD (or your choice) |
+| Example price | $39.99 USD |
 | Optional | Introductory offer / free trial (e.g. 7 days) — configure in ASC |
 
 **Introductory free trial (optional)**

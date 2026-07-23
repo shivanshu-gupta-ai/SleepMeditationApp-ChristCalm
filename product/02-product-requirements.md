@@ -128,7 +128,7 @@ ChristCalm provides:
 - **Premium:** Unlimited content, AI features, premium library, offline (future)  
 - **Trigger:** Soft paywall after first completed practice  
 - **Plans:** Monthly + Annual (annual highlighted respectfully)  
-- Example pricing: ~$9.99/mo or ~$59.99/yr (configure in store)  
+- Example pricing: $9.99/mo or $39.99/yr (configure in store)  
 
 ## Roadmap (post-MVP)
 

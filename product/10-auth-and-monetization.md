@@ -80,7 +80,7 @@ Any IdP is valid. Map provider `sub` → `User.id`. Upsert user row on first val
 | Plan | Example product id | UX |
 |------|--------------------|-----|
 | Monthly | `christcalm_monthly` | ~$9.99/mo |
-| Annual | `christcalm_annual` | ~$59.99/yr, highlighted |
+| Annual | `cc_1999_1y_1w0` | $39.99/yr, highlighted |
 
 Prices are store-configured; app shows localized price strings from the SDK.
 

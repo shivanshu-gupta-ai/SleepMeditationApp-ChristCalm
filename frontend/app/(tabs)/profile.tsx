@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, type ThemePreference } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/features/auth";
-import { usePremium } from "@/src/features/subscriptions";
+import { usePremium, useRevenueCat } from "@/src/features/subscriptions";
 import { layout } from "@/src/theme/layout";
 import { Screen, PageHeader, Button, Surface, FadeIn, ProgressRing } from "@/src/components/ui";
 import { useResponsive } from "@/src/hooks/use-responsive";
@@ -31,6 +31,8 @@ export default function Profile() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { isPremium, subscriptionTier, plan } = usePremium();
+  const { supported: rcSupported, presentCustomerCenter, presentPaywallIfNeeded } =
+    useRevenueCat();
   const { colors, fonts, spacing, radius, shadows, preference, setPreference, isDark } =
     useTheme();
   const { bottomClearance, isCompact } = useResponsive();
@@ -333,10 +335,26 @@ export default function Profile() {
           />
           <MenuItem
             icon="star-outline"
-            label="Manage Subscription"
-            onPress={() => router.push("/paywall")}
+            label={isPremium ? "Upgrade / Change plan" : "Unlock Premium"}
+            onPress={() => {
+              if (rcSupported) {
+                presentPaywallIfNeeded().catch(() => router.push("/paywall"));
+              } else {
+                router.push("/paywall");
+              }
+            }}
             testID="menu-subscription"
           />
+          {rcSupported ? (
+            <MenuItem
+              icon="card-outline"
+              label="Manage Subscription"
+              onPress={() => {
+                presentCustomerCenter().catch(() => router.push("/paywall"));
+              }}
+              testID="menu-customer-center"
+            />
+          ) : null}
           <MenuItem
             icon="log-out-outline"
             label="Sign Out"

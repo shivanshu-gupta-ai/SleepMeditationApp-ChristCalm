@@ -4,44 +4,77 @@
   "platform": "ios_only",
   "ios": {
     "bundle_id": "com.christcalm.app",
+    "asc_app_id": "6788769964",
+    "asc_app_name": "Christ Calm",
+    "rc_app_id": "app7793b2074c",
+    "rc_app_name": "ChristCalm iOS",
+    "public_api_key_app_store": "appl_cccgVPkKesnGrFTnzfXMEjQvfRA",
     "public_api_key_test_store": "test_iOFZidqNcAXQabRbTcHHYiAEKug",
-    "public_api_key_app_store": "appl_xxxxxxxx",
-    "note": "Use Test Store key for sandbox. Create an App Store app in RC + ASC products for production (appl_ key)."
+    "note": "Use appl_ for production/sandbox device builds. test_ only for RC Test Store."
   },
   "entitlement": {
     "id": "christcalm_premium",
     "rc_id": "entl6f7711a266",
     "description": "Unlocks all premium meditations, prayers, and AI features"
   },
+  "paywall": {
+    "id": "pw8ae5b0bdce044611",
+    "name": "Default Paywall",
+    "offering_id": "ofrngd353e9c397",
+    "note": "Created via API with default template version. Customize + Publish in RC dashboard for full branded remote UI; until then presentPaywall uses default package list."
+  },
   "offering": {
     "id": "default",
     "rc_id": "ofrngd353e9c397",
     "is_current": true,
     "packages": [
-      { "lookup_key": "$rc_monthly", "rc_id": "pkgeb6071eac85", "product": "christcalm_monthly" },
-      { "lookup_key": "$rc_annual", "rc_id": "pkgebf71b1f837", "product": "christcalm_annual" }
+      {
+        "lookup_key": "$rc_monthly",
+        "rc_id": "pkgeb6071eac85",
+        "product_store_id": "cc_999_1m",
+        "rc_product_id": "proda11ffad170",
+        "asc_subscription_id": "6792815409"
+      },
+      {
+        "lookup_key": "$rc_annual",
+        "rc_id": "pkgebf71b1f837",
+        "product_store_id": "cc_1999_1y_1w0",
+        "rc_product_id": "prod101d660c9c",
+        "asc_subscription_id": "6788846755"
+      }
     ]
   },
   "products": {
     "monthly": {
-      "store_product_id": "christcalm_monthly",
-      "rc_id": "prod8399690caf",
+      "store_product_id": "cc_999_1m",
+      "display_name": "Monthly $9.99",
+      "price_usd": "9.99",
       "billing_period": "P1M",
-      "app": "Test Store (app1d119d1b47)"
+      "asc_state": "READY_TO_SUBMIT"
     },
     "annual": {
-      "store_product_id": "christcalm_annual",
-      "rc_id": "prod0df9e00c63",
+      "store_product_id": "cc_1999_1y_1w0",
+      "display_name": "Annual $39.99",
+      "price_usd": "39.99",
       "billing_period": "P1Y",
-      "app": "Test Store (app1d119d1b47)"
+      "intro_offer": "1 week free trial (USA)",
+      "asc_state": "READY_TO_SUBMIT",
+      "note": "Product ID keeps 1999 (immutable ASC id); USA price is $39.99"
     }
   },
+  "subscription_group": {
+    "name": "ChristCalm Premium",
+    "asc_id": "22217597"
+  },
   "webhook": {
+    "rc_id": "whintgr69fbbd36cd",
+    "name": "ChristCalm-Dev API",
     "url": "https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com/api/revenuecat/webhook",
-    "authorization_header": "Bearer YOUR_WEBHOOK_SECRET"
+    "authorization_header": "Bearer <REVENUECAT_WEBHOOK_AUTHORIZATION in SSM>",
+    "note": "Secret stored in AWS SSM via terraform revenuecat_webhook_authorization"
   },
   "mcp": {
-    "url": "https://mcp.revenuecat.ai/mcp",
-    "configured_in": "~/.grok/config.toml [mcp_servers.revenuecat]"
+    "revenuecat": "https://mcp.revenuecat.ai/mcp",
+    "app_store_connect": "npx -y appstore-connect-mcp-server"
   }
 }

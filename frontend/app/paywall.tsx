@@ -25,7 +25,7 @@ function formatPrice(plan: PlanId, getPackage: ReturnType<typeof useRevenueCat>[
   if (!pkg) {
     return plan === "monthly"
       ? { main: "$9.99", sub: "billed monthly" }
-      : { main: "$59.99", sub: "$5.00 / month · billed yearly" };
+      : { main: "$39.99", sub: "$3.33 / month · billed yearly" };
   }
   const product = pkg.product;
   if (plan === "annual" && product.pricePerMonthString) {
@@ -44,11 +44,21 @@ export default function Paywall() {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const { isPremium } = usePremium();
-  const { supported, loadingOfferings, purchasing, getPackage, purchase, restore } =
-    useRevenueCat();
+  const {
+    supported,
+    loadingOfferings,
+    purchasing,
+    getPackage,
+    purchase,
+    presentPaywall,
+    restore,
+    error: rcError,
+    clearError,
+  } = useRevenueCat();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
   const [plan, setPlan] = useState<PlanId>("annual");
   const [error, setError] = useState<string | null>(null);
+  const displayError = error || rcError;
 
   const monthlyPrice = formatPrice("monthly", getPackage);
   const annualPrice = formatPrice("annual", getPackage);
@@ -56,6 +66,7 @@ export default function Paywall() {
 
   const subscribe = async () => {
     setError(null);
+    clearError();
     try {
       const active = await purchase(plan);
       if (active) {
@@ -70,6 +81,7 @@ export default function Paywall() {
 
   const onRestore = async () => {
     setError(null);
+    clearError();
     try {
       const active = await restore();
       if (active) {
@@ -80,6 +92,22 @@ export default function Paywall() {
       }
     } catch (e: any) {
       setError(e?.message || "Unable to restore purchases.");
+    }
+  };
+
+  /** RevenueCat-hosted paywall (dashboard template or default package UI). */
+  const onOpenRemotePaywall = async () => {
+    setError(null);
+    clearError();
+    try {
+      const active = await presentPaywall();
+      if (active) {
+        await refreshUser();
+        router.replace("/(tabs)/home");
+      }
+    } catch (e: any) {
+      if (e?.userCancelled) return;
+      setError(e?.message || "Unable to open subscription options.");
     }
   };
 
@@ -356,11 +384,14 @@ export default function Paywall() {
             </View>
           ) : null}
 
-          {error ? (
+          {displayError ? (
             <View style={{ marginTop: spacing.md }}>
               <ErrorBanner
-                message={error}
-                onDismiss={() => setError(null)}
+                message={displayError}
+                onDismiss={() => {
+                  setError(null);
+                  clearError();
+                }}
                 testID="paywall-error"
               />
             </View>
@@ -376,6 +407,27 @@ export default function Paywall() {
             testID="paywall-subscribe-btn"
             style={{ marginTop: spacing.lg }}
           />
+
+          {supported ? (
+            <TouchableOpacity
+              onPress={onOpenRemotePaywall}
+              disabled={purchasing}
+              testID="paywall-remote-btn"
+              style={{ paddingVertical: spacing.sm, marginTop: spacing.xs }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 14,
+                  color: colors.textSecondary,
+                  textAlign: "center",
+                  textDecorationLine: "underline",
+                }}
+              >
+                More plans (RevenueCat paywall)
+              </Text>
+            </TouchableOpacity>
+          ) : null}
 
           {supported ? (
             <TouchableOpacity
