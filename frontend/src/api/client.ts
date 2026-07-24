@@ -1,5 +1,8 @@
 import { storage } from "@/src/utils/storage";
 import { cacheGet, cacheSet } from "@/src/utils/api-cache";
+import { ApiError } from "@/src/utils/api-errors";
+import { reportNetworkFailure, reportNetworkSuccess } from "@/src/utils/connectivity";
+import { emitSessionExpired } from "@/src/utils/session-events";
 
 const BACKEND_URL = (process.env.EXPO_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 
@@ -26,8 +29,9 @@ async function request<T = any>(
     Object.assign(headers, await authHeaders());
   }
   if (!API_BASE) {
-    throw new Error(
-      "Backend URL not configured. Run ./scripts/sync-env-from-aws.sh and restart Expo (npm run start -- --clear)."
+    throw new ApiError(
+      "Backend URL not configured. Run ./scripts/sync-env-from-aws.sh and restart Expo (npm run start -- --clear).",
+      "config"
     );
   }
 
@@ -41,8 +45,10 @@ async function request<T = any>(
       ...(cache ? { cache } : null),
     });
   } catch {
-    throw new Error(
-      `Cannot reach API at ${BACKEND_URL}. Use iOS/Android simulator or Expo Go (not web) if this persists, and restart with: npx expo start --clear`
+    reportNetworkFailure();
+    throw new ApiError(
+      "Looks like you're offline or the connection is unsteady. Check your internet and try again.",
+      "network"
     );
   }
   const text = await res.text();
@@ -54,8 +60,22 @@ async function request<T = any>(
   }
   if (!res.ok) {
     const detail = (data && data.detail) || `HTTP ${res.status}`;
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    const message = typeof detail === "string" ? detail : JSON.stringify(detail);
+
+    // Authenticated call rejected — soft session end (not for public catalog)
+    if (auth && (res.status === 401 || res.status === 403)) {
+      emitSessionExpired();
+      throw new ApiError(
+        "Your session ended quietly. Sign in again to continue.",
+        "unauthorized",
+        res.status,
+        detail
+      );
+    }
+
+    throw new ApiError(message, "http", res.status, detail);
   }
+  reportNetworkSuccess();
   return data as T;
 }
 

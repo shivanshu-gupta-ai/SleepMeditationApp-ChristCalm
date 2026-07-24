@@ -18,5 +18,12 @@ export default function Index() {
     }
   }, [loading, user, onboardingComplete, router]);
 
-  return <LoadingState message="Preparing your space…" testID="app-loading" />;
+  return (
+    <LoadingState
+      emblem="grace"
+      message="Preparing your space…"
+      slowMessage="Almost there — Grace is nearly ready…"
+      testID="app-loading"
+    />
+  );
 }

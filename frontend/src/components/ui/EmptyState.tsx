@@ -5,13 +5,14 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
 import { useTheme } from "@/src/context/ThemeContext";
-import { FadeIn } from "@/src/components/ui/FadeIn";
 import { PressableScale } from "@/src/components/ui/PressableScale";
+import { motion } from "@/src/theme/primitives";
 
 const GRACE = require("@/assets/images/grace-mascot.jpg");
 
@@ -26,7 +27,7 @@ type Props = {
 };
 
 /**
- * Calm empty state — optional Grace bob (P2).
+ * Calm empty state — Grace bob + soft enter fade.
  */
 export function EmptyState({
   icon = "leaf-outline",
@@ -39,6 +40,8 @@ export function EmptyState({
 }: Props) {
   const { colors, fonts, spacing } = useTheme();
   const bob = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(10);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
@@ -48,87 +51,98 @@ export function EmptyState({
   useEffect(() => {
     if (reduceMotion) {
       bob.value = 0;
+      opacity.value = 1;
+      translateY.value = 0;
       return;
     }
-    bob.value = withRepeat(
-      withSequence(
-        withTiming(-4, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      false
+    const easing = Easing.out(Easing.cubic);
+    opacity.value = withTiming(1, { duration: motion.enterDuration, easing });
+    translateY.value = withTiming(0, { duration: motion.enterDuration, easing });
+    bob.value = withDelay(
+      200,
+      withRepeat(
+        withSequence(
+          withTiming(-4, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
     );
-  }, [bob, reduceMotion]);
+  }, [bob, reduceMotion, opacity, translateY]);
 
   const bobStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: bob.value }],
   }));
 
+  const enterStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   return (
-    <FadeIn>
-      <View style={styles.wrap} testID={testID}>
-        {withGrace ? (
-          <Animated.View
-            style={[
-              styles.graceRing,
-              {
-                borderColor: colors.borderSoft,
-                backgroundColor: colors.primarySoft,
-              },
-              bobStyle,
-            ]}
-          >
-            <Image source={GRACE} style={styles.grace} accessibilityLabel="Grace" />
-          </Animated.View>
-        ) : (
-          <View style={[styles.iconWrap, { backgroundColor: colors.primarySoft }]}>
-            <Ionicons name={icon} size={26} color={colors.primary} />
-          </View>
-        )}
+    <Animated.View style={[styles.wrap, enterStyle]} testID={testID}>
+      {withGrace ? (
+        <Animated.View
+          style={[
+            styles.graceRing,
+            {
+              borderColor: colors.borderSoft,
+              backgroundColor: colors.primarySoft,
+            },
+            bobStyle,
+          ]}
+        >
+          <Image source={GRACE} style={styles.grace} accessibilityLabel="Grace" />
+        </Animated.View>
+      ) : (
+        <View style={[styles.iconWrap, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name={icon} size={26} color={colors.primary} />
+        </View>
+      )}
+      <Text
+        style={{
+          fontFamily: fonts.headingBold,
+          fontSize: 17,
+          color: colors.textPrimary,
+          marginTop: spacing.md,
+          textAlign: "center",
+        }}
+      >
+        {title}
+      </Text>
+      {message ? (
         <Text
           style={{
-            fontFamily: fonts.headingBold,
-            fontSize: 17,
-            color: colors.textPrimary,
-            marginTop: spacing.md,
+            fontFamily: fonts.body,
+            fontSize: 14,
+            color: colors.textSecondary,
+            marginTop: spacing.xs,
             textAlign: "center",
+            lineHeight: 21,
+            maxWidth: 280,
           }}
         >
-          {title}
+          {message}
         </Text>
-        {message ? (
+      ) : null}
+      {actionLabel && onAction ? (
+        <PressableScale onPress={onAction} scaleTo={0.96} style={{ marginTop: spacing.md }}>
           <Text
             style={{
-              fontFamily: fonts.body,
+              fontFamily: fonts.bodyBold,
               fontSize: 14,
-              color: colors.textSecondary,
-              marginTop: spacing.xs,
-              textAlign: "center",
-              lineHeight: 21,
-              maxWidth: 280,
+              color: colors.primary,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
             }}
+            accessibilityRole="button"
           >
-            {message}
+            {actionLabel}
           </Text>
-        ) : null}
-        {actionLabel && onAction ? (
-          <PressableScale onPress={onAction} scaleTo={0.96} style={{ marginTop: spacing.md }}>
-            <Text
-              style={{
-                fontFamily: fonts.bodyBold,
-                fontSize: 14,
-                color: colors.primary,
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-              }}
-              accessibilityRole="button"
-            >
-              {actionLabel}
-            </Text>
-          </PressableScale>
-        ) : null}
-      </View>
-    </FadeIn>
+        </PressableScale>
+      ) : null}
+    </Animated.View>
   );
 }
 

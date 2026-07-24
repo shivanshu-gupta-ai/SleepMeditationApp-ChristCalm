@@ -12,6 +12,7 @@ import {
   Screen,
   LoadingState,
   ErrorState,
+  GridSkeleton,
   PremiumBadge,
   PageHeader,
   Surface,
@@ -113,7 +114,19 @@ export default function Home() {
   const contentW = Math.max(width - pagePadding * 2, 0);
   const cardW = contentW > 0 ? (contentW - gap * (cols - 1)) / cols : 0;
 
-  if (loading) return <LoadingState message="Gathering calm…" />;
+  if (loading && !emotions.length) {
+    return (
+      <Screen contentStyle={{ paddingTop: isCompact ? 12 : layout.pageTop }}>
+        <LoadingState
+          fullScreen={false}
+          emblem="grace"
+          message="Gathering calm…"
+          slowMessage="Still gathering your home — connection may be slow…"
+        />
+        <GridSkeleton cells={6} cols={cols} />
+      </Screen>
+    );
+  }
 
   if (error && !emotions.length) {
     return (

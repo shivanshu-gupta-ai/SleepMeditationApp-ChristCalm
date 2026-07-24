@@ -208,7 +208,7 @@ export default function Onboarding() {
   );
 
   if (!draft || !hydrated) {
-    return <LoadingState message="Preparing Grace…" />;
+    return <LoadingState emblem="grace" message="Preparing Grace…" />;
   }
 
   const insight = getInsightCopy(draft);

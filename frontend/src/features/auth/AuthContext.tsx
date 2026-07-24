@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { storage } from "@/src/utils/storage";
 import { api } from "@/src/api/client";
 import {
@@ -16,6 +16,7 @@ import {
   type CognitoTokens,
   type SignUpResult,
 } from "@/src/features/auth/cognito";
+import { onSessionEvent } from "@/src/utils/session-events";
 
 export type User = {
   id: string;
@@ -87,9 +88,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const u = await api.me();
       setUser(u);
-    } catch {
-      setUser(null);
-      await clearTokens();
+    } catch (e: any) {
+      // Only end the session on auth failure — keep tokens on network blips
+      const kind = e?.kind as string | undefined;
+      const status = e?.status as number | undefined;
+      const msg = String(e?.message || "").toLowerCase();
+      const unauthorized =
+        kind === "unauthorized" ||
+        status === 401 ||
+        status === 403 ||
+        msg.includes("session ended") ||
+        msg.includes("not authenticated") ||
+        msg.includes("unauthorized");
+      if (unauthorized) {
+        setUser(null);
+        await clearTokens();
+      }
+      // network / 5xx: leave existing user + tokens so offline banner can show
     }
   }, []);
 
@@ -100,6 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [refreshUser]
   );
+
+  const signingOutRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -147,6 +164,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
     };
   }, [refreshUser]);
+
+  // Mid-session 401/403 → clear tokens softly (banner handled by ConnectivityProvider)
+  useEffect(() => {
+    return onSessionEvent(async (event) => {
+      if (event.type !== "expired" || signingOutRef.current) return;
+      signingOutRef.current = true;
+      try {
+        try {
+          const { stopActiveMeditationPlayer } = await import(
+            "@/src/utils/meditation-audio"
+          );
+          stopActiveMeditationPlayer();
+        } catch {
+          // ignore
+        }
+        if (cognitoConfigured()) signOutCognito();
+        await clearTokens();
+        setUser(null);
+      } finally {
+        signingOutRef.current = false;
+      }
+    });
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     const tokens = await signInWithEmail(email, password);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, TextInput, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -12,6 +12,8 @@ import {
   LoadingState,
   ErrorState,
   EmptyState,
+  ListSkeleton,
+  SuccessInline,
   markFirstStep,
   ErrorBanner,
   Button,
@@ -22,6 +24,7 @@ import {
 } from "@/src/components/ui";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
+import { playHaptic } from "@/src/utils/haptics";
 
 type Entry = { id: string; mood?: string; content: string; created_at: string };
 
@@ -47,6 +50,7 @@ export default function Journal() {
   const [saveFlash, setSaveFlash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const contentRef = useRef<TextInput>(null);
 
   const shareWithWisdom = async (text: string) => {
     const trimmed = text.trim().slice(0, 1800);
@@ -84,10 +88,11 @@ export default function Journal() {
       setContent("");
       setMood(null);
       await load();
-      // P1: success morph
+      void playHaptic("success");
       setSaveFlash(true);
-      setTimeout(() => setSaveFlash(false), 1200);
+      setTimeout(() => setSaveFlash(false), 1800);
     } catch (e: any) {
+      void playHaptic("warning");
       setSaveError(e?.message || "Could not save entry.");
     } finally {
       setSaving(false);
@@ -185,6 +190,7 @@ export default function Journal() {
               borderColor: colors.borderSoft,
               lineHeight: 22,
             }}
+            ref={contentRef}
             placeholder="What is on your heart today?"
             placeholderTextColor={colors.textMuted}
             value={content}
@@ -196,6 +202,11 @@ export default function Journal() {
           {saveError ? (
             <View style={{ marginTop: spacing.md }}>
               <ErrorBanner message={saveError} onDismiss={() => setSaveError(null)} />
+            </View>
+          ) : null}
+          {saveFlash ? (
+            <View style={{ marginTop: spacing.md }}>
+              <SuccessInline message="Saved with care" testID="journal-save-success" />
             </View>
           ) : null}
 
@@ -235,7 +246,14 @@ export default function Journal() {
         </Text>
 
         {loading ? (
-          <LoadingState fullScreen={false} message="Opening your pages…" />
+          <FadeIn>
+            <LoadingState
+              fullScreen={false}
+              message="Opening your pages…"
+              slowMessage="Still opening your journal…"
+            />
+            <ListSkeleton rows={3} />
+          </FadeIn>
         ) : error ? (
           <ErrorState
             fullScreen={false}
@@ -250,6 +268,8 @@ export default function Journal() {
             withGrace
             title="Grace is listening"
             message="Nothing written yet — cast one care here. This is a safe place for whatever you're carrying."
+            actionLabel="Begin writing"
+            onAction={() => contentRef.current?.focus()}
           />
         ) : (
           entries.map((e) => (

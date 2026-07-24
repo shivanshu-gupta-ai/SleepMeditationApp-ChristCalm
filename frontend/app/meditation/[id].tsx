@@ -331,7 +331,13 @@ export default function MeditationPlayer() {
   };
 
   if (loading) {
-    return <LoadingState message="Preparing your session…" />;
+    return (
+      <LoadingState
+        emblem="calm"
+        message="Preparing your session…"
+        slowMessage="Still preparing audio — connection may be slow…"
+      />
+    );
   }
 
   if (error || !med) {

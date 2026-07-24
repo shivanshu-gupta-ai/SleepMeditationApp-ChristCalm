@@ -9,6 +9,7 @@ import { Button } from "@/src/components/ui/Button";
 import { Chip } from "@/src/components/ui/Chip";
 import { PressableScale } from "@/src/components/ui/PressableScale";
 import { Surface } from "@/src/components/ui/Surface";
+import { FadeIn } from "@/src/components/ui/FadeIn";
 import { layout } from "@/src/theme/layout";
 
 type Category = "praise" | "suggestion" | "bug" | "spiritual" | "other";
@@ -136,44 +137,57 @@ export function FeedbackCard() {
       {open ? (
         <View style={{ marginTop: spacing.lg }}>
           {sent ? (
-            <View
-              style={{
-                alignItems: "center",
-                paddingVertical: spacing.md,
-                gap: 8,
-              }}
-              testID="feedback-success"
-            >
-              <Ionicons name="heart" size={28} color={colors.primary} />
-              <Text
+            <FadeIn>
+              <View
                 style={{
-                  fontFamily: fonts.headingBold,
-                  fontSize: 17,
-                  color: colors.textPrimary,
-                  textAlign: "center",
+                  alignItems: "center",
+                  paddingVertical: spacing.md,
+                  gap: 8,
                 }}
+                testID="feedback-success"
               >
-                Received with gratitude
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 14,
-                  color: colors.textSecondary,
-                  textAlign: "center",
-                  lineHeight: 20,
-                }}
-              >
-                Your note helps us shape ChristCalm with care.
-              </Text>
-              <Button
-                label="Send another"
-                variant="secondary"
-                onPress={() => setSent(false)}
-                style={{ marginTop: spacing.sm }}
-                testID="feedback-again-btn"
-              />
-            </View>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: colors.successSoft,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="heart" size={26} color={colors.success} />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: fonts.headingBold,
+                    fontSize: 17,
+                    color: colors.textPrimary,
+                    textAlign: "center",
+                  }}
+                >
+                  Received with gratitude
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                    textAlign: "center",
+                    lineHeight: 20,
+                  }}
+                >
+                  Your note helps us shape ChristCalm with care.
+                </Text>
+                <Button
+                  label="Send another"
+                  variant="secondary"
+                  onPress={() => setSent(false)}
+                  style={{ marginTop: spacing.sm }}
+                  testID="feedback-again-btn"
+                />
+              </View>
+            </FadeIn>
           ) : (
             <>
               <Text

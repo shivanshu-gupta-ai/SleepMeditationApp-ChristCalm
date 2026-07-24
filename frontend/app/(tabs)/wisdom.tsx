@@ -506,19 +506,29 @@ export default function WisdomTab() {
           }}
           ListFooterComponent={
             loading ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  marginVertical: 6,
-                }}
-              >
-                <ActivityIndicator color={colors.primary} />
-                <Text style={{ color: colors.textMuted, fontFamily: fonts.body, fontSize: 13 }}>
-                  Reflecting…
-                </Text>
-              </View>
+              <FadeIn>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    marginVertical: 8,
+                    alignSelf: "flex-start",
+                    backgroundColor: colors.surface,
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 18,
+                    borderWidth: 1,
+                    borderColor: colors.borderSoft,
+                    ...shadows.soft,
+                  }}
+                >
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={{ color: colors.textMuted, fontFamily: fonts.body, fontSize: 13 }}>
+                    Reflecting with care…
+                  </Text>
+                </View>
+              </FadeIn>
             ) : null
           }
         />

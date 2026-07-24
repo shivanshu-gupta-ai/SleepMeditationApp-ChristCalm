@@ -1,8 +1,16 @@
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { AccessibilityInfo, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useTheme } from "@/src/context/ThemeContext";
-
+import { PressableScale } from "@/src/components/ui/PressableScale";
+import { isNetworkErrorMessage, isSessionErrorMessage } from "@/src/utils/connectivity";
+import { motion } from "@/src/theme/primitives";
 type Props = {
   title?: string;
   message?: string;
@@ -10,24 +18,67 @@ type Props = {
   retryLabel?: string;
   fullScreen?: boolean;
   testID?: string;
+  /** Force offline-flavored icon/copy */
+  offline?: boolean;
 };
 
+/**
+ * Soft error card with enter animation + contextual offline / session copy.
+ */
 export function ErrorState({
-  title = "Something went quiet",
+  title,
   message = "We couldn't load this right now. Take a breath and try again.",
   onRetry,
   retryLabel = "Try again",
   fullScreen = true,
   testID = "error-state",
+  offline,
 }: Props) {
   const { colors, fonts, spacing, radius, shadows } = useTheme();
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(12);
+
+  const network = offline ?? isNetworkErrorMessage(message);
+  const session = isSessionErrorMessage(message);
+
+  const resolvedTitle =
+    title ||
+    (network ? "Connection resting" : session ? "Session ended" : "Something went quiet");
+
+  const iconName = network
+    ? ("cloud-offline-outline" as const)
+    : session
+      ? ("key-outline" as const)
+      : ("leaf-outline" as const);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 1;
+      translateY.value = 0;
+      return;
+    }
+    const easing = Easing.out(Easing.cubic);
+    opacity.value = withTiming(1, { duration: motion.enterDuration, easing });
+    translateY.value = withTiming(0, { duration: motion.enterDuration, easing });
+  }, [reduceMotion, opacity, translateY]);
+
+  const enterStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
     <View
       style={[styles.wrap, fullScreen && styles.full, { backgroundColor: colors.background }]}
       testID={testID}
+      accessibilityRole="alert"
     >
-      <View
+      <Animated.View
         style={[
           styles.card,
           {
@@ -36,10 +87,20 @@ export function ErrorState({
             borderRadius: radius.lg,
             ...shadows.soft,
           },
+          enterStyle,
         ]}
       >
-        <View style={[styles.iconWrap, { backgroundColor: colors.dangerSoft }]}>
-          <Ionicons name="cloud-offline-outline" size={28} color={colors.danger} />
+        <View
+          style={[
+            styles.iconWrap,
+            { backgroundColor: network || session ? colors.dangerSoft : colors.primarySoft },
+          ]}
+        >
+          <Ionicons
+            name={iconName}
+            size={28}
+            color={network || session ? colors.danger : colors.primary}
+          />
         </View>
         <Text
           style={{
@@ -51,7 +112,7 @@ export function ErrorState({
             marginTop: spacing.md,
           }}
         >
-          {title}
+          {resolvedTitle}
         </Text>
         <Text
           style={{
@@ -66,8 +127,9 @@ export function ErrorState({
           {message}
         </Text>
         {onRetry ? (
-          <TouchableOpacity
+          <PressableScale
             onPress={onRetry}
+            haptic="light"
             style={[
               styles.retry,
               {
@@ -76,8 +138,8 @@ export function ErrorState({
                 marginTop: spacing.lg,
               },
             ]}
-            activeOpacity={0.85}
             testID={`${testID}-retry`}
+            accessibilityLabel={retryLabel}
           >
             <Ionicons name="refresh" size={18} color={colors.white} />
             <Text
@@ -89,9 +151,9 @@ export function ErrorState({
             >
               {retryLabel}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         ) : null}
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -106,31 +168,64 @@ export function ErrorBanner({
   testID?: string;
 }) {
   const { colors, fonts, spacing, radius } = useTheme();
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(-6);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 1;
+      translateY.value = 0;
+      return;
+    }
+    const easing = Easing.out(Easing.cubic);
+    opacity.value = withTiming(1, { duration: 220, easing });
+    translateY.value = withTiming(0, { duration: 220, easing });
+  }, [message, reduceMotion, opacity, translateY]);
+
+  const anim = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const network = isNetworkErrorMessage(message);
 
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.sm,
-        backgroundColor: colors.dangerSoft,
-        borderRadius: radius.md,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.accentSOS + "33",
-      }}
+    <Animated.View
+      style={[
+        {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.sm,
+          backgroundColor: colors.dangerSoft,
+          borderRadius: radius.md,
+          padding: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.accentSOS + "33",
+        },
+        anim,
+      ]}
       testID={testID}
+      accessibilityRole="alert"
     >
-      <Ionicons name="alert-circle" size={18} color={colors.danger} />
+      <Ionicons
+        name={network ? "cloud-offline-outline" : "alert-circle"}
+        size={18}
+        color={colors.danger}
+      />
       <Text style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: colors.danger }}>
         {message}
       </Text>
       {onDismiss ? (
-        <TouchableOpacity onPress={onDismiss} hitSlop={12}>
+        <PressableScale onPress={onDismiss} hitSlop={12} haptic="none" accessibilityLabel="Dismiss">
           <Ionicons name="close" size={18} color={colors.danger} />
-        </TouchableOpacity>
+        </PressableScale>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 

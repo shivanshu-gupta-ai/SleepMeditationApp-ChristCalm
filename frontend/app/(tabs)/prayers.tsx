@@ -152,14 +152,25 @@ export default function Prayers() {
       </ScrollView>
 
       {loading ? (
-        <LoadingState fullScreen={false} message="Opening the library…" />
+        <FadeIn>
+          <LoadingState
+            fullScreen={false}
+            message="Opening the library…"
+            slowMessage="Still opening the library…"
+          />
+        </FadeIn>
       ) : error ? (
         <ErrorState fullScreen={false} message={error} onRetry={load} />
       ) : prayers.length === 0 ? (
         <EmptyState
           icon="book-outline"
           title="No prayers in this category"
-          message="Try another filter or generate a personal prayer."
+          message="Try another filter or open Wisdom for a personal prayer."
+          actionLabel={selected ? "Show all prayers" : "Open Wisdom"}
+          onAction={() => {
+            if (selected) setSelected(null);
+            else router.push("/(tabs)/wisdom");
+          }}
         />
       ) : (
         <View style={{ gap: spacing.md }}>

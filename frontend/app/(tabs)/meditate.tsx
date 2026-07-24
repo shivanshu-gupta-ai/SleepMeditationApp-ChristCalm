@@ -12,6 +12,7 @@ import {
   LoadingState,
   ErrorState,
   EmptyState,
+  ListSkeleton,
   PremiumTag,
   PageHeader,
   EmotionFilter,
@@ -296,7 +297,14 @@ export default function Meditate() {
       ) : null}
 
       {loading ? (
-        <LoadingState fullScreen={false} message="Loading sessions…" />
+        <FadeIn>
+          <LoadingState
+            fullScreen={false}
+            message="Loading sessions…"
+            slowMessage="Still loading sessions — thank you for waiting…"
+          />
+          <ListSkeleton rows={4} />
+        </FadeIn>
       ) : error ? (
         <ErrorState fullScreen={false} message={error} onRetry={loadMeds} />
       ) : (

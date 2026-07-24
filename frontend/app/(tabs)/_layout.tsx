@@ -15,7 +15,14 @@ export default function TabsLayout() {
   const { user, loading } = useAuth();
   const { colors } = useTheme();
 
-  if (loading) return <LoadingState message="Loading…" />;
+  if (loading) {
+    return (
+      <LoadingState
+        message="Opening your space…"
+        slowMessage="Still preparing — thank you for waiting…"
+      />
+    );
+  }
   if (!user) return <Redirect href="/(auth)/sign-in" />;
 
   return (

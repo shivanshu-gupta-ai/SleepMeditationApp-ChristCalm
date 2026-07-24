@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { LogBox, StatusBar } from "react-native";
+import { LogBox, StatusBar, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -10,6 +10,8 @@ import { AuthProvider, useAuth } from "@/src/features/auth";
 import { RevenueCatProvider } from "@/src/features/subscriptions";
 import { ThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { ViewportProvider } from "@/src/context/ViewportContext";
+import { ConnectivityProvider } from "@/src/context/ConnectivityContext";
+import { ConnectivityBanners } from "@/src/components/ui";
 import { startAnalytics, stopAnalytics } from "@/src/utils/analytics";
 
 LogBox.ignoreAllLogs(true);
@@ -51,7 +53,7 @@ function RootNavigator() {
   const { user } = useAuth();
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar
         barStyle={isDark ? "light-content" : "dark-content"}
         backgroundColor={colors.background}
@@ -106,15 +108,18 @@ function RootNavigator() {
             }}
           />
         </Stack>
+        <ConnectivityBanners />
       </RevenueCatProvider>
-    </>
+    </View>
   );
 }
 
 function AuthenticatedRoot() {
   return (
     <AuthProvider>
-      <RootNavigator />
+      <ConnectivityProvider>
+        <RootNavigator />
+      </ConnectivityProvider>
     </AuthProvider>
   );
 }
