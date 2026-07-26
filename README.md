@@ -6,6 +6,18 @@ Christian faith-based meditation & mental wellness app.
 
 ---
 
+## Contributing (UI without AWS)
+
+Friends and collaborators can explore the app and open PRs **without** your AWS account:
+
+1. Clone → `./scripts/sync-env-from-github.sh` (public `EXPO_PUBLIC_*` from GitHub Variables)  
+2. `cd frontend && npm install && npx expo start`  
+3. Feature branch + PR (see **[CONTRIBUTING.md](CONTRIBUTING.md)**)
+
+Infra stays on the owner’s AWS. Optional AI tooling: [GitHub MCP Server](https://github.com/github/github-mcp-server) is wired in `.grok/config.toml` / `.vscode/mcp.json` for PRs/issues (not for secrets).
+
+---
+
 ## Complete product & engineering pack
 
 **Everything under [`docs/`](docs/)** — product, UX, design, API, AI, **architecture, repo structure, deploy, config, testing** — so an AI agent can recreate the app in **any stack** (Swift, Kotlin, RN, Flutter, …) or operate this monorepo.
