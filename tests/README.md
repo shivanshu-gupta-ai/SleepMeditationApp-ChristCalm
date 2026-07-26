@@ -46,3 +46,12 @@ pytest tests/backend/ -v --junitxml=tests/reports/pytest/pytest_results.xml
 ```
 
 HTTP integration tests require `frontend/.env` with `EXPO_PUBLIC_BACKEND_URL` pointing at a deployed API.
+
+
+## Production readiness checklist
+
+ChristCalm-specific checklist (security threats, product QA, deploy):
+
+- [`tests/test_list.md`](./test_list.md)
+- Latest report: [`tests/PRODUCTION_READINESS_REPORT.md`](./PRODUCTION_READINESS_REPORT.md) (if present)
+- Artifacts: `tests/reports/checklist/`, `tests/reports/pytest/`

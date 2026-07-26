@@ -1,0 +1,30 @@
+✓ AWS credentials detected
+  Identity: arn:aws:iam::500696805306:user/appmaxing
+  Region:   us-east-1
+
+ChristCalm serverless → AWS (code)
+✓ AWS credentials detected
+  Identity: arn:aws:iam::500696805306:user/appmaxing
+  Region:   us-east-1
+  Region: us-east-1
+
+Packaging backend source + AI corpus (excludes .venv, caches, tests)...
+Package contents (ai corpus):
+./ai/corpus/
+./ai/corpus/README.md
+./ai/corpus/Wisdom_Handbook.md
+./ai/corpus/jesus_voice.md
+Archive size: 64K
+Uploading to s3://christcalm-dev-build-500696805306/source/backend.tar.gz ...
+Completed 64.0 KiB/64.0 KiB (27.0 KiB/s) with 1 file(s) remainingupload: ../../../../../../../var/folders/97/c8g07xz50xx4px1d13d4d0zh0000gn/T/christcalm-backend.XXXXXX.tar.gz.iMY5shwWvl to s3://christcalm-dev-build-500696805306/source/backend.tar.gz
+Starting AWS CodeBuild: christcalm-dev-lambda-build
+Build ID: christcalm-dev-lambda-build:235fd657-a030-4f53-952e-ed9002b8945a
+Waiting for CodeBuild (Lambda build runs on AWS, not locally)...
+  … IN_PROGRESS (PROVISIONING)
+  … IN_PROGRESS (BUILD)
+  … IN_PROGRESS (BUILD)
+  … IN_PROGRESS (POST_BUILD)
+  … IN_PROGRESS (POST_BUILD)
+  … IN_PROGRESS (COMPLETED)
+CodeBuild succeeded.
+"https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com/"

@@ -14,7 +14,8 @@
     "build:ios:preview": "eas build -p ios --profile preview",
     "build:ios:production": "eas build -p ios --profile production",
     "submit:ios": "eas submit -p ios --profile production",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "start:mcp": "EXPO_UNSTABLE_MCP_SERVER=1 expo start"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "0.4.2",
@@ -62,6 +63,7 @@
     "eslint": "9.25.0",
     "eslint-config-expo": "10.0.0",
     "expo-doctor": "1.19.8",
+    "expo-mcp": "~0.2.1",
     "typescript": "5.9.3"
   },
   "resolutions": {

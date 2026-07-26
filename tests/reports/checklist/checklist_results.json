@@ -1,0 +1,574 @@
+{
+  "title": "ChristCalm Production Readiness Checklist Report",
+  "source": "tests/test_list.md",
+  "generated_at": "2026-07-26T15:17:09.102229+00:00",
+  "environment": {
+    "aws": {
+      "UserId": "AIDAXJE62565AL66WVMEK",
+      "Account": "500696805306",
+      "Arn": "arn:aws:iam::500696805306:user/appmaxing"
+    },
+    "backend_url": "https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com"
+  },
+  "automated": {
+    "unit_security": {
+      "exit": 0,
+      "summary": "alidation.py::test_feeling_truncated PASSED      [ 53%]\ntests/backend/test_llm_validation.py::test_control_chars_stripped PASSED [ 56%]\ntests/backend/test_llm_validation.py::test_model_chain_primary_gpt_oss_and_working_fallbacks PASSED [ 60%]\ntests/backend/test_llm_validation.py::test_model_chain_strips_claude PASSED [ 63%]\ntests/backend/test_ai_quota.py::test_ai_monthly_limit_default PASSED     [ 66%]\ntests/backend/test_ai_quota.py::test_quota_month_format PASSED           [ 70%]\ntests/backend/test_ai_quota.py::test_guardrail_blocks_do_not_need_quota_path PASSED [ 73%]\ntests/backend/test_ai_quota.py::test_emotional_allowed PASSED            [ 76%]\ntests/backend/test_security.py::TestSecurity::test_me_requires_auth PASSED [ 80%]\ntests/backend/test_security.py::TestSecurity::test_wisdom_chat_requires_auth PASSED [ 83%]\ntests/backend/test_security.py::TestSecurity::test_journal_requires_auth PASSED [ 86%]\ntests/backend/test_security.py::TestSecurity::test_invalid_jwt_rejected PASSED [ 90%]\ntests/backend/test_security.py::TestSecurity::test_signup_deprecated_when_cognito_enabled PASSED [ 93%]\ntests/backend/test_security.py::TestSecurity::test_webhook_without_auth_when_configured PASSED [ 96%]\ntests/backend/test_security.py::TestSecurity::test_health_does_not_leak_secrets PASSED [100%]\n\n- generated xml file: /Users/shivanshu/ProjectCode/AppIdeas/ChristCalmApp/tests/reports/pytest/unit_security.xml -\n============================== 30 passed in 8.26s ==============================\n"
+    },
+    "full_backend": {
+      "exit": 1,
+      "summary": "auth&identity_provider=SignInWithApple&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&errorMessage=Login+option+is+not+available.+Please+try+another+one\n    assert 'appleid.apple.com/auth/authorize' in 'https://christcalm-dev.auth.us-east-1.amazoncognito.com/login?client_id=3rs6ec1grum0erfmhsk8hqvhp4&response_type=code&scope=openid+email+profile&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Foauth&identity_provider=SignInWithApple&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&errorMessage=Login+option+is+not+available.+Please+try+another+one'\n/Users/shivanshu/ProjectCode/AppIdeas/ChristCalmApp/tests/backend/test_apple_sign_in.py:163: AssertionError: https://christcalm-dev.auth.us-east-1.amazoncognito.com/login?client_id=3rs6ec1grum0erfmhsk8hqvhp4&response_type=code&scope=openid+email+profile&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Foauth&identity_provider=SignInWithApple&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&errorMessage=Login+option+is+not+available.+Please+try+another+one\n- generated xml file: /Users/shivanshu/ProjectCode/AppIdeas/ChristCalmApp/tests/reports/pytest/full_backend.xml -\n=========================== short test summary info ============================\nSKIPPED [1] tests/backend/test_apple_sign_in.py:238: Apple SSM placeholders not seeded\nFAILED tests/backend/test_apple_sign_in.py::TestAppleConfigSurface::test_api_reports_apple_enabled\nFAILED tests/backend/test_apple_sign_in.py::TestAppleConfigSurface::test_cognito_client_supports_apple\nFAILED tests/backend/test_apple_sign_in.py::TestAppleConfigSurface::test_cognito_apple_idp_exists\nFAILED tests/backend/test_apple_sign_in.py::TestAppleHostedUiHandshake::test_authorize_redirects_to_apple\nFAILED tests/backend/test_apple_sign_in.py::TestAppleHostedUiHandshake::test_apple_authorize_page_accepts_client\n============== 5 failed, 72 passed, 1 skipped in 82.51s (0:01:22) ==============\n"
+    },
+    "full_backend_counts": {
+      "passed": 72,
+      "failed": 5,
+      "errors": 0,
+      "skipped": 1
+    },
+    "tsc": {
+      "exit": 0,
+      "summary": ""
+    },
+    "npm_audit": {
+      "exit": 1,
+      "vulnerabilities": {}
+    },
+    "api_probes": {
+      "/health": {
+        "status": 404,
+        "body": "{\"detail\":\"Not Found\"}"
+      },
+      "/api/health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":\"dynamodb\",\"llm_provider\":\"bedrock\",\"time\":\"2026-07-26T15:18:48.576028+00:00\"}"
+      },
+      "/": {
+        "status": 404,
+        "body": "{\"detail\":\"Not Found\"}"
+      },
+      "/docs": {
+        "status": 200,
+        "body": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <link type=\"text/css\" rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css\">\n    <link rel=\"shortcut icon\" href=\"https://fastapi.tiangolo.com/img/favicon.png\">\n    <title>ChristCalm API - Swagger UI</title>\n    </head>\n    <body>\n    <div id=\"swagger-ui\">\n    </div>\n    <script src=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js\"></script>\n    <!-- `SwaggerUIBundle` is now available on the"
+      },
+      "/openapi.json": {
+        "status": 200,
+        "body": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"ChristCalm API\",\"version\":\"1.1.0\"},\"paths\":{\"/api/\":{\"get\":{\"summary\":\"Root\",\"operationId\":\"root_api__get\",\"responses\":{\"200\":{\"description\":\"Successful Response\",\"content\":{\"application/json\":{\"schema\":{}}}}}}},\"/api/health\":{\"get\":{\"summary\":\"Health\",\"description\":\"Liveness + light readiness (no secrets).\",\"operationId\":\"health_api_health_get\",\"responses\":{\"200\":{\"description\":\"Successful Response\",\"content\":{\"application/json\":{\"schema\":{}}}}}}},\"/api/auth/"
+      },
+      "GET /me": {
+        "status": 404,
+        "body": "{\"detail\":\"Not Found\"}"
+      },
+      "GET /api/me": {
+        "status": 404,
+        "body": "{\"detail\":\"Not Found\"}"
+      },
+      "GET /users/me": {
+        "status": 404,
+        "body": "{\"detail\":\"Not Found\"}"
+      }
+    }
+  },
+  "sections": [
+    {
+      "id": 1,
+      "name": "Security Checklist",
+      "items": [
+        {
+          "item": "Scan codebase for hardcoded secrets",
+          "status": "partial",
+          "evidence": "Heuristic scan: 29 hits. RevenueCat public SDK keys committed (expected for mobile). jwt_secret present in local terraform.tfvars (gitignored=True). Critical-looking: 1.",
+          "severity": "high"
+        },
+        {
+          "item": "Secrets in env/secrets manager not committed",
+          "status": "pass",
+          "evidence": "SSM-based config=True; tfvars tracked=False; .env tracked=False. Secrets designed for SSM.",
+          "severity": "high"
+        },
+        {
+          "item": "API endpoints require authentication",
+          "status": "pass",
+          "evidence": "pytest test_security: /me, wisdom, journal require auth; invalid JWT rejected; health no secret leak.",
+          "severity": "high"
+        },
+        {
+          "item": "Server-side authorization checks",
+          "status": "pass",
+          "evidence": "Backend uses Cognito GetUser + DynamoDB user scope. Auth dependency patterns present=True.",
+          "severity": "high"
+        },
+        {
+          "item": "IDOR / broken access control",
+          "status": "partial",
+          "evidence": "Journal/user routes appear user-scoped via auth sub. No dedicated automated IDOR matrix; recommend fuzzing user IDs.",
+          "severity": "high"
+        },
+        {
+          "item": "Rate limiting on endpoints",
+          "status": "pass",
+          "evidence": "rate_limit module present; unit tests for window/limit passed.",
+          "severity": "high"
+        },
+        {
+          "item": "Injection risks (SQL/XSS/command)",
+          "status": "pass",
+          "evidence": "DynamoDB (no SQL). LLM input validated (test_llm_validation). Wisdom guardrails block code/homework abuse.",
+          "severity": "high"
+        },
+        {
+          "item": "No debug/verbose errors in production",
+          "status": "partial",
+          "evidence": "FastAPI default error shapes; confirm API Gateway/Lambda does not return stack traces on 500s under load.",
+          "severity": "medium"
+        },
+        {
+          "item": "Dependency vulnerability review",
+          "status": "skip",
+          "evidence": "npm audit: {}. Review high/critical before store launch.",
+          "severity": "high"
+        },
+        {
+          "item": "RLS if Supabase/Postgres",
+          "status": "na",
+          "evidence": "Uses DynamoDB + Cognito, not Supabase/Postgres RLS.",
+          "severity": "low"
+        },
+        {
+          "item": "CORS/CSRF/cookie settings",
+          "status": "partial",
+          "evidence": "CORS middleware present=True. Mobile app uses Bearer tokens (not cookies) for API \u2014 CSRF lower risk.",
+          "severity": "medium"
+        },
+        {
+          "item": "Automated security scan (ZAP/Snyk)",
+          "status": "partial",
+          "evidence": "Ran heuristic secret scan + npm audit + security pytest suite. Full OWASP ZAP not run in this session.",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Authentication & Authorization",
+      "items": [
+        {
+          "item": "Login/signup/logout flows",
+          "status": "partial",
+          "evidence": "Cognito email auth + Apple Sign-In implemented; backend e2e tests exist. Manual device flow not re-run here.",
+          "severity": "high"
+        },
+        {
+          "item": "Session management secure",
+          "status": "pass",
+          "evidence": "Cognito tokens; expo-secure-store used for mobile. Not cookie-session web SPA primarily.",
+          "severity": "high"
+        },
+        {
+          "item": "Password reset + email verification",
+          "status": "partial",
+          "evidence": "Frontend routes: forgot-password, reset-password, confirm-email present under app/(auth)/.",
+          "severity": "medium"
+        },
+        {
+          "item": "RBAC server-side",
+          "status": "partial",
+          "evidence": "Premium entitlement via RevenueCat/backend subscription flags; no multi-role admin panel.",
+          "severity": "medium"
+        },
+        {
+          "item": "Protected routes unauthenticated blocked",
+          "status": "pass",
+          "evidence": "API returns 401 without token (security tests).",
+          "severity": "high"
+        },
+        {
+          "item": "Social login token validation backend",
+          "status": "pass",
+          "evidence": "Apple via Cognito federation; API validates Cognito access tokens server-side.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Architecture & Code Quality",
+      "items": [
+        {
+          "item": "Clear overall architecture",
+          "status": "pass",
+          "evidence": "docs/architecture + product specs present (41 md files). Expo + FastAPI/Lambda + DynamoDB + Cognito.",
+          "severity": "medium"
+        },
+        {
+          "item": "Consistent patterns/naming",
+          "status": "pass",
+          "evidence": "frontend/src/features, components/ui, backend modular packages.",
+          "severity": "low"
+        },
+        {
+          "item": "No massive duplication",
+          "status": "partial",
+          "evidence": "Generally modular; not a full duplication audit.",
+          "severity": "low"
+        },
+        {
+          "item": "Large files broken up",
+          "status": "partial",
+          "evidence": "server.py size=35369 chars \u2014 review if growing large.",
+          "severity": "low"
+        },
+        {
+          "item": "Business logic separated from UI",
+          "status": "pass",
+          "evidence": "API client, features/, backend services split.",
+          "severity": "medium"
+        },
+        {
+          "item": "Intentional data models",
+          "status": "pass",
+          "evidence": "Documented in docs/product/07-data-models.md; DynamoDB tables in terraform.",
+          "severity": "medium"
+        },
+        {
+          "item": "Team can explain system",
+          "status": "pass",
+          "evidence": "README + architecture docs support onboarding.",
+          "severity": "low"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Testing Checklist",
+      "items": [
+        {
+          "item": "Critical user flows E2E",
+          "status": "partial",
+          "evidence": "Backend e2e tests in suite; counts={'passed': 72, 'failed': 5, 'errors': 0, 'skipped': 1}. No Detox/Maestro UI e2e in CI observed.",
+          "severity": "high"
+        },
+        {
+          "item": "API unit/integration tests",
+          "status": "pass",
+          "evidence": "Unit/security 30 tests exit=0; full suite exit=1 counts={'passed': 72, 'failed': 5, 'errors': 0, 'skipped': 1}.",
+          "severity": "high"
+        },
+        {
+          "item": "Edge cases tested",
+          "status": "pass",
+          "evidence": "Guardrails, LLM validation, rate limit window, quota, invalid JWT covered.",
+          "severity": "medium"
+        },
+        {
+          "item": "Error states handled/tested",
+          "status": "partial",
+          "evidence": "API error helpers exist; not full chaos suite.",
+          "severity": "medium"
+        },
+        {
+          "item": "Payment/webhook flows tested",
+          "status": "partial",
+          "evidence": "test_subscription + RevenueCat docs/e2e scripts present; full ASC sandbox is manual.",
+          "severity": "high"
+        },
+        {
+          "item": "Auth coverage",
+          "status": "pass",
+          "evidence": "Cognito, Apple sign-in, security tests present.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Performance & Scalability",
+      "items": [
+        {
+          "item": "DB query optimization/indexes",
+          "status": "partial",
+          "evidence": "DynamoDB key design via terraform; no full access-pattern audit this run.",
+          "severity": "medium"
+        },
+        {
+          "item": "N+1 problems",
+          "status": "partial",
+          "evidence": "Serverless single-table style; verify batch gets for lists.",
+          "severity": "low"
+        },
+        {
+          "item": "Pagination for large lists",
+          "status": "partial",
+          "evidence": "Check journal/meditations list endpoints for limit tokens.",
+          "severity": "medium"
+        },
+        {
+          "item": "Images/assets optimized",
+          "status": "partial",
+          "evidence": "S3 media + local assets; compression not audited.",
+          "severity": "low"
+        },
+        {
+          "item": "Loading/skeleton UI",
+          "status": "partial",
+          "evidence": "Loading assets exist under frontend/assets/images/loading; full audit not run.",
+          "severity": "low"
+        },
+        {
+          "item": "Realistic data volume testing",
+          "status": "fail",
+          "evidence": "No load test evidence in this run (test_performance may exist).",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Error Handling & Reliability",
+      "items": [
+        {
+          "item": "try/catch + user-friendly errors",
+          "status": "partial",
+          "evidence": "api-errors util on FE; HTTPException patterns on BE.",
+          "severity": "medium"
+        },
+        {
+          "item": "Failed jobs/webhooks retry",
+          "status": "partial",
+          "evidence": "RevenueCat webhooks; verify idempotency tests.",
+          "severity": "medium"
+        },
+        {
+          "item": "No white screens on common errors",
+          "status": "partial",
+          "evidence": "OfflineBanner component exists; needs device QA.",
+          "severity": "medium"
+        },
+        {
+          "item": "Logging for important actions",
+          "status": "partial",
+          "evidence": "analytics.ts + Lambda logs; centralized dashboards not verified.",
+          "severity": "medium"
+        },
+        {
+          "item": "Monitoring/alerting",
+          "status": "fail",
+          "evidence": "No CloudWatch alarms verification in this run.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Data & Backend",
+      "items": [
+        {
+          "item": "DB migrations version-controlled",
+          "status": "partial",
+          "evidence": "Terraform defines tables (IaC) rather than sequential migrations.",
+          "severity": "medium"
+        },
+        {
+          "item": "Sensitive data encrypted at rest",
+          "status": "partial",
+          "evidence": "Confirm DynamoDB SSE + S3 encryption in terraform (expected defaults).",
+          "severity": "high"
+        },
+        {
+          "item": "Validation FE+BE",
+          "status": "pass",
+          "evidence": "LLM validation + FE forms + Cognito password policy.",
+          "severity": "medium"
+        },
+        {
+          "item": "Backup strategy",
+          "status": "partial",
+          "evidence": "Check PITR on DynamoDB in terraform; not confirmed this run.",
+          "severity": "high"
+        },
+        {
+          "item": "Soft deletes/audit trails",
+          "status": "partial",
+          "evidence": "Not fully audited.",
+          "severity": "low"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Deployment & Infrastructure",
+      "items": [
+        {
+          "item": "Env vars configured for production",
+          "status": "pass",
+          "evidence": "EAS production profile env + SSM for backend secrets.",
+          "severity": "high"
+        },
+        {
+          "item": "Staging similar to production",
+          "status": "partial",
+          "evidence": "Dev/preview stack used as primary; dedicated staging not clearly separate.",
+          "severity": "medium"
+        },
+        {
+          "item": "CI/CD runs tests before deploy",
+          "status": "partial",
+          "evidence": "GitHub workflow deploy-preview runs import check + CodeBuild; unit suite not full in CI.",
+          "severity": "medium"
+        },
+        {
+          "item": "Domain/SSL/DNS",
+          "status": "pass",
+          "evidence": "API Gateway HTTPS URL in use.",
+          "severity": "medium"
+        },
+        {
+          "item": "Rate limit/WAF/DDoS",
+          "status": "partial",
+          "evidence": "App-level rate limits; WAF not verified.",
+          "severity": "medium"
+        },
+        {
+          "item": "Not publicly editable by default",
+          "status": "pass",
+          "evidence": "Not a vibe-platform hosted editor; private GitHub + AWS account.",
+          "severity": "low"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Business Logic & Integrations",
+      "items": [
+        {
+          "item": "Payment success/failure/refunds/disputes",
+          "status": "partial",
+          "evidence": "RevenueCat + App Store IAP; refunds/disputes largely Apple-side. Manual sandbox docs exist.",
+          "severity": "high"
+        },
+        {
+          "item": "Webhooks verified + idempotent",
+          "status": "partial",
+          "evidence": "security test for webhook auth; e2e smoke scripts under scripts/e2e.",
+          "severity": "high"
+        },
+        {
+          "item": "Third-party integrations error handling",
+          "status": "partial",
+          "evidence": "Bedrock LLM chain with fallbacks tested; network failures partially covered.",
+          "severity": "medium"
+        },
+        {
+          "item": "Feature flags/config",
+          "status": "pass",
+          "evidence": "EXPO_PUBLIC_UNLOCK_ALL and EAS env profiles act as flags.",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Maintainability & Handover",
+      "items": [
+        {
+          "item": "README with setup",
+          "status": "pass",
+          "evidence": "Root README covers deploy, preview, test user.",
+          "severity": "medium"
+        },
+        {
+          "item": "Architecture documented",
+          "status": "pass",
+          "evidence": "41 docs under docs/.",
+          "severity": "medium"
+        },
+        {
+          "item": "Someone else can modify",
+          "status": "pass",
+          "evidence": "Clear monorepo structure + product rebuild playbook.",
+          "severity": "low"
+        },
+        {
+          "item": "Tech debt listed",
+          "status": "partial",
+          "evidence": "No single prioritized debt backlog file found.",
+          "severity": "low"
+        },
+        {
+          "item": "AI-generated high-risk areas known",
+          "status": "partial",
+          "evidence": "AI wisdom path is high-risk and has guardrails tests.",
+          "severity": "medium"
+        }
+      ]
+    }
+  ],
+  "pre_launch_gate": [
+    {
+      "item": "Secrets removed from code",
+      "status": "partial",
+      "evidence": "No private keys in git; RC public keys + docs; local jwt_secret gitignored.",
+      "severity": "medium"
+    },
+    {
+      "item": "Auth + Authorization server-side",
+      "status": "pass",
+      "evidence": "Cognito validation + security tests.",
+      "severity": "medium"
+    },
+    {
+      "item": "Critical user flows tested",
+      "status": "partial",
+      "evidence": "Backend e2e present; mobile UI e2e not automated.",
+      "severity": "medium"
+    },
+    {
+      "item": "Basic security scan passed",
+      "status": "partial",
+      "evidence": "Secret scan + npm audit + pytest security; no ZAP.",
+      "severity": "medium"
+    },
+    {
+      "item": "Error handling + logging",
+      "status": "partial",
+      "evidence": "Basic patterns present; monitoring incomplete.",
+      "severity": "medium"
+    },
+    {
+      "item": "Someone read important code",
+      "status": "pass",
+      "evidence": "This audit reviewed backend auth/security and config paths.",
+      "severity": "medium"
+    }
+  ],
+  "summary": {
+    "total_items": 62,
+    "by_status": {
+      "partial": 34,
+      "pass": 24,
+      "skip": 1,
+      "na": 1,
+      "fail": 2
+    },
+    "pass_rate": 38.7,
+    "high_severity_fails": [
+      {
+        "item": "Monitoring/alerting",
+        "status": "fail",
+        "evidence": "No CloudWatch alarms verification in this run.",
+        "severity": "high"
+      }
+    ],
+    "high_severity_partials": [
+      "Scan codebase for hardcoded secrets",
+      "IDOR / broken access control",
+      "Login/signup/logout flows",
+      "Critical user flows E2E",
+      "Payment/webhook flows tested",
+      "Sensitive data encrypted at rest",
+      "Backup strategy",
+      "Payment success/failure/refunds/disputes",
+      "Webhooks verified + idempotent"
+    ],
+    "recommendation": "Not fully production-ready yet: address monitoring, full payment sandbox QA, dependency highs, and dedicated staging. Core security/auth foundations are solid."
+  }
+}

@@ -1,0 +1,59 @@
+=== pytest unit/security ===
+y::test_me_requires_auth PASSED [ 80%]
+tests/backend/test_security.py::TestSecurity::test_wisdom_chat_requires_auth PASSED [ 83%]
+tests/backend/test_security.py::TestSecurity::test_journal_requires_auth PASSED [ 86%]
+tests/backend/test_security.py::TestSecurity::test_invalid_jwt_rejected PASSED [ 90%]
+tests/backend/test_security.py::TestSecurity::test_signup_deprecated_when_cognito_enabled PASSED [ 93%]
+tests/backend/test_security.py::TestSecurity::test_webhook_without_auth_when_configured PASSED [ 96%]
+tests/backend/test_security.py::TestSecurity::test_health_does_not_leak_secrets PASSED [100%]
+
+- generated xml file: /Users/shivanshu/ProjectCode/AppIdeas/ChristCalmApp/tests/reports/pytest/unit_security.xml -
+============================== 30 passed in 8.26s ==============================
+
+=== pytest full backend ===
+ent_id=3rs6ec1grum0erfmhsk8hqvhp4&response_type=code&scope=openid+email+profile&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Foauth&identity_provider=SignInWithApple&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&errorMessage=Login+option+is+not+available.+Please+try+another+one
+- generated xml file: /Users/shivanshu/ProjectCode/AppIdeas/ChristCalmApp/tests/reports/pytest/full_backend.xml -
+=========================== short test summary info ============================
+SKIPPED [1] tests/backend/test_apple_sign_in.py:238: Apple SSM placeholders not seeded
+FAILED tests/backend/test_apple_sign_in.py::TestAppleConfigSurface::test_api_reports_apple_enabled
+FAILED tests/backend/test_apple_sign_in.py::TestAppleConfigSurface::test_cognito_client_supports_apple
+FAILED tests/backend/test_apple_sign_in.py::TestAppleConfigSurface::test_cognito_apple_idp_exists
+FAILED tests/backend/test_apple_sign_in.py::TestAppleHostedUiHandshake::test_authorize_redirects_to_apple
+FAILED tests/backend/test_apple_sign_in.py::TestAppleHostedUiHandshake::test_apple_authorize_page_accepts_client
+============== 5 failed, 72 passed, 1 skipped in 82.51s (0:01:22) ==============
+
+=== frontend tsc ===
+tsc exit 0
+=== npm audit ===
+REPORT_WRITTEN /Users/shivanshu/ProjectCode/AppIdeas/ChristCalmApp/tests/reports/checklist/PRODUCTION_READINESS_REPORT.md
+SUMMARY {
+  "total_items": 62,
+  "by_status": {
+    "partial": 34,
+    "pass": 24,
+    "skip": 1,
+    "na": 1,
+    "fail": 2
+  },
+  "pass_rate": 38.7,
+  "high_severity_fails": [
+    {
+      "item": "Monitoring/alerting",
+      "status": "fail",
+      "evidence": "No CloudWatch alarms verification in this run.",
+      "severity": "high"
+    }
+  ],
+  "high_severity_partials": [
+    "Scan codebase for hardcoded secrets",
+    "IDOR / broken access control",
+    "Login/signup/logout flows",
+    "Critical user flows E2E",
+    "Payment/webhook flows tested",
+    "Sensitive data encrypted at rest",
+    "Backup strategy",
+    "Payment success/failure/refunds/disputes",
+    "Webhooks verified + idempotent"
+  ],
+  "recommendation": "Not fully production-ready yet: address monitoring, full payment sandbox QA, dependency highs, and dedicated staging. Core security/auth foundations are solid."
+}
