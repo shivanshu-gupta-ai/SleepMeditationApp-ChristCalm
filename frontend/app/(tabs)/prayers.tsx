@@ -76,7 +76,7 @@ export default function Prayers() {
 
       <FadeIn delay={50}>
         <PressableScale
-          onPress={() => router.push("/ai-prayer")}
+          onPress={() => router.push("/(tabs)/wisdom")}
           testID="prayers-ai-btn"
           style={{
             borderRadius: radius.lg,

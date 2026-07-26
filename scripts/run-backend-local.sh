@@ -29,6 +29,8 @@ fi
 
 export SSM_PREFIX="${SSM_PREFIX:-/christcalm-dev}"
 export DYNAMODB_TABLE_PREFIX="${DYNAMODB_TABLE_PREFIX:-christcalm-dev}"
+# Dev-only: seed test@christcalm.dev as premium on login. Never set on production Lambda.
+export ALLOW_PREVIEW_TEST_PREMIUM="${ALLOW_PREVIEW_TEST_PREMIUM:-1}"
 # Strip leading path quirks
 SSM_PREFIX="${SSM_PREFIX%/}"
 [[ "$SSM_PREFIX" == /* ]] || SSM_PREFIX="/$SSM_PREFIX"

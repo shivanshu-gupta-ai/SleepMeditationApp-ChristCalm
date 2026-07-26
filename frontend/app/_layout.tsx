@@ -93,13 +93,6 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
-            name="ai-prayer"
-            options={{
-              presentation: "card",
-              animation: "slide_from_right",
-            }}
-          />
-          <Stack.Screen
             name="meditation/[id]"
             options={{
               presentation: "fullScreenModal",

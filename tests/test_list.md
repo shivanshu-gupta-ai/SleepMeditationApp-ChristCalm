@@ -24,7 +24,7 @@
 
 | Env | API | App flags |
 |-----|-----|-----------|
-| Local preview | Live Lambda URL | `EXPO_PUBLIC_UNLOCK_ALL=1`, RC test key |
+| Local preview | Live Lambda URL | explicit `UNLOCK_ALL=1` + RC test key (via sync-env) |
 | Device IAP sandbox | Same API | `UNLOCK_ALL=0`, RC `appl_` key |
 | EAS production / TestFlight | Production env in `eas.json` | `UNLOCK_ALL=0`, RC `appl_` key |
 
@@ -53,7 +53,8 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 - [ ] Password policy enforced (8+, upper, lower, number)
 - [ ] Confirm-email / forgot-password / reset-password flows complete
 - [ ] Sign-out clears secure storage tokens (no ghost session on reinstall without re-auth where expected)
-- [ ] Test user `test@christcalm.dev` premium unlock does **not** apply to real production users
+- [ ] Seed account premium only when `ALLOW_PREVIEW_TEST_PREMIUM=1` (local API) — never on production Lambda
+- [ ] Client has **no** hard-coded free-premium emails; `UNLOCK_ALL` defaults to **off**
 
 **Possible vulns:** accepting client-supplied `user_id`; skipping Cognito when `USE_COGNITO` mis-set; Apple IdP return URL mismatch → account takeover attempts; auto-confirm in prod if left on for “preview”.
 

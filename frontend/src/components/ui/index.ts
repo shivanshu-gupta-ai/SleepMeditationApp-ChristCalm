@@ -3,7 +3,7 @@ export { LoadingState } from "@/src/components/ui/LoadingState";
 export { ErrorState, ErrorBanner } from "@/src/components/ui/ErrorState";
 export { EmptyState } from "@/src/components/ui/EmptyState";
 export { Skeleton, ListSkeleton, GridSkeleton } from "@/src/components/ui/Skeleton";
-export { SuccessToast, SuccessInline } from "@/src/components/ui/SuccessToast";
+export { SuccessInline } from "@/src/components/ui/SuccessToast";
 export { ConnectivityBanners } from "@/src/components/ui/OfflineBanner";
 export { Button } from "@/src/components/ui/Button";
 export { Chip } from "@/src/components/ui/Chip";

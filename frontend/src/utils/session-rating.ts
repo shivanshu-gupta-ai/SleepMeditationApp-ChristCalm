@@ -1,10 +1,4 @@
-/**
- * Per-session meditation ratings (1–5 stars).
- *
- * - Always cached locally for instant UI on this device.
- * - Persisted to DynamoDB via POST /api/meditations/rate for every authenticated user
- *   so ratings survive reinstall and are available server-side.
- */
+/** Local + server meditation ratings (1–5). Local always; server best-effort. */
 import { storage } from "@/src/utils/storage";
 import { api } from "@/src/api/client";
 
@@ -22,16 +16,6 @@ async function loadMap(): Promise<RatingsMap> {
   }
 }
 
-export async function getMeditationRating(meditationId: string): Promise<number | null> {
-  const map = await loadMap();
-  const row = map[meditationId];
-  return row?.stars ?? null;
-}
-
-/**
- * Save rating locally and sync to backend DynamoDB for the signed-in user.
- * Local write always succeeds; server write is best-effort (offline / unauth).
- */
 export async function saveMeditationRating(
   meditationId: string,
   stars: number,
@@ -46,7 +30,10 @@ export async function saveMeditationRating(
     await api.rateMeditation(meditationId, n, minutes);
     return { local: true, synced: true };
   } catch (e) {
-    console.warn("Meditation rating not synced to server", e);
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn("Meditation rating not synced to server", e);
+    }
     return { local: true, synced: false };
   }
 }

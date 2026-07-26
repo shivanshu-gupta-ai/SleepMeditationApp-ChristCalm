@@ -71,7 +71,14 @@ async def ensure_user_from_claims(claims: dict) -> dict:
     )
 
     email_norm = (email or "").strip().lower()
-    is_test = email_norm in {"test@christcalm.dev"}
+    # Optional dev-only auto-premium for seed account. Never enable in App Store / prod API.
+    # Set ALLOW_PREVIEW_TEST_PREMIUM=1 on local/dev Lambda only.
+    allow_preview_premium = os.environ.get("ALLOW_PREVIEW_TEST_PREMIUM", "").strip() in {
+        "1",
+        "true",
+        "yes",
+    }
+    is_test = allow_preview_premium and email_norm in {"test@christcalm.dev"}
 
     existing = await db.get_user_by_cognito_sub(sub)
     if existing:
@@ -80,7 +87,7 @@ async def ensure_user_from_claims(claims: dict) -> dict:
             updates["email"] = email
         if name and not existing.get("name"):
             updates["name"] = name
-        # Keep test account fully unlocked on every login
+        # Dev-only: keep seed account unlocked when flag is on
         if is_test and not existing.get("is_premium"):
             updates["is_premium"] = True
             updates["plan"] = "preview"
@@ -103,7 +110,7 @@ async def ensure_user_from_claims(claims: dict) -> dict:
                 updates["subscription_provider"] = "preview"
             return await db.update_user(by_email["id"], updates)
 
-    # Preview test accounts get full access; others free until RevenueCat / sync.
+    # New users are free until RevenueCat webhook / purchase sync.
     user_doc = {
         "id": str(uuid.uuid4()),
         "cognito_sub": sub,

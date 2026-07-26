@@ -194,7 +194,7 @@ Reports land under [`tests/reports/`](tests/reports/).
 | Domain | Frontend | Backend | Config |
 |--------|----------|---------|--------|
 | Auth | `frontend/src/features/auth/` | `backend/auth/` | `config/auth/` |
-| AI / Wisdom | `app/(tabs)/wisdom.tsx`, `app/ai-prayer.tsx` | `backend/ai/` | Bedrock via Terraform IAM |
+| AI / Wisdom | `app/(tabs)/wisdom.tsx` | `backend/ai/` | Bedrock via Terraform IAM |
 | Subscriptions | `frontend/src/features/subscriptions/` | webhook in `server.py` | RevenueCat env |
 | Content media | `frontend/assets/` (bundle) | `seed_data.py` + S3 | `assets/meditations/` |
 

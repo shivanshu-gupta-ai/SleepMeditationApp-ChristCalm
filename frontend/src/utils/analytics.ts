@@ -118,22 +118,7 @@ export async function track(
   }
 }
 
-/** Recent events for debug / future sync */
-export async function getRecentEvents(limit = 50): Promise<StoredEvent[]> {
-  const buf = await readBuffer();
-  return buf.slice(-limit);
-}
-
-/** Funnel helper counts for a simple profile debug view */
-export async function countEvent(name: AnalyticsEvent | string): Promise<number> {
-  const buf = await readBuffer();
-  return buf.filter((e) => e.name === name).length;
-}
-
-/**
- * Send buffered events to backend → DynamoDB usage tables.
- * Safe to call often; concurrent flushes are coalesced.
- */
+/** Flush buffered events to backend. Concurrent calls are coalesced. */
 export async function flushAnalytics(): Promise<{ sent: number; ok: boolean }> {
   if (flushing) return { sent: 0, ok: false };
   flushing = true;

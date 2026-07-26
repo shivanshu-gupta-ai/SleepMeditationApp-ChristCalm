@@ -22,7 +22,6 @@ ChristCalmApp/
 │   ├── app/                      # File-based routes only
 │   ├── src/                      # Features, UI kit, theme, API client
 │   ├── assets/                   # Bundled images, Grace, meditation covers
-│   ├── constants/testIds/        # E2E / test ids
 │   ├── scripts/                  # cmd-guard, sync-shims
 │   ├── package.json
 │   ├── app.json                  # Expo config
@@ -140,7 +139,7 @@ ChristCalmApp/
 | `onboarding.tsx` | Multi-step onboarding |
 | `paywall.tsx` | Subscription paywall |
 | `sos.tsx` | 4-7-8 panic relief |
-| `ai-prayer.tsx` | AI prayer entry (Wisdom-related) |
+| `wisdom.tsx` | Wisdom chat (AI companion) |
 | `oauth.tsx` | OAuth return |
 | `meditation/[id].tsx` | Full-screen player |
 | `(tabs)/_layout.tsx` | Floating tab bar + FAB |

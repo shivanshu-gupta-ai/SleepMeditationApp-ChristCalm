@@ -54,7 +54,8 @@
         {
           "microphonePermission": "ChristCalm uses the microphone so you can speak a concern and convert it to text for Wisdom."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

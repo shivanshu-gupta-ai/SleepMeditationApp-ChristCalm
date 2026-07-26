@@ -1,11 +1,6 @@
-/**
- * Bundled meditation covers — one unique image per session track.
- * Canonical files: assets/meditations/covers/<track>.jpg
- * Keep frontend/assets/meditations/covers/ in sync.
- */
+/** Bundled meditation covers (sync from assets/meditations/covers via scripts). */
 import type { ImageSourcePropType } from "react-native";
 
-/** Track slug → local require (must match seed_data track keys) */
 const LOCAL: Record<string, ImageSourcePropType> = {
   shanti: require("../../assets/meditations/covers/shanti.jpg"),
   sun: require("../../assets/meditations/covers/sun.jpg"),
@@ -23,7 +18,6 @@ const LOCAL: Record<string, ImageSourcePropType> = {
   "yoga-nidra": require("../../assets/meditations/covers/yoga-nidra.jpg"),
 };
 
-/** Full meditation ids → same art as their track */
 const BY_MED_ID: Record<string, ImageSourcePropType> = {
   "med-anxious-shanti": LOCAL.shanti,
   "med-fearful-transforming-emotions": LOCAL["transforming-emotions"],
@@ -41,7 +35,6 @@ const BY_MED_ID: Record<string, ImageSourcePropType> = {
   "med-cant_sleep-yoga-nidra": LOCAL["yoga-nidra"],
 };
 
-/** Prefer bundled asset; fall back to remote cover URL from API. */
 export function meditationCoverSource(
   id: string,
   remoteUrl?: string | null,
@@ -61,6 +54,4 @@ export function meditationCoverSource(
   return LOCAL.shanti;
 }
 
-export function hasLocalCover(id: string): boolean {
-  return Boolean(BY_MED_ID[id] || LOCAL[id]);
-}
+

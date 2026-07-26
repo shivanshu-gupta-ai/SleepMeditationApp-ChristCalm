@@ -1,8 +1,4 @@
-/**
- * Soft haptic hierarchy for ChristCalm.
- * Light = chips/tiles · Medium = tabs/primary · Success = completed action
- * No-ops on web / when unsupported.
- */
+/** Soft haptics; no-ops on web / unsupported devices. */
 import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 

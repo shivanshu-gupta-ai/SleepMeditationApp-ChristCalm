@@ -194,32 +194,6 @@ export const PREFERRED_TIMES: {
   },
 ];
 
-export const FIRST_PRACTICES: {
-  id: string;
-  label: string;
-  text: string;
-  icon: IonIconName;
-}[] = [
-  {
-    id: "breathe",
-    label: "Breathe with Jesus",
-    text: 'Take 3 slow breaths and whisper: "Jesus, I receive Your peace."',
-    icon: "fitness-outline",
-  },
-  {
-    id: "scripture",
-    label: "Today's Scripture",
-    text: "Read today's Scripture slowly and let one word settle.",
-    icon: "book-outline",
-  },
-  {
-    id: "share",
-    label: "Honest prayer",
-    text: "Tell Jesus one thing heavy on your heart.",
-    icon: "chatbubble-ellipses-outline",
-  },
-];
-
 /** Honest product preview — matches live app features (not a sequential week plan). */
 export const HOW_THE_APP_WORKS: {
   id: string;

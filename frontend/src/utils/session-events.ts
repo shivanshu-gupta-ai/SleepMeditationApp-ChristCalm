@@ -1,7 +1,4 @@
-/**
- * Lightweight session lifecycle bus (no React dependency).
- * Used by the API client when auth fails mid-session.
- */
+/** Session lifecycle bus (API client → auth / connectivity). */
 
 export type SessionEvent =
   | { type: "expired"; message?: string }

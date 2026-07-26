@@ -105,9 +105,6 @@ export function createShadows(isDark: boolean): ShadowTokens {
   };
 }
 
-/** @deprecated Prefer theme.shadows from useTheme() */
-export const shadows = createShadows(false);
-
 export const motion = {
   pressScale: 0.97,
   pressSpring: { damping: 20, stiffness: 340, mass: 0.55 },

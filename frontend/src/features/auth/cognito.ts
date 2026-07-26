@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 
@@ -250,7 +249,7 @@ export async function signInWithProvider(
 ): Promise<CognitoTokens> {
   if (!appleSignInSupported()) {
     throw new Error(
-      "Sign in with Apple isn’t available in the browser. Use email and password (test@christcalm.dev / Test1234)."
+      "Sign in with Apple isn’t available in the browser. Use email and password instead."
     );
   }
   if (!DOMAIN) {
@@ -320,7 +319,7 @@ export async function signInWithProvider(
       const err = String(data?.error_description || data?.error || "Token exchange failed");
       if (/invalid_client/i.test(err)) {
         throw new Error(
-          "Apple Sign-In token exchange failed. Use email sign-in (test@christcalm.dev / Test1234)."
+          "Apple Sign-In token exchange failed. Use email sign-in, or finish Apple setup (config/auth/README.md)."
         );
       }
       throw new Error(err);
@@ -360,26 +359,4 @@ export async function refreshTokens(refreshToken: string): Promise<CognitoTokens
 
 export function signOutCognito(): void {
   // Tokens are cleared by AuthContext; no server session for USER_PASSWORD_AUTH
-}
-
-export async function fetchAuthConfig(apiBase: string): Promise<CognitoConfig | null> {
-  try {
-    const res = await fetch(`${apiBase}/auth/config`);
-    if (!res.ok) return null;
-    return (await res.json()) as CognitoConfig;
-  } catch {
-    return null;
-  }
-}
-
-/** Parse tokens returned via deep link (fallback). */
-export function parseOAuthRedirect(url: string | null): string | null {
-  if (!url) return null;
-  const match = url.match(/[?&#]code=([^&]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-export function cognitoLogoutUrl(): string {
-  const redirect = Linking.createURL("oauth");
-  return `${hostedUiBase()}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(redirect)}`;
 }

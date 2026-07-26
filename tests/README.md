@@ -53,5 +53,5 @@ HTTP integration tests require `frontend/.env` with `EXPO_PUBLIC_BACKEND_URL` po
 ChristCalm-specific checklist (security threats, product QA, deploy):
 
 - [`tests/test_list.md`](./test_list.md)
-- Latest report: [`tests/PRODUCTION_READINESS_REPORT.md`](./PRODUCTION_READINESS_REPORT.md) (if present)
-- Artifacts: `tests/reports/checklist/`, `tests/reports/pytest/`
+- Release path: [`docs/engineering/prod-sandbox-release.md`](../docs/engineering/prod-sandbox-release.md)
+- Pytest JUnit XML may live under `tests/reports/pytest/` (logs/scans are gitignored)

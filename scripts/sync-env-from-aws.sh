@@ -24,13 +24,19 @@ COGNITO_REGION="$(terraform output -raw cognito_region)"
 SSM_PREFIX="$(terraform output -raw ssm_prefix 2>/dev/null || echo "/christcalm-dev")"
 TABLE_PREFIX="$(terraform output -json dynamodb_tables 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("users","").rsplit("-users",1)[0] if d else "christcalm-dev")' 2>/dev/null || echo "christcalm-dev")"
 
-# RevenueCat public keys (not in Terraform)
+# RevenueCat public keys (not secrets; still prefer env overrides over hardcoding).
 # Modes:
 #   CHRISTCALM_RC_MODE=preview   → Test Store key + UNLOCK_ALL=1  (default; web/sim content)
 #   CHRISTCALM_RC_MODE=appstore  → appl_ key + UNLOCK_ALL=0       (device StoreKit / EAS)
+# Override without editing this script:
+#   export EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=appl_…
+#   or set RC_APPL_KEY / RC_TEST_KEY in the environment.
 RC_MODE="${CHRISTCALM_RC_MODE:-preview}"
-RC_TEST_KEY="test_iOFZidqNcAXQabRbTcHHYiAEKug"
-RC_APPL_KEY="appl_cccgVPkKesnGrFTnzfXMEjQvfRA"
+RC_TEST_KEY="${RC_TEST_KEY:-${EXPO_PUBLIC_REVENUECAT_TEST_KEY:-}}"
+RC_APPL_KEY="${RC_APPL_KEY:-${EXPO_PUBLIC_REVENUECAT_APPL_KEY:-}}"
+# Fallback: last known project public keys (client-safe). Prefer env for new accounts.
+if [[ -z "$RC_TEST_KEY" ]]; then RC_TEST_KEY="test_iOFZidqNcAXQabRbTcHHYiAEKug"; fi
+if [[ -z "$RC_APPL_KEY" ]]; then RC_APPL_KEY="appl_cccgVPkKesnGrFTnzfXMEjQvfRA"; fi
 
 RC_IOS_KEY=""
 RC_ENT=""

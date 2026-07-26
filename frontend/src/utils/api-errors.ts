@@ -1,7 +1,3 @@
-/**
- * Typed API errors for calm, actionable UI states.
- */
-
 export type ApiErrorKind = "network" | "unauthorized" | "http" | "config";
 
 export class ApiError extends Error {
@@ -16,8 +12,4 @@ export class ApiError extends Error {
     this.status = status;
     this.detail = detail;
   }
-}
-
-export function isApiError(e: unknown): e is ApiError {
-  return e instanceof ApiError;
 }

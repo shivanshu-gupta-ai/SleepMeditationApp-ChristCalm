@@ -9,14 +9,7 @@ export const PHONE_BASE_WIDTH = 390;
  */
 export const PHONE_MAX_WIDTH = 430;
 
-/** Smallest modern iPhone class (SE 3rd gen = 375; older SE = 320) */
-export const PHONE_MIN_WIDTH = 320;
-
-/**
- * Tablet / large-layout breakpoints (logical points).
- * 600 covers large phones in landscape + iPad mini portrait.
- * 900 covers iPad landscape / iPad Pro.
- */
+/** Tablet / large-layout breakpoints (logical points). */
 export const TABLET_BREAKPOINT = 600;
 export const TABLET_WIDE_BREAKPOINT = 900;
 
@@ -31,9 +24,6 @@ const BASE_WIDTH = PHONE_BASE_WIDTH;
 
 export type SizeClass = "compact" | "regular" | "large" | "tablet" | "tabletWide";
 
-/** @deprecated Use SizeClass */
-export type PhoneSizeClass = SizeClass;
-
 export function getWindow(): ScaledSize {
   return Dimensions.get("window");
 }
@@ -45,39 +35,18 @@ export function windowWidth(windowW?: number): number {
   return w;
 }
 
-export function windowHeight(windowH?: number): number {
-  const h = windowH ?? getWindow().height;
-  if (!Number.isFinite(h) || h <= 0) return 844;
-  return h;
-}
-
 export function isTabletWidth(width?: number): boolean {
   return windowWidth(width) >= TABLET_BREAKPOINT;
 }
 
-export function isTablet(width?: number): boolean {
-  return isTabletWidth(width);
-}
-
-export function isLandscape(width?: number, height?: number): boolean {
-  return windowWidth(width) > windowHeight(height);
-}
-
-/**
- * Device size class across iPhone SE → Pro Max → iPad mini → iPad Pro.
- */
+/** Device size class: SE → Pro Max → iPad. */
 export function sizeClass(width?: number): SizeClass {
   const w = windowWidth(width);
   if (w >= TABLET_WIDE_BREAKPOINT) return "tabletWide";
   if (w >= TABLET_BREAKPOINT) return "tablet";
-  if (w <= 375) return "compact"; // SE, mini
-  if (w <= 402) return "regular"; // standard iPhone
-  return "large"; // Plus / Pro Max / large phone
-}
-
-/** @deprecated Prefer sizeClass */
-export function phoneSizeClass(width?: number): SizeClass {
-  return sizeClass(width);
+  if (w <= 375) return "compact";
+  if (w <= 402) return "regular";
+  return "large";
 }
 
 /**
@@ -156,10 +125,6 @@ export function tabBarMaxWidth(width?: number): number {
   const w = windowWidth(width);
   if (isTabletWidth(w)) return Math.min(contentMaxWidth(w) + 48, w - 24);
   return w;
-}
-
-export function isWeb(): boolean {
-  return Platform.OS === "web";
 }
 
 /** Title / type scale by device class */

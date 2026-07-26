@@ -6,7 +6,8 @@ import { emitSessionExpired } from "@/src/utils/session-events";
 
 const BACKEND_URL = (process.env.EXPO_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 
-if (!BACKEND_URL) {
+if (!BACKEND_URL && typeof __DEV__ !== "undefined" && __DEV__) {
+  // eslint-disable-next-line no-console
   console.warn(
     "EXPO_PUBLIC_BACKEND_URL is not set — run ./scripts/sync-env-from-aws.sh then restart Expo with --clear"
   );
@@ -89,10 +90,6 @@ export const api = {
       domain: string | null;
       apple_enabled: boolean;
     }>("/auth/config", { auth: false }),
-  signUp: (name: string, email: string, password: string) =>
-    request("/auth/signup", { method: "POST", body: { name, email, password }, auth: false }),
-  signIn: (email: string, password: string) =>
-    request("/auth/signin", { method: "POST", body: { email, password }, auth: false }),
   me: () => request("/auth/me"),
   saveOnboarding: (payload: {
     faith_journey: string | null;
@@ -163,16 +160,6 @@ export const api = {
         ...(typeof minutes === "number" ? { minutes } : {}),
       },
     }),
-  listMeditationRatings: () =>
-    request<{
-      ratings: {
-        id: string;
-        meditation_id: string;
-        stars: number;
-        minutes?: number | null;
-        created_at: string;
-      }[];
-    }>("/meditations/ratings"),
   prayers: async (category?: string) => {
     const key = `catalog:prayers:${category || "all"}`;
     const hit = cacheGet<any>(key);
@@ -195,16 +182,12 @@ export const api = {
 
   logMood: (emotion: string, note?: string) =>
     request("/mood/log", { method: "POST", body: { emotion, note } }),
-  moodHistory: () => request("/mood/history"),
 
   createJournal: (content: string, mood?: string) =>
     request("/journal", { method: "POST", body: { content, mood } }),
   listJournal: () => request("/journal"),
 
-  /**
-   * Product feedback (Me tab) → DynamoDB user-feedback table (durable free-text).
-   * Analytics should only track category/stars, not the message body.
-   */
+  /** Product feedback (Me tab) → DynamoDB; analytics should not store message body. */
   submitFeedback: (body: {
     category: "praise" | "suggestion" | "bug" | "spiritual" | "other";
     message: string;
@@ -221,19 +204,7 @@ export const api = {
         status: string;
       };
     }>("/feedback", { method: "POST", body }),
-  listFeedback: () =>
-    request<{
-      items: {
-        id: string;
-        category: string;
-        message?: string;
-        stars?: number | null;
-        created_at: string;
-        status?: string;
-      }[];
-    }>("/feedback"),
 
-  /** Conversational wisdom (RAG + Bedrock) */
   wisdomChat: (message: string, conversation_id?: string | null) =>
     request<{
       conversation_id: string;
@@ -248,32 +219,12 @@ export const api = {
       method: "POST",
       body: { message, conversation_id: conversation_id || undefined },
     }),
-  wisdomHistory: (conversation_id?: string) =>
-    request(
-      `/wisdom/history${conversation_id ? `?conversation_id=${encodeURIComponent(conversation_id)}` : ""}`
-    ),
-  wisdomStatus: () => request("/wisdom/status", { auth: false }),
   wisdomQuota: () =>
     request<{ used: number; limit: number; remaining: number; month: string; ok: boolean }>(
       "/wisdom/quota"
     ),
 
-  /** Product usage summary (daily rollups for analysis) */
-  analyticsSummary: (days = 7) =>
-    request<{
-      days: { day: string; dau: number; events: number; by_event: Record<string, number> }[];
-      totals: { events: number; dau_sum: number; by_event: Record<string, number> };
-    }>(`/analytics/summary?days=${days}`),
-  analyticsMe: (limit = 40) =>
-    request<{ events: unknown[]; counts: Record<string, number> }>(
-      `/analytics/me?limit=${limit}`
-    ),
-
-  /**
-   * Voice note → Amazon Transcribe.
-   * 1) presign → PUT audio to S3
-   * 2) transcribe(s3_key) → text for the input box (user then taps Send)
-   */
+  /** Voice note → Amazon Transcribe (presign → PUT S3 → transcribe). */
   wisdomVoicePresign: (media_ext = "m4a", content_type = "audio/mp4") =>
     request<{
       upload_url: string;
@@ -297,12 +248,6 @@ export const api = {
       body: { s3_key, media_format: media_format || undefined },
     }),
 
-  /** @deprecated use wisdomChat */
-  generatePrayer: (feeling: string, context?: string) =>
-    request("/ai/prayer", { method: "POST", body: { feeling, context } }),
-  aiPrayerHistory: () => request("/ai/prayers/history"),
-
-  subscriptionStatus: () => request("/subscription/status"),
   syncSubscription: (body: { active: boolean; plan?: "monthly" | "annual" | null }) =>
     request("/subscription/sync", { method: "POST", body }),
 };

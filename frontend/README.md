@@ -10,7 +10,7 @@ frontend/
 │   ├── (auth)/               # Sign-in / sign-up / password
 │   ├── (tabs)/               # Home, meditate, wisdom, journal, profile
 │   ├── meditation/[id].tsx   # Player
-│   ├── sos.tsx · paywall.tsx · onboarding.tsx · ai-prayer.tsx
+│   ├── sos.tsx · paywall.tsx · onboarding.tsx
 │   └── …
 ├── src/
 │   ├── features/

@@ -37,7 +37,7 @@ ChristCalmApp/
 │   ├── app/                  # Expo Router screens (routes only)
 │   │   ├── (auth)/           # Sign-in, sign-up, password flows
 │   │   ├── (tabs)/           # Home, meditate, wisdom, journal, …
-│   │   └── …                 # onboarding, paywall, sos, ai-prayer
+│   │   └── …                 # onboarding, paywall, sos
 │   ├── src/
 │   │   ├── features/         # Domain modules
 │   │   │   ├── auth/         # AuthContext, Cognito, social buttons
@@ -79,7 +79,7 @@ ChristCalmApp/
 | Auth (client) | `frontend/src/features/auth/` + routes `frontend/app/(auth)/` |
 | Auth (server) | `backend/auth/` + routes `/api/auth/*` |
 | Auth config | `config/auth/`, Cognito in `infrastructure/terraform/cognito*.tf` |
-| AI / Wisdom (client) | screens `wisdom.tsx`, `ai-prayer.tsx` + `src/api/client.ts` |
+| AI / Wisdom (client) | screen `wisdom.tsx` + `src/api/client.ts` |
 | AI / Wisdom (server) | `backend/ai/` + corpus `backend/ai/corpus/` |
 | Subscriptions | `frontend/src/features/subscriptions/` + RevenueCat webhook in API |
 | Meditation catalog | `backend/seed_data.py` → API `/emotions`, `/meditations` |

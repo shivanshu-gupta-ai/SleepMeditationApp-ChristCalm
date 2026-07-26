@@ -1,7 +1,4 @@
-// Native storage (Metro picks index.web.ts on web).
-// Helpers never throw: reads return `fallback`, writes return `false`.
-// Values supported: string | number | boolean | null (JSON-serialized on disk).
-// Usage: import { storage } from "@/src/utils/storage"; await storage.getItem(key, fallback);
+// Native storage (Metro picks index.web.ts on web). Never throws.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";

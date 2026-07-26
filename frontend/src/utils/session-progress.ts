@@ -56,7 +56,8 @@ export async function getStreak(): Promise<number> {
 export function shouldOfferPaywallAfterCompletes(completedCount: number, isPremium: boolean): boolean {
   // Preview: unlock-all / premium never shows soft paywall
   if (isPremium) return false;
-  if ((process.env.EXPO_PUBLIC_UNLOCK_ALL ?? "1").toString().trim() !== "0") return false;
+  // Default off: only skip soft paywall when explicitly unlocked for preview demos
+  if ((process.env.EXPO_PUBLIC_UNLOCK_ALL ?? "0").toString().trim() === "1") return false;
   // After first completed session, and again every 3rd thereafter
   return completedCount === 1 || completedCount % 3 === 0;
 }
