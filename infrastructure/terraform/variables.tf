@@ -77,14 +77,17 @@ variable "cognito_auto_confirm_users" {
 
 variable "cognito_callback_urls" {
   type        = list(string)
-  description = "OAuth redirect URIs for Cognito app client (mobile deep links)"
+  description = "OAuth redirect URIs for Cognito app client (mobile deep links + web)"
   default = [
-    "frontend://oauth",
+    "christcalm://oauth",
     "com.christcalm.app://oauth",
+    "frontend://oauth",
     "exp://127.0.0.1:8081/--/oauth",
     "exp://localhost:8081/--/oauth",
     "http://localhost:8081/oauth",
     "http://127.0.0.1:8081/oauth",
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
   ]
 }
 

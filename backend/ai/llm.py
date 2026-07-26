@@ -10,7 +10,7 @@ import asyncio
 import logging
 import os
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any, AsyncIterator, Iterator, List, Optional, Tuple
 
 from ai.wisdom_rag import format_context, retrieve
 from ai.wisdom_guardrails import enforce_wisdom_scope
@@ -193,6 +193,13 @@ def _trim_reply(text: str, max_chars: int = 720) -> str:
     return chunk[:max_chars].rsplit(" ", 1)[0].strip() + "…"
 
 
+def _inference_config() -> dict:
+    return {
+        "maxTokens": int(os.environ.get("BEDROCK_MAX_TOKENS", "280")),
+        "temperature": float(os.environ.get("BEDROCK_TEMPERATURE", "0.55")),
+    }
+
+
 def _converse_one(
     client: Any,
     model_id: str,
@@ -207,10 +214,7 @@ def _converse_one(
             modelId=model_id,
             system=[{"text": system}],
             messages=bedrock_messages,
-            inferenceConfig={
-                "maxTokens": int(os.environ.get("BEDROCK_MAX_TOKENS", "280")),
-                "temperature": float(os.environ.get("BEDROCK_TEMPERATURE", "0.55")),
-            },
+            inferenceConfig=_inference_config(),
         )
         blocks = response.get("output", {}).get("message", {}).get("content", [])
         text = _trim_reply(_extract_text(blocks))
@@ -225,6 +229,73 @@ def _converse_one(
         raise
     except Exception as e:
         logger.exception("Bedrock unexpected model=%s: %s", model_id, type(e).__name__)
+        raise LLMError("Wisdom is temporarily unavailable. Please try again.") from e
+
+
+def _extract_stream_delta(event: dict) -> str:
+    """Pull text from a converse_stream event, if present."""
+    if not isinstance(event, dict):
+        return ""
+    # Preferred: contentBlockDelta.delta.text
+    block = event.get("contentBlockDelta") or {}
+    delta = block.get("delta") if isinstance(block, dict) else None
+    if isinstance(delta, dict) and delta.get("text"):
+        return str(delta["text"])
+    # Some SDKs nest differently
+    if "delta" in event and isinstance(event["delta"], dict) and event["delta"].get("text"):
+        return str(event["delta"]["text"])
+    return ""
+
+
+def _converse_stream_one(
+    client: Any,
+    model_id: str,
+    system: str,
+    bedrock_messages: list,
+):
+    """
+    Stream text deltas from one model.
+    Yields str chunks; raises ClientError / BotoCoreError / LLMError.
+    """
+    from botocore.exceptions import BotoCoreError, ClientError
+
+    try:
+        response = client.converse_stream(
+            modelId=model_id,
+            system=[{"text": system}],
+            messages=bedrock_messages,
+            inferenceConfig=_inference_config(),
+        )
+        stream = response.get("stream")
+        if stream is None:
+            # Unexpected shape — fall back to non-stream invoke
+            yield _converse_one(client, model_id, system, bedrock_messages)
+            return
+
+        any_text = False
+        for event in stream:
+            if not isinstance(event, dict):
+                continue
+            if "messageStop" in event or "metadata" in event:
+                continue
+            if "internalServerException" in event:
+                raise LLMError("empty_response")
+            if "modelStreamErrorException" in event:
+                raise LLMError("empty_response")
+            piece = _extract_stream_delta(event)
+            if piece:
+                any_text = True
+                yield piece
+        if not any_text:
+            raise LLMError("empty_response")
+    except ClientError:
+        raise
+    except BotoCoreError:
+        raise
+    except LLMError:
+        raise
+    except Exception as e:
+        logger.exception("Bedrock stream unexpected model=%s: %s", model_id, type(e).__name__)
         raise LLMError("Wisdom is temporarily unavailable. Please try again.") from e
 
 
@@ -407,6 +478,192 @@ async def generate_wisdom_reply(
         "sources": [
             {"source": c["source"], "heading": c["heading"]} for c in chunks
         ],
+        "blocked": False,
+    }
+
+
+def _converse_stream_sync(
+    system: str,
+    messages: List[dict[str, str]],
+) -> Iterator[Tuple[str, Any]]:
+    """
+    Stream Bedrock tokens with model fallbacks.
+    Yields ("delta", text_chunk) then ("done", model_id).
+    """
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError
+
+    region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+    client = boto3.Session(region_name=region).client("bedrock-runtime")
+    chain = _model_chain()
+
+    bedrock_messages = []
+    for m in messages:
+        role = m["role"]
+        if role not in ("user", "assistant"):
+            continue
+        bedrock_messages.append({"role": role, "content": [{"text": m["content"]}]})
+
+    if not bedrock_messages or bedrock_messages[-1]["role"] != "user":
+        raise LLMError("Invalid conversation state.")
+
+    last_error: Optional[BaseException] = None
+
+    for i, model_id in enumerate(chain):
+        emitted = 0
+        try:
+            for piece in _converse_stream_one(client, model_id, system, bedrock_messages):
+                emitted += 1
+                yield ("delta", piece)
+            if emitted == 0:
+                raise LLMError("empty_response")
+            if i > 0:
+                logger.warning(
+                    "Bedrock stream fallback succeeded model=%s after_primary_failures=%s",
+                    model_id,
+                    i,
+                )
+            else:
+                logger.info("Bedrock stream ok model=%s", model_id)
+            yield ("done", model_id)
+            return
+        except ClientError as e:
+            last_error = e
+            last_code = e.response.get("Error", {}).get("Code", "")
+            logger.error(
+                "Bedrock stream ClientError %s model=%s (%s/%s): %s",
+                last_code,
+                model_id,
+                i + 1,
+                len(chain),
+                e,
+            )
+            # Never switch models after tokens already reached the client
+            if emitted > 0:
+                break
+            if i < len(chain) - 1 and _should_fallback(e):
+                continue
+            break
+        except BotoCoreError as e:
+            last_error = e
+            logger.error(
+                "Bedrock stream BotoCoreError model=%s (%s/%s): %s",
+                model_id,
+                i + 1,
+                len(chain),
+                e,
+            )
+            if emitted > 0:
+                break
+            if i < len(chain) - 1 and _should_fallback(e):
+                continue
+            break
+        except LLMError as e:
+            last_error = e
+            if emitted > 0:
+                raise
+            if str(e) == "empty_response" and i < len(chain) - 1:
+                logger.warning("Empty stream from %s — trying next model", model_id)
+                continue
+            if str(e) == "empty_response":
+                raise LLMError("No response was generated. Please try again.") from e
+            raise
+
+    logger.error("All Bedrock stream models failed last_err=%s chain=%s", last_error, chain)
+    raise LLMError(
+        "Wisdom is temporarily unavailable. Please try again in a moment."
+    ) from last_error
+
+
+async def generate_wisdom_reply_stream(
+    user_message: str,
+    history: Optional[List[dict[str, str]]] = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """
+    Async stream of wisdom events:
+      {"type":"meta", "blocked": bool, "sources": [...], "model"?: str}
+      {"type":"delta", "text": str}
+      {"type":"done", "reply": str, "model": str, "sources": [...], "blocked": bool}
+      {"type":"error", "message": str}
+    """
+    msg = validate_user_message(user_message)
+
+    allowed, blocked_reply = enforce_wisdom_scope(msg)
+    if not allowed:
+        yield {
+            "type": "meta",
+            "blocked": True,
+            "sources": [],
+            "model": "guardrail",
+        }
+        yield {"type": "delta", "text": blocked_reply}
+        yield {
+            "type": "done",
+            "reply": blocked_reply,
+            "model": "guardrail",
+            "sources": [],
+            "blocked": True,
+        }
+        return
+
+    chunks = retrieve(msg, top_k=4)
+    context = format_context(chunks)
+    system = SYSTEM_TEMPLATE.format(context=context)
+    sources = [{"source": c["source"], "heading": c["heading"]} for c in chunks]
+
+    messages: List[dict[str, str]] = []
+    if history:
+        for turn in history[-MAX_HISTORY_TURNS * 2 :]:
+            role = turn.get("role")
+            content = _sanitize(turn.get("content") or "", MAX_MESSAGE_LEN)
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": msg})
+
+    yield {"type": "meta", "blocked": False, "sources": sources}
+
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+
+    def worker() -> None:
+        try:
+            for kind, payload in _converse_stream_sync(system, messages):
+                loop.call_soon_threadsafe(queue.put_nowait, (kind, payload))
+            loop.call_soon_threadsafe(queue.put_nowait, ("_end", None))
+        except Exception as e:  # noqa: BLE001 — surface to async consumer
+            loop.call_soon_threadsafe(queue.put_nowait, ("_err", e))
+
+    asyncio.create_task(asyncio.to_thread(worker))
+
+    parts: list[str] = []
+    model_used = ""
+    while True:
+        kind, payload = await queue.get()
+        if kind == "_end":
+            break
+        if kind == "_err":
+            err = payload
+            if isinstance(err, LLMError):
+                yield {"type": "error", "message": str(err)}
+            else:
+                logger.exception("Wisdom stream worker failed: %s", err)
+                yield {
+                    "type": "error",
+                    "message": "Wisdom is temporarily unavailable. Please try again.",
+                }
+            return
+        if kind == "delta":
+            parts.append(str(payload))
+            yield {"type": "delta", "text": str(payload)}
+        elif kind == "done":
+            model_used = str(payload)
+
+    full = _trim_reply("".join(parts))
+    yield {
+        "type": "done",
+        "reply": full,
+        "model": model_used or _model_id(),
+        "sources": sources,
         "blocked": False,
     }
 

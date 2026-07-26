@@ -86,20 +86,27 @@ export default function SignUp() {
         <>
           <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
             <AppleSignInButton
-              label="Sign up with Apple"
+              label="Continue with Apple"
+              disabled={loading}
               onPress={async () => {
+                setError(null);
+                setLoading(true);
                 try {
+                  // Same Cognito Hosted UI flow for first-time signup and returning login
                   await signInWithApple();
                   try {
                     const draft = await loadOnboardingDraft();
                     await api.saveOnboarding(draftToApiPayload(draft));
                     await clearOnboardingDraft();
                   } catch {
-                    // ignore
+                    // ignore draft sync failures
                   }
                   router.replace("/(tabs)/home");
                 } catch (e: any) {
-                  setError(e?.message || "Apple sign-up failed");
+                  const msg = e?.message || "Apple sign-up failed";
+                  if (!/cancel/i.test(msg)) setError(msg);
+                } finally {
+                  setLoading(false);
                 }
               }}
             />

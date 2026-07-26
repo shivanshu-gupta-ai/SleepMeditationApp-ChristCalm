@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { View, Text, TextInput, ScrollView } from "react-native";
+import { View, Text, TextInput, ScrollView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import {
+  useAudioRecorder,
+  useAudioRecorderState,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+} from "expo-audio";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { api } from "@/src/api/client";
@@ -21,10 +28,12 @@ import {
   Surface,
   PressableScale,
   FadeIn,
+  ListeningWave,
 } from "@/src/components/ui";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
 import { playHaptic } from "@/src/utils/haptics";
+import { mediaMetaFromUri } from "@/src/utils/voice-media";
 
 type Entry = { id: string; mood?: string; content: string; created_at: string };
 
@@ -50,7 +59,13 @@ export default function Journal() {
   const [saveFlash, setSaveFlash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
   const contentRef = useRef<TextInput>(null);
+
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder, 250);
+  const isRecording = recorderState.isRecording;
 
   const shareWithWisdom = async (text: string) => {
     const trimmed = text.trim().slice(0, 1800);
@@ -99,6 +114,94 @@ export default function Journal() {
     }
   };
 
+  const startRecording = async () => {
+    if (saving || transcribing || isRecording) return;
+    setVoiceError(null);
+    setSaveError(null);
+    try {
+      const perm = await requestRecordingPermissionsAsync();
+      if (!perm.granted) {
+        setVoiceError("Microphone permission is needed to speak your journal entry.");
+        return;
+      }
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
+      });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      void playHaptic("medium");
+    } catch (e: any) {
+      setVoiceError(e?.message || "Could not start recording. Try typing instead.");
+    }
+  };
+
+  const stopAndTranscribe = async () => {
+    if (!isRecording) return;
+    setVoiceError(null);
+    setTranscribing(true);
+    void playHaptic("light");
+    try {
+      await recorder.stop();
+      const uri = recorder.uri;
+      if (!uri) {
+        throw new Error("Recording failed — no audio captured.");
+      }
+
+      const meta = mediaMetaFromUri(uri);
+      const isWeb = Platform.OS === "web";
+      const ext = isWeb ? "webm" : meta.ext;
+      const contentType = isWeb ? "audio/webm" : meta.contentType;
+      const format = isWeb ? "webm" : meta.format;
+
+      const presign = await api.wisdomVoicePresign(ext, contentType);
+
+      const audioRes = await fetch(uri);
+      const blob = await audioRes.blob();
+      const putRes = await fetch(presign.upload_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": contentType,
+        },
+        body: blob,
+      });
+      if (!putRes.ok) {
+        throw new Error("Could not upload your voice note. Please try again.");
+      }
+
+      const result = await api.wisdomVoiceTranscribe(presign.s3_key, format);
+      const text = (result.text || "").trim();
+      if (!text) {
+        throw new Error("No speech detected. Please try again closer to the mic.");
+      }
+      setContent((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+      void playHaptic("success");
+      void track("journal_voice");
+      // Keep focus on the editor so the user can keep writing
+      setTimeout(() => contentRef.current?.focus(), 80);
+    } catch (e: any) {
+      setVoiceError(e?.message || "Could not convert speech to text. Please try again.");
+    } finally {
+      setTranscribing(false);
+      try {
+        await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const onMicPress = () => {
+    if (transcribing || saving) return;
+    if (isRecording) {
+      void stopAndTranscribe();
+    } else {
+      void startRecording();
+    }
+  };
+
+  const busy = saving || transcribing || isRecording;
+
   return (
     <Screen
       scroll
@@ -112,7 +215,7 @@ export default function Journal() {
         <PageHeader
           overline="Private · Safe"
           title="Journal"
-          subtitle="Cast your cares on Him. Write freely — this space is yours."
+          subtitle="Cast your cares on Him. Type or speak — this space is yours."
         />
       </FadeIn>
 
@@ -176,29 +279,128 @@ export default function Journal() {
             })}
           </ScrollView>
 
-          <TextInput
-            style={{
-              minHeight: 120,
-              backgroundColor: isDark ? colors.inputFill : colors.background,
-              borderRadius: radius.md,
-              padding: spacing.md,
-              fontFamily: fonts.body,
-              fontSize: 15,
-              color: colors.textPrimary,
-              textAlignVertical: "top",
-              borderWidth: 1,
-              borderColor: colors.borderSoft,
-              lineHeight: 22,
-            }}
-            ref={contentRef}
-            placeholder="What is on your heart today?"
-            placeholderTextColor={colors.textMuted}
-            value={content}
-            onChangeText={setContent}
-            multiline
-            testID="journal-content-input"
-          />
+          {isRecording ? (
+            <View
+              style={{
+                marginBottom: spacing.sm,
+                borderRadius: 16,
+                backgroundColor: colors.primarySoft,
+                borderWidth: 1,
+                borderColor: colors.primary + "44",
+                overflow: "hidden",
+              }}
+              testID="journal-listening-panel"
+            >
+              <ListeningWave active label="Listening — speak freely" compact />
+            </View>
+          ) : null}
 
+          {transcribing && !isRecording ? (
+            <View
+              style={{
+                marginBottom: spacing.sm,
+                borderRadius: 16,
+                backgroundColor: colors.primarySoft,
+                borderWidth: 1,
+                borderColor: colors.primary + "44",
+                overflow: "hidden",
+              }}
+              testID="journal-transcribing-panel"
+            >
+              <ListeningWave active label="Turning speech into words…" compact />
+            </View>
+          ) : null}
+
+          <View
+            style={{
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: isRecording
+                ? colors.primary
+                : transcribing
+                  ? colors.primary + "66"
+                  : colors.borderSoft,
+              backgroundColor: isDark ? colors.inputFill : colors.background,
+              overflow: "hidden",
+            }}
+          >
+            <TextInput
+              style={{
+                minHeight: 120,
+                padding: spacing.md,
+                paddingBottom: 8,
+                fontFamily: fonts.body,
+                fontSize: 15,
+                color: colors.textPrimary,
+                textAlignVertical: "top",
+                lineHeight: 22,
+              }}
+              ref={contentRef}
+              placeholder="What is on your heart today? Type or tap the mic to speak."
+              placeholderTextColor={colors.textMuted}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              editable={!isRecording}
+              testID="journal-content-input"
+            />
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: spacing.sm,
+                paddingBottom: spacing.sm,
+                gap: 8,
+              }}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: colors.textMuted,
+                  paddingLeft: spacing.xs,
+                }}
+              >
+                {isRecording
+                  ? "Tap stop when you're done speaking"
+                  : transcribing
+                    ? "Almost ready…"
+                    : "Voice is private — only you see this entry"}
+              </Text>
+              <PressableScale
+                onPress={onMicPress}
+                disabled={saving || transcribing}
+                haptic="none"
+                accessibilityLabel={isRecording ? "Stop recording" : "Record journal by voice"}
+                testID="journal-mic"
+                hitSlop={6}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isRecording ? colors.primary : colors.primarySoft,
+                  opacity: saving || transcribing ? 0.55 : 1,
+                }}
+              >
+                <Ionicons
+                  name={isRecording ? "stop" : "mic"}
+                  size={20}
+                  color={isRecording ? colors.textOnPrimary : colors.primary}
+                />
+              </PressableScale>
+            </View>
+          </View>
+
+          {voiceError ? (
+            <View style={{ marginTop: spacing.md }}>
+              <ErrorBanner message={voiceError} onDismiss={() => setVoiceError(null)} />
+            </View>
+          ) : null}
           {saveError ? (
             <View style={{ marginTop: spacing.md }}>
               <ErrorBanner message={saveError} onDismiss={() => setSaveError(null)} />
@@ -217,7 +419,7 @@ export default function Journal() {
               variant={saveFlash ? "premium" : "primary"}
               onPress={save}
               loading={saving}
-              disabled={!content.trim() && !saveFlash}
+              disabled={(!content.trim() && !saveFlash) || busy}
               testID="journal-save-btn"
             />
             <Button
@@ -225,7 +427,7 @@ export default function Journal() {
               icon="chatbubbles-outline"
               variant="secondary"
               onPress={() => shareWithWisdom(content)}
-              disabled={!content.trim() || saving}
+              disabled={!content.trim() || busy}
               testID="journal-to-wisdom-btn"
             />
           </View>
@@ -267,7 +469,7 @@ export default function Journal() {
           <EmptyState
             withGrace
             title="Grace is listening"
-            message="Nothing written yet — cast one care here. This is a safe place for whatever you're carrying."
+            message="Nothing written yet — type or speak one care here. This is a safe place for whatever you're carrying."
             actionLabel="Begin writing"
             onAction={() => contentRef.current?.focus()}
           />

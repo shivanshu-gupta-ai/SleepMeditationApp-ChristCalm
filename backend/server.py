@@ -16,7 +16,8 @@ bootstrap()
 
 import jwt as pyjwt
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, StreamingResponse
+import json
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -25,7 +26,7 @@ from starlette.middleware.cors import CORSMiddleware
 from seed_data import EMOTIONS, MEDITATIONS, PRAYERS, DEVOTIONALS, PRAYER_CATEGORIES
 from auth import cognito as cognito_auth
 from data.dynamodb import db
-from ai.llm import generate_wisdom_reply, generate_prayer, LLMError
+from ai.llm import generate_wisdom_reply, generate_wisdom_reply_stream, generate_prayer, LLMError
 from ai.wisdom_rag import corpus_stats
 from ai.voice_transcribe import (
     VoiceError,
@@ -345,20 +346,26 @@ async def health():
 
 @api.get("/auth/config")
 async def auth_config():
-    """Public Cognito settings for the mobile app."""
-    apple_svc = os.environ.get("APPLE_SERVICES_ID", "")
+    """Public Cognito settings for the mobile app (no secrets)."""
+    apple_svc = (os.environ.get("APPLE_SERVICES_ID") or "").strip()
     apple_ok = bool(apple_svc and apple_svc not in ("", "unset"))
-    domain = os.environ.get("COGNITO_DOMAIN") or ""
+    domain = (os.environ.get("COGNITO_DOMAIN") or "").strip()
+    # Domain may be bare prefix or full host
+    if domain and not domain.endswith(".amazoncognito.com") and "." not in domain:
+        domain = f"{domain}.auth.{os.environ.get('AWS_REGION', 'us-east-1')}.amazoncognito.com"
     return {
         "provider": "cognito" if cognito_auth.cognito_enabled() else "legacy",
         "region": os.environ.get("AWS_REGION", "us-east-1"),
         "user_pool_id": os.environ.get("COGNITO_USER_POOL_ID"),
         "client_id": os.environ.get("COGNITO_CLIENT_ID"),
         "domain": domain,
+        # True when Apple Services ID is present in Lambda env (SSM-backed) —
+        # implies enable_apple_sign_in + seed-apple-ssm were completed.
         "apple_enabled": apple_ok,
         "social_setup": {
-            "apple": "ready" if apple_ok else "needs_apple_services_id_in_terraform",
+            "apple": "ready" if apple_ok else "needs_apple_secrets_and_enable_script",
             "docs": "config/auth/README.md",
+            "enable_script": "./scripts/enable-apple-sign-in.sh",
         },
     }
 
@@ -716,6 +723,147 @@ async def wisdom_chat(
         "blocked": False,
         "ai_quota": quota,
     }
+
+
+@api.post("/wisdom/chat/stream")
+async def wisdom_chat_stream(
+    body: WisdomChatIn,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """Stream wisdom reply as SSE (text/event-stream).
+
+    Events (JSON after `data: `):
+      meta  — conversation_id, message_id, sources, blocked?, ai_quota
+      delta — text chunk
+      done  — full reply + model + sources + ai_quota
+      error — message
+
+    Same auth, rate limits, and monthly quota as POST /wisdom/chat.
+    """
+    _enforce_rate_limit(f"wisdom:chat:{user['id']}", AI_LIMIT, AI_WINDOW)
+    _enforce_rate_limit(f"wisdom:chat:ip:{_client_ip(request)}", AI_LIMIT * 2, AI_WINDOW)
+
+    conversation_id = (body.conversation_id or "").strip() or str(uuid.uuid4())
+    msg = body.message.strip()
+    message_id = str(uuid.uuid4())
+
+    allowed, blocked_reply = enforce_wisdom_scope(msg)
+    if not allowed:
+        quota = await db.get_ai_quota(user["id"], limit=AI_MONTHLY_LIMIT)
+
+        async def blocked_gen():
+            payload_meta = {
+                "type": "meta",
+                "conversation_id": conversation_id,
+                "message_id": message_id,
+                "blocked": True,
+                "sources": [],
+                "model": "guardrail",
+                "ai_quota": quota,
+            }
+            yield f"data: {json.dumps(payload_meta)}\n\n"
+            yield f"data: {json.dumps({'type': 'delta', 'text': blocked_reply})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id, 'message_id': message_id, 'reply': blocked_reply, 'sources': [], 'model': 'guardrail', 'blocked': True, 'ai_quota': quota, 'created_at': datetime.now(timezone.utc).isoformat()})}\n\n"
+
+        return StreamingResponse(
+            blocked_gen(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+
+    quota = await db.consume_ai_quota(user["id"], limit=AI_MONTHLY_LIMIT)
+    if not quota.get("ok"):
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"You've used all {AI_MONTHLY_LIMIT} Wisdom messages for this month. "
+                "Your allowance resets next month. Please return then — we're still here for you."
+            ),
+            headers={"X-AI-Quota-Remaining": "0"},
+        )
+
+    prior = await db.list_wisdom_turns(user["id"], conversation_id=conversation_id, limit=16)
+    history: list[dict] = []
+    for turn in reversed(prior):
+        if turn.get("user_message"):
+            history.append({"role": "user", "content": turn["user_message"]})
+        if turn.get("assistant_message") or turn.get("prayer"):
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": turn.get("assistant_message") or turn.get("prayer") or "",
+                }
+            )
+
+    async def event_gen():
+        full_parts: list[str] = []
+        sources: list = []
+        model_used = ""
+        blocked = False
+        try:
+            yield f"data: {json.dumps({'type': 'meta', 'conversation_id': conversation_id, 'message_id': message_id, 'blocked': False, 'ai_quota': quota})}\n\n"
+
+            async for ev in generate_wisdom_reply_stream(msg, history=history):
+                et = ev.get("type")
+                if et == "meta":
+                    sources = ev.get("sources") or []
+                    if ev.get("blocked"):
+                        blocked = True
+                    yield f"data: {json.dumps({'type': 'meta', 'conversation_id': conversation_id, 'message_id': message_id, 'blocked': bool(ev.get('blocked')), 'sources': sources, 'model': ev.get('model'), 'ai_quota': quota})}\n\n"
+                elif et == "delta":
+                    text = ev.get("text") or ""
+                    if text:
+                        full_parts.append(text)
+                        yield f"data: {json.dumps({'type': 'delta', 'text': text})}\n\n"
+                elif et == "done":
+                    model_used = ev.get("model") or model_used
+                    sources = ev.get("sources") or sources
+                    blocked = bool(ev.get("blocked"))
+                    reply = ev.get("reply") or "".join(full_parts)
+                    now = datetime.now(timezone.utc).isoformat()
+                    if not blocked and reply:
+                        entry = {
+                            "id": message_id,
+                            "user_id": user["id"],
+                            "kind": "wisdom",
+                            "conversation_id": conversation_id,
+                            "user_message": msg[:2000],
+                            "assistant_message": reply,
+                            "prayer": reply,
+                            "sources": sources,
+                            "model": model_used,
+                            "created_at": now,
+                            "provider": "bedrock",
+                        }
+                        try:
+                            await db.insert_ai_prayer(entry)
+                        except Exception:
+                            logger.exception("Failed to persist streamed wisdom turn")
+                    yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id, 'message_id': message_id, 'reply': reply, 'sources': sources, 'model': model_used or 'guardrail', 'blocked': blocked, 'ai_quota': quota, 'created_at': now})}\n\n"
+                    return
+                elif et == "error":
+                    yield f"data: {json.dumps({'type': 'error', 'message': ev.get('message') or 'Wisdom is temporarily unavailable.'})}\n\n"
+                    return
+        except LLMError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        except Exception:
+            logger.exception("Wisdom stream failure user=%s", user.get("id"))
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Wisdom is temporarily unavailable. Please try again.'})}\n\n"
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @api.get("/wisdom/history")
