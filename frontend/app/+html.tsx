@@ -73,6 +73,8 @@ export default function Root({ children }: PropsWithChildren) {
               body {
                 overscroll-behavior: none;
                 touch-action: manipulation;
+                /* Match Nest dark default so nothing flashes white behind the tab bar */
+                background-color: #000000 !important;
               }
 
               /* Horizontal chip strips (EmotionFilter).

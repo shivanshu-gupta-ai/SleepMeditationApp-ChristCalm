@@ -1,7 +1,9 @@
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 
+// Required for AuthSession / Hosted UI return on web & native
 WebBrowser.maybeCompleteAuthSession();
 
 export type CognitoConfig = {
@@ -24,6 +26,14 @@ const POOL_ID = process.env.EXPO_PUBLIC_COGNITO_USER_POOL_ID || "";
 const CLIENT_ID = process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID || "";
 const DOMAIN = (process.env.EXPO_PUBLIC_COGNITO_DOMAIN || "").replace(/^https?:\/\//, "");
 
+/** App scheme from app.json (must match Cognito callback URLs). */
+const APP_SCHEME =
+  (Constants.expoConfig?.scheme as string | undefined) ||
+  (Array.isArray(Constants.expoConfig?.scheme)
+    ? (Constants.expoConfig?.scheme as string[])[0]
+    : undefined) ||
+  "christcalm";
+
 const IDP_URL = `https://cognito-idp.${REGION}.amazonaws.com/`;
 
 export function cognitoConfigured(): boolean {
@@ -31,8 +41,8 @@ export function cognitoConfigured(): boolean {
 }
 
 /**
- * Sign in with Apple via Cognito Hosted UI works on iOS, Android, and web
- * once Apple Developer Services ID + return URL are configured (see config/auth/README.md).
+ * Client can open Cognito Hosted UI when domain + app client are configured.
+ * Server-side Apple IdP must also be enabled (see config/auth/README.md).
  */
 export function appleSignInSupported(): boolean {
   return Boolean(DOMAIN && CLIENT_ID);
@@ -44,12 +54,17 @@ function requireCognito() {
   }
 }
 
+/**
+ * OAuth redirect registered on the Cognito app client.
+ * - Web: http(s)://origin/oauth
+ * - Native: christcalm://oauth (app.json scheme)
+ */
 export function getRedirectUri(): string {
   if (Platform.OS === "web" && typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}/oauth`;
   }
   return AuthSession.makeRedirectUri({
-    scheme: "frontend",
+    scheme: APP_SCHEME,
     path: "oauth",
   });
 }
@@ -292,9 +307,13 @@ export async function signInWithProvider(
         "Apple Sign-In is not fully configured (invalid_client). Use email sign-in for now. See config/auth/README.md for Apple return URL setup."
       );
     }
-    if (/invalid_request|not enabled|not found|identity.?provider/i.test(err)) {
+    if (
+      /invalid_request|not enabled|not found|identity.?provider|login option is not available/i.test(
+        err
+      )
+    ) {
       throw new Error(
-        "Apple sign-in is not linked in Cognito yet. Use email sign-in, or finish Apple setup in config/auth/README.md."
+        "Apple Sign-In is not fully enabled in Cognito yet. Use email for now, or finish setup: seed Apple secrets and run ./scripts/enable-apple-sign-in.sh (see config/auth/README.md)."
       );
     }
     throw new Error(err);

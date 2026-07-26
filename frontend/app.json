@@ -12,6 +12,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.christcalm.app",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "ChristCalm uses the microphone so you can speak a concern and convert it to text for Wisdom.",
         "UIRequiresFullScreen": false,

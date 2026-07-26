@@ -3,6 +3,7 @@ import { View, Text, Platform, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -101,9 +102,39 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const activeColor = isDark ? colors.premium : colors.primary;
   // Inactive: lower opacity (not different colors per tab) — accessible, clean
   const inactiveColor = isDark ? "rgba(160,160,168,0.72)" : "rgba(92,85,104,0.72)";
+  // Full-width plate under the floating bar so scroll content never shows through
+  // the home-indicator gap or translucent pill (especially visible in dark mode).
+  const scrimHeight = bottomPad + pillMinH + fabSize + gap + 28;
 
   return (
     <>
+      {/* Edge-to-edge bottom cover + soft fade (does not intercept touches) */}
+      <View
+        pointerEvents="none"
+        style={[styles.scrimWrap, { height: scrimHeight }]}
+      >
+        <LinearGradient
+          colors={
+            isDark
+              ? ["rgba(0,0,0,0)", "rgba(0,0,0,0.72)", colors.background]
+              : ["rgba(255,255,255,0)", "rgba(255,255,255,0.55)", colors.background]
+          }
+          locations={[0, 0.35, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
+        {/* Solid strip for home indicator / bottom safe area */}
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: bottomPad + 10,
+            backgroundColor: colors.background,
+          }}
+        />
+      </View>
+
       <View
         pointerEvents="box-none"
         style={[
@@ -124,16 +155,17 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             styles.pill,
             {
               minHeight: pillMinH,
-              backgroundColor: isDark ? "rgba(22,22,24,0.94)" : "rgba(255,255,255,0.96)",
-              borderWidth: isDark ? 0 : StyleSheet.hairlineWidth,
-              borderColor: colors.borderSoft,
+              // Fully opaque pill so list content cannot bleed through
+              backgroundColor: isDark ? colors.surface : colors.backgroundElevated,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: isDark ? colors.border : colors.borderSoft,
               paddingHorizontal: isCompact ? 4 : 8,
               ...Platform.select({
                 ios: {
                   shadowColor: "#000",
-                  shadowOpacity: isDark ? 0.45 : 0.1,
-                  shadowRadius: isDark ? 24 : 20,
-                  shadowOffset: { width: 0, height: 10 },
+                  shadowOpacity: isDark ? 0.55 : 0.1,
+                  shadowRadius: isDark ? 20 : 20,
+                  shadowOffset: { width: 0, height: 8 },
                 },
                 android: { elevation: 16 },
                 default: {},
@@ -258,6 +290,13 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 }
 
 const styles = StyleSheet.create({
+  scrimWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
   wrap: {
     position: "absolute",
     left: 0,
@@ -266,6 +305,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
+    zIndex: 2,
   },
   pill: {
     flex: 1,

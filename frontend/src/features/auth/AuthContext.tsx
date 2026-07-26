@@ -122,14 +122,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     (async () => {
+      // Show Sign in with Apple whenever Hosted UI is possible (domain + client).
+      // Backend `apple_enabled` reflects whether the Apple IdP is fully configured in Cognito;
+      // the button still appears so users can attempt Apple login/signup.
+      if (mounted) {
+        setAppleEnabled(appleSignInSupported());
+      }
       try {
         const config = await api.authConfig();
         if (mounted && config) {
-          // Show Apple when Cognito has SignInWithApple + app has domain/client configured
-          setAppleEnabled(Boolean(config.apple_enabled) && appleSignInSupported());
+          // Prefer true when server reports IdP ready; keep button if client can open Hosted UI
+          setAppleEnabled(
+            appleSignInSupported() &&
+              (Boolean(config.apple_enabled) || Boolean(config.domain && config.client_id))
+          );
         }
       } catch {
-        // non-blocking
+        // non-blocking — client env alone is enough to show the button
       }
 
       const ob = await storage.getItem("cc_onboarding_done", false);

@@ -29,6 +29,7 @@ export type AnalyticsEvent =
   | "wisdom_voice"
   | "wisdom_blocked"
   | "journal_save"
+  | "journal_voice"
   | "journal_to_wisdom"
   | "paywall_shown"
   | "tab_change"

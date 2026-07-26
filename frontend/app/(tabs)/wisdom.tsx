@@ -40,11 +40,14 @@ import { ListeningWave } from "@/src/components/ui/ListeningWave";
 import { playHaptic } from "@/src/utils/haptics";
 import { track } from "@/src/utils/analytics";
 import { storage } from "@/src/utils/storage";
+import { mediaMetaFromUri } from "@/src/utils/voice-media";
 
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  /** True while tokens are still arriving */
+  streaming?: boolean;
 };
 
 /** Short prompt chips — only shown before the first real reply */
@@ -62,20 +65,6 @@ const WELCOME =
   "What's on your heart? Type or speak — spiritual concerns only.";
 
 const WELCOME_NEW = "New chat. Share what's weighing on you.";
-
-function mediaMetaFromUri(uri: string): { ext: string; contentType: string; format: string } {
-  const lower = (uri || "").toLowerCase();
-  if (lower.includes(".webm") || lower.startsWith("blob:")) {
-    return { ext: "webm", contentType: "audio/webm", format: "webm" };
-  }
-  if (lower.includes(".wav")) {
-    return { ext: "wav", contentType: "audio/wav", format: "wav" };
-  }
-  if (lower.includes(".mp3")) {
-    return { ext: "mp3", contentType: "audio/mpeg", format: "mp3" };
-  }
-  return { ext: "m4a", contentType: "audio/mp4", format: "mp4" };
-}
 
 export default function WisdomTab() {
   const { colors, fonts, spacing, shadows, isDark } = useTheme();
@@ -183,32 +172,84 @@ export default function WisdomTab() {
       }
       setError(null);
       setInput("");
+
+      const userId = `u-${Date.now()}`;
+      // Mutable id: starts local, may switch to server message_id on meta/done
+      let assistantId = `a-${Date.now()}`;
+      let accumulated = "";
+
       setMessages((prev) => [
         ...prev,
-        { id: `u-${Date.now()}`, role: "user", content: message },
+        { id: userId, role: "user", content: message },
+        { id: assistantId, role: "assistant", content: "", streaming: true },
       ]);
       setLoading(true);
       void markFirstStep("wisdom");
+
+      const patchAssistant = (content: string, opts?: { nextId?: string; streaming?: boolean }) => {
+        const fromId = assistantId;
+        if (opts?.nextId) assistantId = opts.nextId;
+        const streaming = opts?.streaming ?? true;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === fromId
+              ? { id: assistantId, role: "assistant", content, streaming }
+              : m
+          )
+        );
+      };
+
       try {
-        const res = await api.wisdomChat(message, conversationId || undefined);
-        if (res.conversation_id) setConversationId(res.conversation_id);
-        applyQuota(res.ai_quota);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: res.message_id || `a-${Date.now()}`,
-            role: "assistant",
-            content: res.reply,
+        await api.wisdomChatStream(message, conversationId || undefined, {
+          onMeta: (meta) => {
+            if (meta.conversation_id) setConversationId(meta.conversation_id);
+            applyQuota(meta.ai_quota);
+            if (meta.message_id) {
+              patchAssistant(accumulated, { nextId: meta.message_id, streaming: true });
+            }
           },
-        ]);
-        if (res.blocked) {
-          void track("wisdom_blocked");
-        } else {
-          void track("wisdom_send");
-          flashSendSuccess();
+          onDelta: (chunk) => {
+            if (!chunk) return;
+            accumulated += chunk;
+            setLoading(false);
+            patchAssistant(accumulated, { streaming: true });
+            setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 16);
+          },
+          onDone: (done) => {
+            if (done.conversation_id) setConversationId(done.conversation_id);
+            applyQuota(done.ai_quota);
+            const reply = done.reply || accumulated;
+            accumulated = reply;
+            patchAssistant(reply, {
+              nextId: done.message_id || assistantId,
+              streaming: false,
+            });
+            if (done.blocked) {
+              void track("wisdom_blocked");
+            } else {
+              void track("wisdom_send");
+              flashSendSuccess();
+            }
+          },
+          onError: (msg) => {
+            setError(msg || "Could not get wisdom right now. Please try again.");
+            if (!accumulated) {
+              setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+            } else {
+              patchAssistant(accumulated, { streaming: false });
+            }
+          },
+        });
+        if (!accumulated) {
+          setMessages((prev) => prev.filter((m) => !(m.id === assistantId && !m.content)));
         }
       } catch (e: any) {
         setError(e?.message || "Could not get wisdom right now. Please try again.");
+        if (!accumulated) {
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        } else {
+          patchAssistant(accumulated, { streaming: false });
+        }
       } finally {
         setLoading(false);
       }
@@ -332,16 +373,34 @@ export default function WisdomTab() {
             ...(mine ? null : shadows.soft),
           }}
         >
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 15,
-              lineHeight: 22,
-              color: colors.textPrimary,
-            }}
-          >
-            {item.content}
-          </Text>
+          {item.content ? (
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 15,
+                lineHeight: 22,
+                color: colors.textPrimary,
+              }}
+            >
+              {item.content}
+              {item.streaming ? (
+                <Text style={{ color: colors.primary, fontFamily: fonts.bodyBold }}>
+                  {" ▌"}
+                </Text>
+              ) : null}
+            </Text>
+          ) : item.streaming ? (
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 15,
+                lineHeight: 22,
+                color: colors.textMuted,
+              }}
+            >
+              …
+            </Text>
+          ) : null}
         </View>
       </FadeIn>
     );

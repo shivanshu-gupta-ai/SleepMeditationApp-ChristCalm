@@ -63,13 +63,23 @@ export default function SignIn() {
           <>
             <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
               <AppleSignInButton
-                label="Sign in with Apple"
+                label="Continue with Apple"
+                disabled={loading}
                 onPress={async () => {
+                  setError(null);
+                  setLoading(true);
                   try {
                     await signInWithApple();
                     router.replace("/(tabs)/home");
                   } catch (e: any) {
-                    setError(e?.message || "Apple sign-in failed");
+                    const msg = e?.message || "Apple sign-in failed";
+                    if (/cancel/i.test(msg)) {
+                      // User dismissed the sheet — no banner
+                    } else {
+                      setError(msg);
+                    }
+                  } finally {
+                    setLoading(false);
                   }
                 }}
               />
