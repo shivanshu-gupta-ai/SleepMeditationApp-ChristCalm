@@ -1,0 +1,9 @@
+# Project MCP servers for ChristCalm (committed — no secrets).
+# Expo remote MCP: https://docs.expo.dev/mcp/
+
+[mcp_servers.expo]
+url = "https://mcp.expo.dev/mcp"
+type = "http"
+enabled = true
+startup_timeout_sec = 60
+tool_timeout_sec = 600

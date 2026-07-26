@@ -55,7 +55,8 @@
         "EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY": "cc_999_1m",
         "EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL": "cc_1999_1y_1w0",
         "EXPO_PUBLIC_UNLOCK_ALL": "0"
-      }
+      },
+      "credentialsSource": "local"
     }
   },
   "submit": {

@@ -14,7 +14,8 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "ChristCalm uses the microphone so you can speak a concern and convert it to text for Wisdom.",
-        "UIRequiresFullScreen": false
+        "UIRequiresFullScreen": false,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -24,7 +25,11 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.christcalm.app",
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -53,6 +58,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "36da5202-7495-4e6c-84e7-a71bb447295b"
+      }
+    },
+    "owner": "shivanshu_here"
   }
 }
