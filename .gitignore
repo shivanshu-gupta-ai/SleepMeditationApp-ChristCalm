@@ -2,7 +2,8 @@
 
 # IDE and editors
 .idea/
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 
 # Dependencies
 node_modules/
