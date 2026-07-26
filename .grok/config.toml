@@ -1,6 +1,17 @@
 # Project MCP servers for ChristCalm (committed — no secrets).
-# Expo remote MCP: https://docs.expo.dev/mcp/
+# Docs: CONTRIBUTING.md · https://github.com/github/github-mcp-server
 
+# GitHub official remote MCP — PRs, issues, code, Actions.
+# Auth: OAuth in host (Grok / VS Code / Cursor) or PAT via host credentials.
+# Does NOT store app env vars; use GitHub Actions Variables + sync-env-from-github.sh
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+type = "http"
+enabled = true
+startup_timeout_sec = 60
+tool_timeout_sec = 600
+
+# Expo remote MCP: https://docs.expo.dev/mcp/
 [mcp_servers.expo]
 url = "https://mcp.expo.dev/mcp"
 type = "http"

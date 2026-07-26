@@ -9,8 +9,10 @@ Local `.env` files are disposable and must not hold secrets.
 |------|--------|
 | Secrets (JWT, Apple, webhooks, …) | SSM `/christcalm-dev/*` via Terraform `ssm.tf` |
 | Infra inputs (once) | `infrastructure/terraform/terraform.tfvars` (**gitignored**) |
-| Frontend public config | Auto: `./scripts/sync-env-from-aws.sh` → `frontend/.env` |
-| Backend local flags | Auto: same script → `backend/.env` (`SSM_PREFIX`, region, table prefix only) |
+| Frontend public config (owner) | `./scripts/sync-env-from-aws.sh` → `frontend/.env` |
+| Frontend public config (collaborators) | GitHub Actions **Variables** → `./scripts/sync-env-from-github.sh` |
+| Publish public vars for team | Owner: `./scripts/push-env-to-github.sh` |
+| Backend local flags | Auto: sync-from-aws → `backend/.env` (`SSM_PREFIX`, region, table prefix only) |
 
 ```
 terraform.tfvars  ──apply──►  SSM  ──►  Lambda (always)
