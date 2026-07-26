@@ -2,6 +2,13 @@
 
 - If using XcodeBuildMCP, use the installed XcodeBuildMCP skill before calling XcodeBuildMCP tools.
 
+# GitHub MCP
+- Official remote server is configured in `.grok/config.toml` and `.vscode/mcp.json` (`https://api.githubcopilot.com/mcp/`).
+- Use for PRs, issues, code search, Actions — not for shipping laptop `frontend/.env`.
+- Public app config for contributors: GitHub Actions **Variables** + `./scripts/sync-env-from-github.sh` (see `CONTRIBUTING.md`).
+- Owner refreshes Variables after AWS env changes: `./scripts/push-env-to-github.sh`.
+- Authenticate with your own GitHub OAuth/PAT; never commit tokens.
+
 # Expo MCP
 - Remote Expo MCP is configured (`https://mcp.expo.dev/mcp`). Authenticate with your Expo account when prompted.
 - For local capabilities (simulator screenshot/tap, DevTools): `cd frontend && EXPO_UNSTABLE_MCP_SERVER=1 npx expo start` (requires `expo-mcp` devDependency), or `npm run start:mcp`.
