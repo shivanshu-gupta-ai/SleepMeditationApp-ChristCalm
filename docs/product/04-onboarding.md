@@ -107,7 +107,7 @@ Persist expiry timestamps in AsyncStorage (spec §4 / §8). Not implemented in s
 | Screens 16–19 (lifetime loss → reclaim) | Done |
 | Screens 20–22 (proof · commitment · stats) | Done |
 | Screens 23–25 escalating paywalls + timers | Done (RevenueCat purchase) |
-| Screen 26 How the App Works | Skeleton / pending full UI |
+| Screen 26 How the App Works → sign-in | Done (staggered cards + exit fade) |
 | Scarcity timers + RevenueCat on paywalls | Pending |
 | Profile derivation math | Pending |
 

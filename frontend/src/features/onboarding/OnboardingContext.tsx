@@ -41,9 +41,13 @@ export type OnboardingContextValue = {
   goBack: () => void;
   /** Jump to a step index (bypasses canProceed). Used after purchase / paywall skips. */
   goToStep: (index: number) => void;
+  /** Complete onboarding with a smooth exit → sign-in. */
+  finish: () => void;
   canProceed: boolean;
   fade: Animated.Value;
   slide: Animated.Value;
+  /** Full-screen exit opacity for leave-onboarding transition */
+  exitOpacity: Animated.Value;
 };
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
@@ -93,6 +97,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const fade = useRef(new Animated.Value(1)).current;
   const slide = useRef(new Animated.Value(0)).current;
+  const exitOpacity = useRef(new Animated.Value(1)).current;
+  const finishingRef = useRef(false);
 
   const screen = getScreenDef(step);
 
@@ -136,8 +142,44 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   );
 
   const finish = useCallback(() => {
-    markOnboardingComplete().then(() => router.replace("/(auth)/sign-up"));
-  }, [markOnboardingComplete, router]);
+    if (finishingRef.current) return;
+    finishingRef.current = true;
+    // Smooth exit: fade + slight rise, then land on sign-in
+    Animated.parallel([
+      Animated.timing(exitOpacity, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slide, {
+        toValue: -28,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(fade, {
+        toValue: 0,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished) {
+        finishingRef.current = false;
+        return;
+      }
+      markOnboardingComplete()
+        // After onboarding, open unified auth on Create account
+        .then(() => router.replace("/(auth)/sign-in?mode=signup"))
+        .catch(() => {
+          finishingRef.current = false;
+          exitOpacity.setValue(1);
+          fade.setValue(1);
+          slide.setValue(0);
+        });
+    });
+  }, [markOnboardingComplete, router, exitOpacity, slide, fade]);
 
   const goNext = useCallback(() => {
     if (!draft || !canProceedForStep(step, draft)) return;
@@ -234,9 +276,11 @@ const value = useMemo<OnboardingContextValue | null>(() => {
       goNext,
       goBack,
       goToStep,
+      finish,
       canProceed: canProceedForStep(step, draft),
       fade,
       slide,
+      exitOpacity,
     };
   }, [
     hydrated,
@@ -249,8 +293,10 @@ const value = useMemo<OnboardingContextValue | null>(() => {
     goNext,
     goBack,
     goToStep,
+    finish,
     fade,
     slide,
+    exitOpacity,
   ]);
 
   if (!value) {

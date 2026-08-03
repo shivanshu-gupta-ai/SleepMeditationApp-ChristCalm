@@ -273,8 +273,9 @@ export const ONBOARDING_SEQUENCE: readonly OnboardingScreenDef[] = [
     label: "How It Works",
     type: "education",
     grace: "peaceful",
-    showProgress: true,
-    showBack: true,
+    // Finale: no progress chrome; CTA leaves to sign-in with exit fade
+    showProgress: false,
+    showBack: false,
     ctaLabel: "Start my journey",
   },
 ] as const;

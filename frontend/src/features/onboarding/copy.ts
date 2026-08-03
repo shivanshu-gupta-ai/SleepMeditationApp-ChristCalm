@@ -230,3 +230,42 @@ export const STATS_PREVIEW_COPY = {
   afterLine: "Quiet · Deep rest · Nearness",
   footer: "Thousands stopped losing years.",
 } as const;
+
+/** Screen 26 — How the app works */
+export const HOW_APP_WORKS_COPY = {
+  title: "How ChristCalm works",
+  sub: "Simple tools for peace, when you need them.",
+  cta: "Start my journey",
+  cards: [
+    {
+      id: "emotions",
+      icon: "happy-outline" as const,
+      title: "Emotion meditations",
+      sub: "Pick how you feel. Get a short, Scripture-led calm.",
+    },
+    {
+      id: "sos",
+      icon: "heart" as const,
+      title: "SOS breath",
+      sub: "One tap when panic hits — 4-7-8 with verses.",
+    },
+    {
+      id: "scripture",
+      icon: "book-outline" as const,
+      title: "Today's Scripture",
+      sub: "A daily verse and reflection.",
+    },
+    {
+      id: "wisdom",
+      icon: "chatbubbles-outline" as const,
+      title: "What would Jesus say?",
+      sub: "Ask, and receive wise, grounded counsel.",
+    },
+    {
+      id: "journal",
+      icon: "create-outline" as const,
+      title: "Journal",
+      sub: "Write freely. Private to you.",
+    },
+  ],
+} as const;

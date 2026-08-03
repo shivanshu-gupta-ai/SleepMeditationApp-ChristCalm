@@ -58,7 +58,11 @@ export default function ConfirmEmail() {
 
   return (
     <Screen scroll keyboard edges={["top", "bottom"]} contentStyle={{ paddingTop: spacing.md }}>
-      <BackButton fallback="/(auth)/sign-up" size={24} style={{ marginBottom: spacing.md }} />
+      <BackButton
+        fallback="/(auth)/sign-in?mode=signup"
+        size={24}
+        style={{ marginBottom: spacing.md }}
+      />
 
       <SectionHeader
         overline="Verify email"
@@ -115,9 +119,9 @@ export default function ConfirmEmail() {
 
       <View style={{ flexDirection: "row", justifyContent: "center", marginTop: spacing.xl, gap: spacing.xs }}>
         <Text style={{ fontFamily: fonts.body, color: colors.textSecondary }}>Wrong email?</Text>
-        <Link href="/(auth)/sign-up" asChild>
+        <Link href="/(auth)/sign-in?mode=signup" asChild>
           <TouchableOpacity>
-            <Text style={{ fontFamily: fonts.bodyBold, color: colors.primary }}>Sign up again</Text>
+            <Text style={{ fontFamily: fonts.bodyBold, color: colors.primary }}>Back to account</Text>
           </TouchableOpacity>
         </Link>
       </View>

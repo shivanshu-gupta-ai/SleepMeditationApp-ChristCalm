@@ -76,24 +76,49 @@ function OnboardingFlow() {
   const { markOnboardingComplete } = useAuth();
   const { colors } = useTheme();
   const obStyles = useObStyles();
-  const { step, screen, goNext, goBack, canProceed, fade, slide } = useOnboarding();
+  const {
+    step,
+    screen,
+    goNext,
+    goBack,
+    finish,
+    canProceed,
+    fade,
+    slide,
+    exitOpacity,
+  } = useOnboarding();
+
+  const handlePrimary = useCallback(() => {
+    if (screen.id === "howAppWorks") {
+      finish();
+      return;
+    }
+    goNext();
+  }, [screen.id, finish, goNext]);
 
   const handleSecondary = useCallback(() => {
     if (screen.id === "welcome") {
-      markOnboardingComplete().then(() => router.replace("/(auth)/sign-in"));
+      // Returning user: open Sign in tab
+      markOnboardingComplete().then(() =>
+        router.replace("/(auth)/sign-in?mode=signin")
+      );
       return;
     }
-    // Paywalls / free paths: advance without selection gates
     goNext();
   }, [screen.id, markOnboardingComplete, router, goNext]);
 
   const footer = useMemo(() => {
     if (!screen.ctaLabel) return null;
+    const isFinale = screen.id === "howAppWorks";
     return (
       <>
         <TouchableOpacity
-          style={[obStyles.cta, !canProceed && obStyles.ctaDisabled]}
-          onPress={goNext}
+          style={[
+            obStyles.cta,
+            !canProceed && obStyles.ctaDisabled,
+            isFinale && { minHeight: 52 },
+          ]}
+          onPress={handlePrimary}
           disabled={!canProceed}
           testID="onboarding-next-btn"
           accessibilityRole="button"
@@ -101,7 +126,11 @@ function OnboardingFlow() {
           accessibilityState={{ disabled: !canProceed }}
         >
           <Text style={obStyles.ctaText}>{screen.ctaLabel}</Text>
-          <Ionicons name="arrow-forward" size={20} color={colors.white} />
+          <Ionicons
+            name={isFinale ? "arrow-forward-circle" : "arrow-forward"}
+            size={isFinale ? 22 : 20}
+            color={colors.white}
+          />
         </TouchableOpacity>
         {screen.secondaryCtaLabel ? (
           <TouchableOpacity onPress={handleSecondary} testID="onboarding-secondary-btn">
@@ -110,29 +139,37 @@ function OnboardingFlow() {
         ) : null}
       </>
     );
-  }, [screen, obStyles, goNext, handleSecondary, colors.white, canProceed]);
+  }, [screen, obStyles, handlePrimary, handleSecondary, colors.white, canProceed]);
 
   const ScreenComponent = SCREEN_MAP[screen.id];
 
   return (
-    <OnboardingStepLayout
-      step={step}
-      onBack={goBack}
-      showProgress={screen.showProgress}
-      showBack={screen.showBack && previousStepIndex(step) != null}
-      footer={footer}
-      scrollable={screen.id !== "calculating" && screen.id !== "splash"}
-    >
-      <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
-        <ScreenComponent />
-      </Animated.View>
-    </OnboardingStepLayout>
+    <Animated.View style={{ flex: 1, opacity: exitOpacity }}>
+      <OnboardingStepLayout
+        step={step}
+        onBack={goBack}
+        showProgress={screen.showProgress && screen.id !== "howAppWorks"}
+        showBack={
+          screen.showBack &&
+          previousStepIndex(step) != null &&
+          screen.id !== "howAppWorks"
+        }
+        footer={footer}
+        scrollable={screen.id !== "calculating" && screen.id !== "splash"}
+      >
+        <Animated.View
+          style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}
+        >
+          <ScreenComponent />
+        </Animated.View>
+      </OnboardingStepLayout>
+    </Animated.View>
   );
 }
 
 /**
  * Entry: OnboardingProvider owns draft + navigation.
- * Screens 6–10 (and others) read/write via useOnboarding().
+ * Final screen fades out into sign-in.
  */
 export function OnboardingNavigator() {
   return (
