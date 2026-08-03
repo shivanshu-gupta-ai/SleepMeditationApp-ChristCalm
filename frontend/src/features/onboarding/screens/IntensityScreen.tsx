@@ -2,22 +2,26 @@ import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useTheme } from "@/src/context/ThemeContext";
-import { GraceMoodImage } from "../components/GraceMoodImage";
+import {
+  IntensityMascot,
+  intensityBandFromValue,
+} from "../components/IntensityMascot";
 import { OnboardingQuestion } from "../components/OnboardingQuestion";
 import { useOnboarding } from "../OnboardingContext";
 import { INTENSITY_QUESTION } from "../copy";
+import { playHaptic } from "@/src/utils/haptics";
 
 /**
- * Screen 13 — Intensity slider (0–10)
- * Light → Overwhelming. Stores draft.dailyLoad.
- * Grace mood softens/heavies with value (idle vs wave as stand-in).
+ * Screen 13 — Intensity slider with interactive mascot.
+ * Bands: 0–2 light · 2–4 mild · 4–6 moderate · 6–8 heavy · 8–10 overwhelmed
+ * Expression + animation change with the load.
  */
 export function IntensityScreen() {
   const { draft, setSingle } = useOnboarding();
   const { colors, fonts, spacing, radius } = useTheme();
 
-  // Default to mid if unset so first render is honest middle ground
   const value = draft.dailyLoad ?? 5;
+  const band = intensityBandFromValue(value);
 
   useEffect(() => {
     if (draft.dailyLoad == null) {
@@ -25,9 +29,12 @@ export function IntensityScreen() {
     }
   }, [draft.dailyLoad, setSingle]);
 
-  const mood = value <= 4 ? ("hopeful" as const) : value <= 7 ? ("listening" as const) : ("heavy" as const);
-  const weightLabel =
-    value <= 2 ? "Light" : value <= 5 ? "Manageable" : value <= 7 ? "Heavy" : "Overwhelming";
+  const trackColor =
+    band === "light" || band === "mild"
+      ? colors.primary
+      : band === "moderate"
+        ? colors.secondary
+        : colors.danger;
 
   const styles = useMemo(
     () =>
@@ -38,14 +45,6 @@ export function IntensityScreen() {
           paddingTop: spacing.sm,
           alignItems: "center",
         },
-        graceWrap: { marginBottom: spacing.md, marginTop: spacing.sm },
-        weight: {
-          fontFamily: fonts.bodyBold,
-          fontSize: 18,
-          color: colors.primary,
-          marginBottom: spacing.lg,
-          letterSpacing: -0.2,
-        },
         sliderBlock: {
           width: "100%",
           backgroundColor: colors.surface,
@@ -54,6 +53,7 @@ export function IntensityScreen() {
           paddingHorizontal: spacing.md,
           borderWidth: 1,
           borderColor: colors.borderSoft,
+          marginTop: spacing.md,
         },
         labels: {
           flexDirection: "row",
@@ -84,6 +84,13 @@ export function IntensityScreen() {
           marginBottom: 6,
           marginLeft: 4,
         },
+        bandHint: {
+          fontFamily: fonts.body,
+          fontSize: 12,
+          color: colors.textMuted,
+          textAlign: "center",
+          marginTop: spacing.md,
+        },
       }),
     [colors, fonts, spacing, radius]
   );
@@ -96,10 +103,8 @@ export function IntensityScreen() {
         center
         density="roomy"
       />
-      <View style={styles.graceWrap}>
-        <GraceMoodImage mood={mood} size={120} testID="grace-intensity" />
-      </View>
-      <Text style={styles.weight}>{weightLabel}</Text>
+
+      <IntensityMascot value={value} size={168} testID="grace-intensity" />
 
       <View style={styles.sliderBlock}>
         <View style={styles.valueRow}>
@@ -107,15 +112,21 @@ export function IntensityScreen() {
           <Text style={styles.ofTen}>/ 10</Text>
         </View>
         <Slider
-          style={{ width: "100%", height: 40 }}
+          style={{ width: "100%", height: 44 }}
           minimumValue={0}
           maximumValue={10}
           step={1}
           value={value}
-          onValueChange={(v) => setSingle("dailyLoad", Math.round(v))}
-          minimumTrackTintColor={colors.primary}
+          onValueChange={(v) => {
+            const next = Math.round(v);
+            if (next !== value) {
+              void playHaptic(next >= 8 ? "medium" : "light");
+            }
+            setSingle("dailyLoad", next);
+          }}
+          minimumTrackTintColor={trackColor}
           maximumTrackTintColor={colors.borderSoft}
-          thumbTintColor={colors.primary}
+          thumbTintColor={trackColor}
           testID="onboarding-intensity-slider"
           accessibilityLabel={INTENSITY_QUESTION.title}
         />
@@ -124,6 +135,7 @@ export function IntensityScreen() {
           <Text style={styles.endLabel}>{INTENSITY_QUESTION.highLabel}</Text>
         </View>
       </View>
+      <Text style={styles.bandHint}>Drag — watch how Grace feels with you</Text>
     </View>
   );
 }

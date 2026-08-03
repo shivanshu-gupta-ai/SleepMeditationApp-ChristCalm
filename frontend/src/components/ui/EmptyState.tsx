@@ -14,7 +14,7 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { PressableScale } from "@/src/components/ui/PressableScale";
 import { motion } from "@/src/theme/primitives";
 
-const GRACE = require("@/assets/images/grace-mascot.jpg");
+const GRACE = require("@/assets/images/grace-mascot.png");
 
 type Props = {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -93,7 +93,7 @@ export function EmptyState({
             bobStyle,
           ]}
         >
-          <Image source={GRACE} style={styles.grace} accessibilityLabel="Grace" />
+          <Image source={GRACE} style={styles.grace} resizeMode="contain" accessibilityLabel="Grace" />
         </Animated.View>
       ) : (
         <View style={[styles.iconWrap, { backgroundColor: colors.primarySoft }]}>

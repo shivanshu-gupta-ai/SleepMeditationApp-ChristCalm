@@ -1,29 +1,39 @@
-import React, { useMemo } from "react";
-import { Image, View, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import React, { useEffect, useMemo, useRef } from "react";
+import {
+  Image,
+  View,
+  StyleSheet,
+  Animated,
+  Easing,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import type { GraceExpression } from "../types";
 
 /**
- * Soft 3D / cinematic Grace illustrations (Imagine-generated).
- * Falls back to classic companion still if a mood asset is missing.
+ * ChristCalm bunny mascot moods (from mascot-christcalm.jpg + Imagine variants).
+ * Gentle idle bob for interactive feel.
  */
 
-const FALLBACK = require("@/assets/images/grace/companion.jpg");
+const FALLBACK = require("@/assets/images/grace-mascot.png");
 
-const MOOD_ASSETS: Partial<Record<GraceExpression | "splash" | "benefit", number>> = {
-  welcome: require("@/assets/images/onboarding/grace-welcome.jpg"),
-  listening: require("@/assets/images/onboarding/grace-listening.jpg"),
-  thoughtful: require("@/assets/images/onboarding/grace-thoughtful.jpg"),
-  heavy: require("@/assets/images/onboarding/grace-heavy.jpg"),
-  hopeful: require("@/assets/images/onboarding/grace-hopeful.jpg"),
-  committed: require("@/assets/images/onboarding/grace-committed.jpg"),
-  peaceful: require("@/assets/images/onboarding/grace-peaceful.jpg"),
-  splash: require("@/assets/images/onboarding/grace-splash.jpg"),
+const MOOD_ASSETS: Record<GraceExpression | "splash", number> = {
+  welcome: require("@/assets/images/onboarding/grace-welcome.png"),
+  listening: require("@/assets/images/onboarding/grace-listening.png"),
+  thoughtful: require("@/assets/images/onboarding/grace-thoughtful.png"),
+  heavy: require("@/assets/images/onboarding/grace-heavy.png"),
+  hopeful: require("@/assets/images/onboarding/grace-hopeful.png"),
+  committed: require("@/assets/images/onboarding/grace-committed.png"),
+  peaceful: require("@/assets/images/onboarding/grace-peaceful.png"),
+  splash: require("@/assets/images/onboarding/grace-splash.png"),
 };
 
 export type GraceMoodImageProps = {
   mood?: GraceExpression | "splash";
   size?: number;
+  /** Soft continuous bob animation */
+  animate?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -31,45 +41,78 @@ export type GraceMoodImageProps = {
 export function GraceMoodImage({
   mood = "welcome",
   size = 140,
+  animate = true,
   style,
   testID = "grace-mood",
 }: GraceMoodImageProps) {
   const { colors, shadows, isDark } = useTheme();
   const src = MOOD_ASSETS[mood] ?? FALLBACK;
-  const r = size / 2;
+  const bob = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(1)).current;
+  const prevMood = useRef(mood);
+
+  useEffect(() => {
+    if (prevMood.current !== mood) {
+      prevMood.current = mood;
+      fade.setValue(0.4);
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [mood, fade]);
+
+  useEffect(() => {
+    if (!animate) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bob, {
+          toValue: -8,
+          duration: 1400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bob, {
+          toValue: 0,
+          duration: 1400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [animate, bob]);
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         wrap: {
-          width: size + 12,
-          height: size + 12,
+          width: size + 16,
+          height: size + 16,
           alignItems: "center",
           justifyContent: "center",
-        },
-        ring: {
-          width: size,
-          height: size,
-          borderRadius: r,
-          overflow: "hidden",
-          backgroundColor: isDark ? colors.surface : colors.primarySoft,
-          borderWidth: 1,
-          borderColor: colors.borderSoft,
-          ...shadows.soft,
         },
         img: {
           width: size,
           height: size,
         },
       }),
-    [size, r, colors, shadows, isDark]
+    [size]
   );
 
   return (
-    <View style={[styles.wrap, style]} testID={testID} accessibilityRole="image" accessibilityLabel="Grace">
-      <View style={styles.ring}>
-        <Image source={src} style={styles.img} resizeMode="cover" />
-      </View>
+    <View
+      style={[styles.wrap, style]}
+      testID={testID}
+      accessibilityRole="image"
+      accessibilityLabel="ChristCalm mascot"
+    >
+      <Animated.View style={{ opacity: fade, transform: [{ translateY: bob }] }}>
+        <Image source={src} style={styles.img} resizeMode="contain" />
+      </Animated.View>
     </View>
   );
 }
