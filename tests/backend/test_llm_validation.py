@@ -4,28 +4,28 @@ import pytest
 
 from backend_path import ensure_backend_path  # noqa: F401
 
-from ai.llm import LLMError, MAX_FEELING_LEN, _model_chain, validate_prayer_input
+from ai.llm import LLMError, MAX_FEELING_LEN, _model_chain, validate_short_input
 
 
 def test_valid_feeling():
-    f, c = validate_prayer_input("anxious", "work stress")
+    f, c = validate_short_input("anxious", "work stress")
     assert f == "anxious"
     assert c == "work stress"
 
 
 def test_empty_feeling_rejected():
     with pytest.raises(LLMError):
-        validate_prayer_input("  ", None)
+        validate_short_input("  ", None)
 
 
 def test_feeling_truncated():
     long = "x" * (MAX_FEELING_LEN + 300)
-    f, _ = validate_prayer_input(long, None)
+    f, _ = validate_short_input(long, None)
     assert len(f) == MAX_FEELING_LEN
 
 
 def test_control_chars_stripped():
-    f, _ = validate_prayer_input("sad\x00\x01 day", None)
+    f, _ = validate_short_input("sad\x00\x01 day", None)
     assert "\x00" not in f
 
 

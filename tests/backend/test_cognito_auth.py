@@ -44,7 +44,7 @@ class TestCognitoConfig:
         assert data["client_id"] == CLIENT_ID
         assert "domain" in data
 
-    def test_legacy_signup_returns_410(self, session):
+    def test_server_signup_removed(self, session):
         r = session.post(
             f"{BASE_URL}/api/auth/signup",
             json={
@@ -54,15 +54,15 @@ class TestCognitoConfig:
             },
             timeout=15,
         )
-        assert r.status_code == 410, r.text
+        assert r.status_code == 404, r.text
 
-    def test_legacy_signin_returns_410(self, session):
+    def test_server_signin_removed(self, session):
         r = session.post(
             f"{BASE_URL}/api/auth/signin",
             json={"email": "test@christcalm.app", "password": "Password1"},
             timeout=15,
         )
-        assert r.status_code == 410, r.text
+        assert r.status_code == 404, r.text
 
 
 class TestCognitoBearer:

@@ -16,6 +16,7 @@ import {
   type CognitoTokens,
   type SignUpResult,
 } from "@/src/features/auth/cognito";
+import { COGNITO_TOKENS_KEY } from "@/src/utils/auth-token";
 import { onSessionEvent } from "@/src/utils/session-events";
 
 export type User = {
@@ -55,15 +56,12 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-const TOKEN_KEY = "cc_cognito_tokens";
-
 async function saveTokens(tokens: CognitoTokens): Promise<void> {
-  await storage.secureSet(TOKEN_KEY, JSON.stringify(tokens));
-  await storage.secureSet("cc_token", tokens.accessToken);
+  await storage.secureSet(COGNITO_TOKENS_KEY, JSON.stringify(tokens));
 }
 
 async function loadTokens(): Promise<CognitoTokens | null> {
-  const raw = await storage.secureGet(TOKEN_KEY, "");
+  const raw = await storage.secureGet(COGNITO_TOKENS_KEY, "");
   if (!raw) return null;
   try {
     return JSON.parse(raw) as CognitoTokens;
@@ -73,8 +71,7 @@ async function loadTokens(): Promise<CognitoTokens | null> {
 }
 
 async function clearTokens(): Promise<void> {
-  await storage.secureRemove(TOKEN_KEY);
-  await storage.secureRemove("cc_token");
+  await storage.secureRemove(COGNITO_TOKENS_KEY);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -145,8 +142,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (mounted) setOnboardingComplete(Boolean(ob));
 
       if (!cognitoConfigured()) {
-        const legacy = await storage.secureGet("cc_token", "");
-        if (legacy) await refreshUser();
         if (mounted) setLoading(false);
         return;
       }

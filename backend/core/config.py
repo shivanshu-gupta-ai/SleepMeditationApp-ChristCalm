@@ -23,7 +23,6 @@ logger = logging.getLogger("christcalm.config")
 
 # Loaded from SSM when SSM_PREFIX is set (Lambda + local-with-SSM).
 SSM_KEYS = (
-    "JWT_SECRET",
     "CORS_ORIGINS",
     "COGNITO_USER_POOL_ID",
     "COGNITO_CLIENT_ID",
@@ -64,14 +63,11 @@ _LOCAL_NON_SECRET_KEYS = frozenset(
 # If someone pastes secrets into .env, strip them when SSM is active so SSM wins.
 _SECRET_KEY_MARKERS = frozenset(
     {
-        "JWT_SECRET",
-                "REVENUECAT_WEBHOOK_AUTHORIZATION",
+        "REVENUECAT_WEBHOOK_AUTHORIZATION",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_SESSION_TOKEN",
         "APPLE_PRIVATE_KEY",
-        "STRIPE_API_KEY",
-        "STRIPE_SECRET_KEY",
     }
 )
 
@@ -189,16 +185,4 @@ def bootstrap() -> None:
     _LOADED = True
 
 
-def require_jwt_secret() -> str:
-    secret = (os.environ.get("JWT_SECRET") or "").strip()
-    if not secret or secret in ("unset", "dev-only-change-me"):
-        if os.environ.get("SSM_PREFIX"):
-            raise RuntimeError(
-                "JWT_SECRET missing/placeholder in SSM. "
-                "Set via terraform.tfvars → apply (infrastructure/terraform/ssm.tf)."
-            )
-        raise RuntimeError(
-            "JWT_SECRET is required. Prefer SSM: export SSM_PREFIX=/christcalm-preview "
-            "and run with AWS credentials (./scripts/run-backend-local.sh)."
-        )
-    return secret
+

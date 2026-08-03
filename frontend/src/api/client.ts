@@ -1,6 +1,6 @@
-import { storage } from "@/src/utils/storage";
 import { cacheGet, cacheSet } from "@/src/utils/api-cache";
 import { ApiError } from "@/src/utils/api-errors";
+import { getAccessToken } from "@/src/utils/auth-token";
 import { reportNetworkFailure, reportNetworkSuccess } from "@/src/utils/connectivity";
 import { emitSessionExpired } from "@/src/utils/session-events";
 
@@ -16,7 +16,7 @@ if (!BACKEND_URL && typeof __DEV__ !== "undefined" && __DEV__) {
 export const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api` : "";
 
 async function authHeaders() {
-  const token = await storage.secureGet("cc_token", "");
+  const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

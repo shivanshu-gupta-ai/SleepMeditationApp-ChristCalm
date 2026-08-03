@@ -668,17 +668,8 @@ async def generate_wisdom_reply_stream(
     }
 
 
-# Back-compat alias used by older imports/tests
-async def generate_prayer(feeling: str, context: Optional[str] = None) -> str:
-    prompt = feeling
-    if context:
-        prompt = f"{feeling}. Context: {context}"
-    result = await generate_wisdom_reply(prompt)
-    return result["reply"]
-
-
-def validate_prayer_input(feeling: str, context: Optional[str] = None):
-    """Validate short prayer / feeling input (not full chat messages)."""
+def validate_short_input(feeling: str, context: Optional[str] = None):
+    """Validate short feeling / context input (not full chat messages)."""
     f = _sanitize(feeling or "", MAX_FEELING_LEN)
     if not f:
         raise LLMError("Feeling is required")

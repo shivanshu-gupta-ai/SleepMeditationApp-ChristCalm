@@ -135,7 +135,8 @@ export async function flushAnalytics(): Promise<{ sent: number; ok: boolean }> {
       return { sent: 0, ok: false };
     }
 
-    const token = await storage.secureGet("cc_token", "");
+    const { getAccessToken } = await import("@/src/utils/auth-token");
+    const token = await getAccessToken();
     const deviceId = await getDeviceId();
     const sid = await getSessionId();
 

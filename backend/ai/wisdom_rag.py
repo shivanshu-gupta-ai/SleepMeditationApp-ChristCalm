@@ -7,12 +7,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
-# Prefer packaged corpus next to this package, then Lambda paths
+# Packaged corpus next to this package, then Lambda package path
 _CANDIDATE_ROOTS = [
     Path(__file__).resolve().parent / "corpus",  # backend/ai/corpus
     Path("/var/task/ai/corpus"),
-    Path("/var/task/wisdom"),  # legacy package layout
-    Path(__file__).resolve().parents[2] / "wisdom",  # legacy monorepo root
 ]
 
 

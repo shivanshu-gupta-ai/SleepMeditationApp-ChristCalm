@@ -13,12 +13,9 @@ phases:
     commands:
       - pip install -r backend/requirements-lambda.txt -t package/ --quiet
       - cp backend/handler.py backend/server.py backend/seed_data.py package/
-      - cp -r backend/auth backend/ai backend/core backend/data package/
+      - cp -r backend/api backend/auth backend/ai backend/core backend/data package/
       - echo "AI corpus check:" && find backend/ai -type f -name '*.md' | head -20
       - test -f package/ai/corpus/Wisdom_Handbook.md || (echo "MISSING ai corpus handbook" && ls -laR backend/ai | head -50 && exit 1)
-      # Legacy wisdom path for older code paths
-      - mkdir -p package/wisdom
-      - if [ -d package/ai/corpus ]; then cp -R package/ai/corpus/. package/wisdom/; fi
       # Drop macOS AppleDouble / junk that can pollute RAG corpus
       - find package -name '._*' -delete 2>/dev/null || true
       - find package -name '.DS_Store' -delete 2>/dev/null || true

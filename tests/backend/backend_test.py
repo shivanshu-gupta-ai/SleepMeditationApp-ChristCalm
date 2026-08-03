@@ -1,7 +1,7 @@
 """ChristCalm backend integration tests.
 
 Runs against the public preview URL (EXPO_PUBLIC_BACKEND_URL).
-Auth uses Cognito (legacy /api/auth/signup returns 410 when Cognito is on).
+Auth uses Cognito only (no server-side email/password signup).
 """
 
 import uuid
@@ -18,7 +18,6 @@ from cognito_helpers import (
     SEEDED_PASSWORD,
     auth_headers as auth,
     cognito_client,
-    cognito_env_ready,
     require_cognito_env,
     signup_and_token,
     strong_password,
@@ -129,9 +128,8 @@ class TestAuth:
         r = session.get(f"{BASE_URL}/api/auth/me", timeout=10)
         assert r.status_code == 401
 
-    def test_legacy_signup_gone(self, session):
-        if not cognito_env_ready():
-            pytest.skip("Cognito not configured")
+    def test_server_signup_removed(self, session):
+        """Email/password auth is Cognito-only — API has no signup route."""
         r = session.post(
             f"{BASE_URL}/api/auth/signup",
             json={
@@ -141,7 +139,7 @@ class TestAuth:
             },
             timeout=15,
         )
-        assert r.status_code == 410
+        assert r.status_code == 404
 
 
 # -------------------- Onboarding --------------------
@@ -391,33 +389,42 @@ class TestFeedback:
         assert r.status_code == 422
 
 
-# -------------------- AI Prayer --------------------
-class TestAIPrayer:
-    def test_generate_prayer(self, session, seeded_token):
+# -------------------- Wisdom --------------------
+class TestWisdom:
+    def test_wisdom_chat(self, session, seeded_token):
         r = session.post(
-            f"{BASE_URL}/api/ai/prayer",
+            f"{BASE_URL}/api/wisdom/chat",
             headers=auth(seeded_token),
-            json={"feeling": "anxious", "context": "work deadline stress"},
+            json={"message": "I feel anxious about a work deadline."},
             timeout=90,
         )
         assert r.status_code in (200, 503, 429), r.text
         if r.status_code == 200:
             body = r.json()
-            assert "prayer" in body and isinstance(body["prayer"], str)
-            assert len(body["prayer"]) > 40, f"Prayer too short: {body['prayer']!r}"
+            assert "reply" in body and isinstance(body["reply"], str)
+            assert len(body["reply"]) > 20, f"Reply too short: {body['reply']!r}"
             assert "sk-" not in r.text
         else:
             detail = str(r.json().get("detail", "")).lower()
             assert "sk-" not in detail
             assert "api key" not in detail
 
-    def test_prayer_requires_auth(self, session):
+    def test_wisdom_requires_auth(self, session):
         r = session.post(
-            f"{BASE_URL}/api/ai/prayer",
-            json={"feeling": "sad"},
+            f"{BASE_URL}/api/wisdom/chat",
+            json={"message": "I feel sad today."},
             timeout=10,
         )
         assert r.status_code == 401
+
+    def test_legacy_ai_prayer_removed(self, session, seeded_token):
+        r = session.post(
+            f"{BASE_URL}/api/ai/prayer",
+            headers=auth(seeded_token),
+            json={"feeling": "anxious"},
+            timeout=15,
+        )
+        assert r.status_code == 404
 
 
 # -------------------- Subscriptions (RevenueCat) --------------------

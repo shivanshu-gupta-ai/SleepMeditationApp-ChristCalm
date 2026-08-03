@@ -49,14 +49,14 @@ class TestSecurity:
         )
         assert r.status_code == 401
 
-    def test_signup_deprecated_when_cognito_enabled(self, session):
+    def test_server_signup_removed(self, session):
         email = f"sec_{uuid.uuid4().hex[:8]}@christcalm.app"
         r = session.post(
             f"{BASE}/api/auth/signup",
             json={"name": "X", "email": email, "password": "Password12"},
             timeout=15,
         )
-        assert r.status_code == 410
+        assert r.status_code == 404
 
     def test_webhook_without_auth_when_configured(self, session):
         """If webhook secret is set in env, missing auth should 401; else 200 ok."""
