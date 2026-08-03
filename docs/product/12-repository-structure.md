@@ -109,7 +109,7 @@ ChristCalmApp/
 | Client routes / screens | `frontend/app/` |
 | Auth (client) | `frontend/src/features/auth/` |
 | Subscriptions (client) | `frontend/src/features/subscriptions/` |
-| Onboarding UI + copy | `frontend/src/features/onboarding/` |
+| Onboarding (navigator + screens) | `frontend/src/features/onboarding/` · [04-onboarding.md](./04-onboarding.md) |
 | Design tokens | `frontend/src/theme/` |
 | UI kit | `frontend/src/components/ui/` |
 | HTTP client | `frontend/src/api/client.ts` |
@@ -175,8 +175,12 @@ src/
 │   │   ├── cognito.ts            # Email + hosted UI / Apple / Google
 │   │   └── components/
 │   ├── onboarding/
-│   │   ├── constants.ts          # Questions, options, insight copy
-│   │   └── components/           # Grace, progress, options, layout
+│   │   ├── OnboardingNavigator.tsx  # Step machine (0–26)
+│   │   ├── sequence.ts              # Design sequence + paywall rules
+│   │   ├── types.ts
+│   │   ├── constants.ts             # Option catalogs
+│   │   ├── screens/                 # One component per design screen
+│   │   └── components/              # ProgressBar, layout, Grace placeholders
 │   └── subscriptions/
 │       ├── RevenueCatContext.tsx
 │       ├── use-premium.ts

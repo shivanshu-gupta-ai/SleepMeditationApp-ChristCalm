@@ -12,9 +12,9 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { motion } from "@/src/theme/primitives";
 
 /** Cute Grace loading badges (Imagine, mascot-matched sage/teal) */
-const GRACE_WAIT = require("@/assets/images/loading/grace-wait.jpg");
-const GRACE_WAIT_DARK = require("@/assets/images/loading/grace-wait-dark.jpg");
-const GRACE_CALM = require("@/assets/images/loading/grace-calm.jpg");
+const GRACE_WAIT = require("@/assets/images/loading/grace-wait.png");
+const GRACE_WAIT_DARK = require("@/assets/images/loading/grace-wait-dark.png");
+const GRACE_CALM = require("@/assets/images/loading/grace-calm.png");
 
 export type LoadingEmblem = "grace" | "calm";
 
@@ -173,7 +173,7 @@ export function LoadingState({
             <Image
               source={source}
               style={styles.emblem}
-              resizeMode="cover"
+              resizeMode="contain"
               accessibilityIgnoresInvertColors
               accessibilityLabel="Grace is waiting with you"
             />

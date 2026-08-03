@@ -20,6 +20,8 @@ type Props = {
   multi?: boolean;
   /** compact (default): denser list for many options on one screen */
   density?: "compact" | "roomy";
+  /** Allow long labels (e.g. support options) to wrap to 2 lines */
+  labelLines?: number;
 };
 
 /**
@@ -35,6 +37,7 @@ export function OnboardingOption({
   testID,
   multi = false,
   density = "compact",
+  labelLines = 1,
 }: Props) {
   const { colors, fonts, spacing, radius, shadows } = useTheme();
   const compact = density === "compact";
@@ -89,7 +92,7 @@ export function OnboardingOption({
 
       <View style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
         <Text
-          numberOfLines={1}
+          numberOfLines={labelLines}
           style={{
             fontFamily: fonts.bodyBold,
             fontSize: compact ? 15 : 16,
