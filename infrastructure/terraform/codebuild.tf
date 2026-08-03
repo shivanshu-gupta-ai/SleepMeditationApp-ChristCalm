@@ -8,6 +8,93 @@ resource "aws_s3_bucket_versioning" "build" {
   versioning_configuration { status = "Enabled" }
 }
 
+# Customer-managed CMK for the CodeBuild source bucket (explicit least-privilege key policy).
+resource "aws_kms_key" "build" {
+  description             = "${local.name_prefix} CodeBuild S3 encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "${local.name_prefix}-build-key"
+    Statement = [
+      {
+        Sid    = "AllowRootAccountKeyAdministration"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        # Administrative actions only — not kms:Decrypt / kms:CreateGrant.
+        Action = [
+          "kms:Create*",
+          "kms:Describe*",
+          "kms:Enable*",
+          "kms:List*",
+          "kms:Put*",
+          "kms:Update*",
+          "kms:Revoke*",
+          "kms:Disable*",
+          "kms:Get*",
+          "kms:Delete*",
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion",
+          "kms:TagResource",
+          "kms:UntagResource",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCodeBuildUseOfTheKey"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.codebuild.arn
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+      },
+      {
+        # Deploy uploads (aws s3 cp) and other account principals may use the key
+        # only when calling through S3 in this region — not unrestricted KMS use.
+        Sid    = "AllowAccountUseViaS3"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "s3.${var.aws_region}.amazonaws.com"
+          }
+        }
+      },
+    ]
+  })
+  tags = local.common_tags
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "build" {
+  bucket = aws_s3_bucket.build.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.build.arn
+    }
+    bucket_key_enabled = true
+  }
+}
+
 resource "aws_iam_role" "codebuild" {
   name = "${local.name_prefix}-codebuild"
   assume_role_policy = jsonencode({
@@ -28,14 +115,25 @@ resource "aws_iam_role_policy" "codebuild" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/codebuild/*"
       },
       {
         Effect   = "Allow"
         Action   = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
         Resource = "${aws_s3_bucket.build.arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*",
+        ]
+        Resource = aws_kms_key.build.arn
       },
       {
         Effect = "Allow"
