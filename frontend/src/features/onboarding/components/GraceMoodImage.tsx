@@ -12,7 +12,7 @@ import { useTheme } from "@/src/context/ThemeContext";
 import type { GraceExpression } from "../types";
 
 /**
- * ChristCalm bunny mascot moods (from mascot-christcalm.jpg + Imagine variants).
+ * ChristCalm bunny mascot moods (transparent PNG cutouts).
  * Gentle idle bob for interactive feel.
  */
 

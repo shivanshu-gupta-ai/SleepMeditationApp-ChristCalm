@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-/** ChristCalm bunny mascot (mascot-christcalm.jpg) */
+/** ChristCalm bunny mascot (transparent PNG) */
 const GRACE_IDLE = require("@/assets/images/grace/companion.png");
 const GRACE_WAVE = require("@/assets/images/grace/wave.png");
 
