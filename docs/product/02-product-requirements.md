@@ -32,7 +32,7 @@ ChristCalm provides:
 
 | # | Feature | Acceptance |
 |---|---------|------------|
-| 1 | Onboarding (~11–12 steps) | Completes; data persisted; lands Home |
+| 1 | Onboarding (27 screens, design v3.1) | Completes; draft persisted; auth gate; lands Home |
 | 2 | Auth (email + at least one social) | Session secure; `/me` works |
 | 3 | Home | Greeting, emotions, SOS, path, today’s word |
 | 4 | Meditate list + filter | Filter by emotion; cards show duration, Scripture |
@@ -67,9 +67,10 @@ ChristCalm provides:
 
 ### FR-Onboarding
 
-- Collect: name (optional), emotional states, faith stage, concerns, preferred time, desired support, covenant acceptance  
+- Full flow per [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md) / [04-onboarding.md](./04-onboarding.md): welcome → questions → insight → loss/hope → commitment → escalating paywalls → how the app works  
+- Collect: name (optional), emotional states, faith stage, concerns, preferred time, desired support, age, intensity, commitment  
 - Persist draft locally until authenticated, then sync to backend  
-- Paywall is **not** part of onboarding  
+- In-flow escalating paywalls (full → 50% → 80%) with scarcity timers; soft paywall after first practice remains secondary  
 
 ### FR-Content
 

@@ -1,190 +1,118 @@
 # Onboarding
 
-**Goal:** Warm, personalized, reverent first-run experience. Acknowledge struggle → offer hope → gentle education → meaningful commitment → teach how the app works.  
-**Duration target:** ~75–100 seconds of active attention.  
-**Paywall:** Not here — show soft paywall only after first completed practice on Home.
+**Canonical design:** [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md) (v3.1)  
+**Implementation:** `frontend/src/features/onboarding/` · route `app/onboarding.tsx`
 
-## Principles
+## Goal
 
-**Borrow good patterns:** personalization, mascot warmth, insight moment (not harsh diagnosis), beautiful commitment, value before paywall.
+High-converting first-run experience: personalization → insight → loss aversion → hope → commitment → escalating paywalls → app orientation. Grace is the emotional companion throughout.
 
-**Never:** fear/guilt, shock, fake social proof, aggressive urgency.
-
-## Step list
-
-| # | Screen | Required | Data |
-|---|--------|----------|------|
-| 0 | Welcome + Scripture + Grace | — | — |
-| 1 | What should I call you? | Name optional | `user_name` |
-| 2 | How has your heart been feeling? | ≥1 | `emotional_state[]` |
-| 3 | Faith journey stage | One | `faith_journey` |
-| 4 | What’s weighing on your heart? | ≥1 | `concerns[]` |
-| 5 | When do you most need peace? | One | `preferred_time` |
-| 6 | Your current season (insight) | — | derived copy only |
-| 7 | How Grace will support you | ≥1 | `desired_support[]` |
-| 8 | A moment with Scripture | — | — |
-| 9 | Personal Peace Covenant | Commit | `commitment_accepted`, `commitment_date` |
-| 10 | Preparing your journey | — | animation |
-| 11 | How the app works + first practices | ≥1 practice optional | `first_practices_done[]` |
-
-After step 11 → Home (auth may wrap before/after depending on platform policy).
-
----
-
-## Copy & options (canonical)
-
-### Step 0 — Welcome
-
-- Overline: “A sacred space for your heart”  
-- Headline Scripture: “Peace I leave with you; my peace I give you.”  
-- Reference: John 14:27  
-- Subtext: “Grace is here to walk with you — one gentle step at a time.”  
-- CTA: **Begin My Journey**
-
-### Step 1 — Name
-
-- Title: “What should I call you?”  
-- Subtitle: “This helps our conversations feel personal and warm.”  
-- Field: optional display name  
-
-### Step 2 — Heart (multi-select OK)
-
-| id | Label | Sub |
-|----|-------|-----|
-| `weary` | Weary | I'm running on empty |
-| `anxious` | Anxious | My mind won't quiet down |
-| `numb` | Numb | I'm going through the motions |
-| `hopeful_tired` | Hopeful but tired | I want to feel peace again |
-| `peaceful` | Peaceful | I'm in a good place |
-
-### Step 3 — Faith stage (single)
-
-| id | Label | Sub |
-|----|-------|-----|
-| `seeking` | Seeking | I'm exploring faith |
-| `new` | New | I'm new to following Jesus |
-| `growing` | Growing | I'm growing and learning |
-| `deep` | Deeply rooted | Faith is the center of my life |
-
-### Step 4 — Concerns (multi)
-
-| id | Label | Sub |
-|----|-------|-----|
-| `anxiety` | Anxiety & Fear | Worry, restless thoughts, or panic |
-| `sleep` | Sleep & Rest | Hard to settle at night |
-| `grief` | Grief or Loneliness | Sorrow, loss, or feeling unseen |
-| `overwhelm` | Overwhelm | Too much to hold right now |
-| `faith_purpose` | Faith & Purpose | Doubt, direction, or wanting Jesus nearer |
-
-### Step 5 — Timing (single)
-
-| id | Label |
-|----|-------|
-| `morning` | Morning |
-| `midday` | Midday |
-| `evening` | Evening |
-| `before_sleep` | Before sleep |
-| `random` | Random moments |
-
-### Step 6 — Insight (derived)
+## Architecture
 
 ```
-if heavy (many concerns OR anxious/weary):
-  headline: "It looks like you're carrying quite a bit right now."
-  sub: "You're not alone. God's peace is available to you — one small step at a time."
-else if only peaceful:
-  headline: "What a gift to begin from a place of peace."
-  sub: "Grace will walk with you as you deepen the calm God has already placed in your heart."
-else:
-  headline: "Every season has its own rhythm."
-  sub: "You're not alone. God's peace is available to you — one small step at a time."
+app/onboarding.tsx                    → thin Expo Router entry
+src/features/onboarding/
+  OnboardingNavigator.tsx             → layout shell + CTA footer
+  OnboardingContext.tsx               → shared draft, patch/toggle, Next/Back, canProceed
+  sequence.ts                         → 27 screens (0–26), CTAs, paywall rules
+  copy.ts                             → design-spec titles + option catalogs
+  types.ts                            → route ids, Grace expressions
+  components/
+    ProgressBar.tsx                   → continuous flow progress
+    OnboardingStepLayout.tsx          → shell (back, progress, footer CTA)
+    GraceCompanion / Option / Question
+  screens/                            → one component per design screen
 ```
 
-### Step 7 — Desired support (multi)
+**Navigation model:** single route `/onboarding` with an internal step index.  
+**State:** `OnboardingProvider` + `useOnboarding()` — all answers live in one draft, persisted to AsyncStorage `cc_onboarding_draft`.  
+**Exit:** last CTA → `markOnboardingComplete` → `/(auth)/sign-up`.
 
-| id | Label | Sub |
-|----|-------|-----|
-| `calm_anxiety` | Calm my mind | Scripture for anxious, racing thoughts |
-| `rest_sleep` | Rest & sleep | Settle body and mind at night |
-| `scripture` | God's Word | Hear Scripture spoken into this season |
-| `hard_emotions` | Hard emotions | Grief, loneliness, or overwhelm |
-| `presence` | His presence | Feel God near — quiet company |
+## Screen sequence (0–26)
 
-### Step 8 — Scripture moment
+| # | id | Label | Type |
+|---|-----|-------|------|
+| 0 | `splash` | Splash | static |
+| 1 | `welcome` | Welcome + Scripture | hook |
+| 2–4 | `benefit1`…`benefit3` | Benefits | value |
+| 5 | `name` | Name | input |
+| 6 | `heart` | Heart feelings | multi-select |
+| 7 | `faith` | Faith journey | single |
+| 8 | `concerns` | What weighs on heart | multi-select |
+| 9 | `timing` | When need peace | single |
+| 10 | `support` | Desired support | multi-select |
+| 11 | `didYouKnow` | Did You Know | education |
+| 12 | `age` | Age | single |
+| 13 | `intensity` | Intensity slider | slider |
+| 14 | `calculating` | Calculating insights | loading |
+| 15 | `profileReveal` | Spiritual profile | result |
+| 16 | `lifetimeLoss` | Lifetime loss | shock |
+| 17–18 | `visualRemaining` / `visualLost` | Dot-grid visuals | visualization |
+| 19 | `yearsReclaim` | Years reclaimed | hope |
+| 20 | `socialProof` | Social proof | trust |
+| 21 | `commitment` | Commitment ritual | ritual |
+| 22 | `statsPreview` | Before / after | motivation |
+| 23–25 | `paywallFull` / `paywall50` / `paywall80` | Escalating paywalls | monetization |
+| 26 | `howAppWorks` | How the app works | education → Home |
 
-> “Come to me, all you who are weary and burdened, and I will give you rest.”  
-> — Matthew 11:28  
+Copy, options, timers, and Grace expression map: **see Onboarding-Design-Spec.md** (source of truth).
 
-CTA: **I’m ready to begin**
+## Progress
 
-### Step 9 — Peace Covenant
+- `ProgressBar` spans the **entire** flow (`(step + 1) / 27`).
+- Splash hides the bar; calculating / some paywalls hide **back**.
+- Paywall ladder: after leaving full price, back does **not** return to an earlier offer tier (`previousStepIndex` in `sequence.ts`).
 
-```
-With Jesus beside me,
-I choose to walk toward peace —
-one gentle step, one honest breath, one day at a time.
-I am not alone. I am deeply loved.
-```
-
-CTA: **I commit to this journey with Jesus**  
-Store: `commitment_accepted=true`, `commitment_date=ISO-8601`
-
-### Step 10 — Preparing
-
-- “I’m preparing a journey just for you.”  
-- Soft progress / Grace animation  
-
-### Step 11 — How the app works
-
-Honest product (not a locked 7-day course):
-
-| id | Title | Sub |
-|----|-------|-----|
-| `emotions` | Emotion-based meditations | Tell us how you feel — open a Scripture-guided session for that emotion. |
-| `sos` | SOS when panic hits | One-tap 4-7-8 breathing with calming verses. |
-| `devotional` | Today's devotional | A fresh Scripture reflection each day. |
-| `wisdom` | What would Jesus say? | Type a concern — conversational wisdom + handbook. |
-| `journal` | Journal | Write what's on your heart with mood tags. |
-
-Optional first practices checklist:
-
-| id | Label | Text |
-|----|-------|------|
-| `breathe` | Breathe with Jesus | Take 3 slow breaths and whisper: “Jesus, I receive Your peace.” |
-| `scripture` | Today's Scripture | Read today's Scripture slowly and let one word settle. |
-| `share` | Honest prayer | Tell Jesus one thing heavy on your heart. |
-
-CTA: **Start my journey**
-
----
-
-## Data model
+## Data model (client)
 
 ```ts
 interface OnboardingDraft {
-  user_name?: string;
-  emotional_state?: string[];   // or single string if product simplifies
-  faith_journey?: string;
-  concerns?: string[];
-  preferred_time?: string;
-  desired_support?: string[];
-  commitment_accepted?: boolean;
-  commitment_date?: string;     // ISO date
-  first_practices_done?: string[];
+  name: string;
+  emotionalState: string[];
+  faithStage: string | null;
+  concerns: string[];
+  preferredTime: string | null;
+  desiredSupport: string[];
+  ageRange: string | null;
+  dailyLoad: number | null;       // 0–10
+  profileType: string | null;     // derived
+  commitmentAccepted: boolean;
+  commitmentDate: string | null;
+  firstPracticesDone: string[];
+  highestPaywallSeen: number | null;
 }
 ```
 
-## Persistence rules
+Synced fields after auth: `POST /auth/onboarding` (`draftToApiPayload`).
 
-1. Save draft **locally** after each step (survive kill/background).  
-2. After auth, `POST /api/auth/onboarding` with draft fields.  
-3. Do not block progress on network for early steps.  
-4. Mark onboarding complete only after final CTA.
+## Timers (paywalls)
 
-## Motion & UI notes
+| Offer | Duration | Storage key (planned) |
+|-------|----------|------------------------|
+| Full price | 12 min | `cc_paywall_full_expiry` |
+| 50% off | 5 min | `cc_paywall_50_expiry` |
+| 80% off | 3 min | `cc_paywall_80_expiry` |
 
-- Soft fade + gentle slide-up between steps  
-- Progress indicator (step labels optional)  
-- Grace expression shifts: welcome → listening → hopeful → covenant  
-- Scripture uses elevated type treatment (see design system)  
-- Full light/dark from step 0  
+Persist expiry timestamps in AsyncStorage (spec §4 / §8). Not implemented in skeleton.
+
+## Implementation status
+
+| Layer | Status |
+|-------|--------|
+| Sequence + navigator + ProgressBar | Done |
+| OnboardingContext (shared answers) | Done |
+| Screens 0–5 UI | Done |
+| Screens 6–10 personalization questions | Done |
+| Screens 11–15 (facts → profile reveal) | Done |
+| Screens 16–19 (lifetime loss → reclaim) | Done |
+| Screens 20–22 (proof · commitment · stats) | Done |
+| Screens 23–25 escalating paywalls + timers | Done (RevenueCat purchase) |
+| Screen 26 How the App Works | Skeleton / pending full UI |
+| Scarcity timers + RevenueCat on paywalls | Pending |
+| Profile derivation math | Pending |
+
+## Principles (product)
+
+- Copy: headline + at most one short line; Grace is the visual focus (`GraceMoodImage`).  
+- Motion: fade + gentle slide (250–350ms); subtle pulse only on final timer.  
+- Soft paywall after first practice on Home remains a **secondary** trigger; in-flow paywalls are primary conversion.  

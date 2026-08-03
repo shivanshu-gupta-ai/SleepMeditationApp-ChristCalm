@@ -1,7 +1,10 @@
+/**
+ * Re-exports design-spec option catalogs + legacy helpers.
+ * Prefer `copy.ts` for new screens.
+ */
 import type { OnboardingDraft } from "@/src/utils/onboarding-draft";
 import type { IonIconName } from "@/src/constants/emotion-icons";
 
-/** Canonical question copy — same structure on every knowledge step */
 export type QuestionCopy = {
   overline: string;
   title: string;
@@ -9,41 +12,51 @@ export type QuestionCopy = {
   hint?: string;
 };
 
+export {
+  EMOTIONAL_STATES,
+  FAITH_STAGES,
+  CONCERNS,
+  PREFERRED_TIMES,
+  DESIRED_SUPPORT,
+  HEART_QUESTION,
+  FAITH_QUESTION,
+  CONCERNS_QUESTION,
+  TIMING_QUESTION,
+  SUPPORT_QUESTION,
+  type OnboardingChoice,
+} from "./copy";
+
+/** @deprecated Prefer question constants in copy.ts */
 export const QUESTIONS = {
   name: {
     overline: "Getting to know you",
     title: "What should I call you?",
-    subtitle: "This helps our conversations feel personal and warm.",
+    subtitle: "This helps Grace speak to you more personally.",
   },
   heart: {
     overline: "Your heart",
     title: "How has your heart been feeling lately?",
-    subtitle: "Be honest — there's no wrong answer here.",
-    hint: "Select all that feel true",
+    subtitle: "You can select more than one.",
   },
   faith: {
     overline: "Your faith",
-    title: "Where are you in your faith journey right now?",
-    subtitle: "Every season is welcome. We'll meet you where you are.",
-    hint: "Choose one that feels closest",
+    title: "Where are you in your faith journey?",
+    subtitle: "There's no right or wrong answer here.",
   },
   concerns: {
     overline: "Your season",
-    title: "What's weighing on your heart right now?",
-    subtitle: "Name what feels heavy so we can bring the right peace.",
-    hint: "Select all that feel true",
+    title: "What weighs on your heart right now?",
+    subtitle: "Select everything that feels true.",
   },
   timing: {
     overline: "Your rhythm",
-    title: "When do you most need peace during the day?",
-    subtitle: "We'll gently meet you in those moments.",
-    hint: "Choose one primary time",
+    title: "When do you most need peace?",
+    subtitle: "We'll help you find stillness at the right moments.",
   },
   support: {
-    overline: "How Grace helps",
-    title: "How would you like Grace to support you?",
-    subtitle: "Choose what feels most helpful for this season.",
-    hint: "Select all that resonate",
+    overline: "How we help",
+    title: "How would you like ChristCalm to support you?",
+    subtitle: "Choose the kinds of help that would mean the most.",
   },
   practices: {
     overline: "You're ready",
@@ -58,143 +71,7 @@ export const QUESTIONS = {
   },
 } as const satisfies Record<string, QuestionCopy>;
 
-export const EMOTIONAL_STATES: {
-  id: string;
-  label: string;
-  sub: string;
-  icon: IonIconName;
-}[] = [
-  { id: "weary", label: "Weary", sub: "I'm running on empty", icon: "moon-outline" },
-  { id: "anxious", label: "Anxious", sub: "My mind won't quiet down", icon: "water-outline" },
-  { id: "numb", label: "Numb", sub: "I'm going through the motions", icon: "remove-circle-outline" },
-  {
-    id: "hopeful_tired",
-    label: "Hopeful but tired",
-    sub: "I want to feel peace again",
-    icon: "partly-sunny-outline",
-  },
-  { id: "peaceful", label: "Peaceful", sub: "I'm in a good place", icon: "flower-outline" },
-];
-
-export const FAITH_STAGES: {
-  id: string;
-  label: string;
-  sub: string;
-  icon: IonIconName;
-}[] = [
-  { id: "seeking", label: "Seeking", sub: "I'm exploring faith", icon: "compass-outline" },
-  { id: "new", label: "New", sub: "I'm new to following Jesus", icon: "leaf-outline" },
-  { id: "growing", label: "Growing", sub: "I'm growing and learning", icon: "trending-up-outline" },
-  {
-    id: "deep",
-    label: "Deeply rooted",
-    sub: "Faith is the center of my life",
-    icon: "heart-outline",
-  },
-];
-
-/** Step 5 (Concerns) — keep few, clear choices (ponytail: long lists hurt UX). */
-export const CONCERNS: {
-  id: string;
-  label: string;
-  sub: string;
-  icon: IonIconName;
-}[] = [
-  {
-    id: "anxiety",
-    label: "Anxiety & Fear",
-    sub: "Worry, restless thoughts, or panic",
-    icon: "water-outline",
-  },
-  {
-    id: "sleep",
-    label: "Sleep & Rest",
-    sub: "Hard to settle at night",
-    icon: "bed-outline",
-  },
-  {
-    id: "grief",
-    label: "Grief or Loneliness",
-    sub: "Sorrow, loss, or feeling unseen",
-    icon: "heart-outline",
-  },
-  {
-    id: "overwhelm",
-    label: "Overwhelm",
-    sub: "Too much to hold right now",
-    icon: "layers-outline",
-  },
-  {
-    id: "faith_purpose",
-    label: "Faith & Purpose",
-    sub: "Doubt, direction, or wanting Jesus nearer",
-    icon: "compass-outline",
-  },
-];
-
-/** Step 8 (Support) — few clear choices so the list fits one screen. */
-export const DESIRED_SUPPORT: {
-  id: string;
-  label: string;
-  sub: string;
-  icon: IonIconName;
-}[] = [
-  {
-    id: "calm_anxiety",
-    label: "Calm my mind",
-    sub: "Scripture for anxious, racing thoughts",
-    icon: "water-outline",
-  },
-  {
-    id: "rest_sleep",
-    label: "Rest & sleep",
-    sub: "Settle body and mind at night",
-    icon: "bed-outline",
-  },
-  {
-    id: "scripture",
-    label: "God's Word",
-    sub: "Hear Scripture spoken into this season",
-    icon: "book-outline",
-  },
-  {
-    id: "hard_emotions",
-    label: "Hard emotions",
-    sub: "Grief, loneliness, or overwhelm",
-    icon: "heart-outline",
-  },
-  {
-    id: "presence",
-    label: "His presence",
-    sub: "Feel God near — quiet company",
-    icon: "sparkles-outline",
-  },
-];
-
-export const PREFERRED_TIMES: {
-  id: string;
-  label: string;
-  sub: string;
-  icon: IonIconName;
-}[] = [
-  { id: "morning", label: "Morning", sub: "Start my day with Jesus", icon: "sunny-outline" },
-  {
-    id: "midday",
-    label: "Midday",
-    sub: "Reset in the middle of busyness",
-    icon: "partly-sunny-outline",
-  },
-  { id: "evening", label: "Evening", sub: "Wind down and reflect", icon: "moon-outline" },
-  { id: "before_sleep", label: "Before sleep", sub: "Quiet my mind at night", icon: "bed-outline" },
-  {
-    id: "random",
-    label: "Random moments",
-    sub: "Whenever I feel overwhelmed",
-    icon: "time-outline",
-  },
-];
-
-/** Honest product preview — matches live app features (not a sequential week plan). */
+/** Honest product preview — matches live app features. */
 export const HOW_THE_APP_WORKS: {
   id: string;
   icon: IonIconName;
@@ -216,7 +93,7 @@ export const HOW_THE_APP_WORKS: {
   {
     id: "devotional",
     icon: "book-outline",
-    title: "Today's devotional",
+    title: "Today's Scripture",
     sub: "A fresh Scripture reflection each day — not a locked multi-day course.",
   },
   {
@@ -233,29 +110,13 @@ export const HOW_THE_APP_WORKS: {
   },
 ];
 
-export const ONBOARDING_STEP_LABELS = [
-  "Welcome",
-  "Name",
-  "Heart",
-  "Faith",
-  "Concerns",
-  "Timing",
-  "Insight",
-  "Support",
-  "Scripture",
-  "Covenant",
-  "Building",
-  "Practices",
-] as const;
-
-export const TOTAL_ONBOARDING_STEPS = ONBOARDING_STEP_LABELS.length;
-
 export function getInsightCopy(draft: OnboardingDraft) {
   const hearts = draft.emotionalState || [];
   const heavy =
     draft.concerns.length >= 3 ||
     hearts.includes("anxious") ||
-    hearts.includes("weary");
+    hearts.includes("weary") ||
+    hearts.includes("overwhelmed");
 
   if (heavy) {
     return {
@@ -277,5 +138,4 @@ export function getInsightCopy(draft: OnboardingDraft) {
   };
 }
 
-// Keep draft type import live for consumers that re-export
 export type { OnboardingDraft };

@@ -203,7 +203,7 @@ Not now (dismiss)
 
 ### 11. Onboarding
 
-See [04-onboarding.md](./04-onboarding.md).
+Full conversion flow (27 screens): design in [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md), product overview in [04-onboarding.md](./04-onboarding.md).
 
 ---
 

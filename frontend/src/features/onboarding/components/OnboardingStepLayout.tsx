@@ -12,13 +12,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
-import OnboardingProgress from "@/src/features/onboarding/components/OnboardingProgress";
-import { TOTAL_ONBOARDING_STEPS, ONBOARDING_STEP_LABELS } from "@/src/features/onboarding/constants";
+import { ProgressBar } from "@/src/features/onboarding/components/ProgressBar";
+import { TOTAL_ONBOARDING_STEPS } from "@/src/features/onboarding/sequence";
 
 type Props = {
   step: number;
   onBack: () => void;
   showProgress?: boolean;
+  /** When false, hide the back chevron (e.g. splash, paywall ladder). */
+  showBack?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
   scrollable?: boolean;
@@ -216,11 +218,12 @@ export default function OnboardingStepLayout({
   step,
   onBack,
   showProgress = true,
+  showBack = true,
   children,
   footer,
   scrollable = true,
 }: Props) {
-  const { colors, fonts, spacing, radius, isDark } = useTheme();
+  const { colors, spacing, radius, isDark } = useTheme();
 
   const styles = useMemo(
     () =>
@@ -244,15 +247,7 @@ export default function OnboardingStepLayout({
           borderWidth: 1,
           borderColor: colors.borderSoft,
         },
-        stepLabel: {
-          textAlign: "center",
-          fontFamily: fonts.body,
-          fontSize: 11,
-          color: colors.textMuted,
-          marginTop: 6,
-          marginBottom: 2,
-          letterSpacing: 0.1,
-        },
+        backPlaceholder: { width: 36, height: 36 },
         scroll: { flexGrow: 1, paddingBottom: spacing.sm },
         footer: {
           paddingHorizontal: spacing.lg,
@@ -264,7 +259,7 @@ export default function OnboardingStepLayout({
           backgroundColor: isDark ? colors.backgroundElevated : colors.background,
         },
       }),
-    [colors, fonts, spacing, radius, isDark]
+    [colors, spacing, radius, isDark]
   );
 
   const body = scrollable ? (
@@ -276,7 +271,7 @@ export default function OnboardingStepLayout({
       {children}
     </ScrollView>
   ) : (
-    <View style={styles.scroll}>{children}</View>
+    <View style={{ flex: 1 }}>{children}</View>
   );
 
   return (
@@ -287,20 +282,20 @@ export default function OnboardingStepLayout({
           style={{ flex: 1 }}
         >
           <View style={styles.topBar}>
-            <TouchableOpacity onPress={onBack} style={styles.backBtn} testID="onboarding-back">
-              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-            </TouchableOpacity>
+            {showBack ? (
+              <TouchableOpacity onPress={onBack} style={styles.backBtn} testID="onboarding-back">
+                <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.backPlaceholder} />
+            )}
             {showProgress ? (
-              <OnboardingProgress step={step} total={TOTAL_ONBOARDING_STEPS} />
+              <ProgressBar step={step} total={TOTAL_ONBOARDING_STEPS} />
             ) : (
               <View style={{ flex: 1 }} />
             )}
           </View>
-          {showProgress && step > 0 ? (
-            <Text style={styles.stepLabel}>
-              Step {step + 1} of {TOTAL_ONBOARDING_STEPS} · {ONBOARDING_STEP_LABELS[step]}
-            </Text>
-          ) : null}
+          {/* Progress bar only — no step label chrome (more breathing room) */}
           {body}
           {footer ? <View style={styles.footer}>{footer}</View> : null}
         </KeyboardAvoidingView>

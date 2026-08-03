@@ -16,7 +16,7 @@ frontend/
 │   ├── features/
 │   │   ├── auth/             # Session, Cognito, social buttons
 │   │   ├── subscriptions/    # RevenueCat + premium
-│   │   └── onboarding/       # Onboarding steps UI
+│   │   └── onboarding/       # Navigator + 27 screens (design v3.1)
 │   ├── components/ui/        # Shared design-system primitives
 │   ├── context/              # Theme, Viewport
 │   ├── api/                  # Backend HTTP client
