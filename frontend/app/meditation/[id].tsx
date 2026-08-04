@@ -205,7 +205,11 @@ export default function MeditationPlayer() {
       });
       void playHaptic("success");
 
-      recordMeditationComplete().then(({ completedCount, streak: s, isFirstComplete }) => {
+      recordMeditationComplete({
+        meditationId: med.id,
+        minutes: med.duration_min,
+        title: med.title,
+      }).then(({ completedCount, streak: s, isFirstComplete }) => {
         setStreak(s);
         setShowCelebration(true);
         Animated.timing(celebrateOpacity, {

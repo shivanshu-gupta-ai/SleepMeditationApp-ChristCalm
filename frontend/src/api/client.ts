@@ -160,6 +160,27 @@ export const api = {
         ...(typeof minutes === "number" ? { minutes } : {}),
       },
     }),
+  listMeditationRatings: () =>
+    request<{
+      ratings: Array<{
+        id: string;
+        user_id: string;
+        meditation_id: string;
+        stars: number;
+        minutes?: number | null;
+        created_at: string;
+      }>;
+    }>("/meditations/ratings"),
+  moodHistory: () =>
+    request<{
+      logs: Array<{
+        id: string;
+        user_id: string;
+        emotion: string;
+        note?: string | null;
+        created_at: string;
+      }>;
+    }>("/mood/history"),
   prayers: async (category?: string) => {
     const key = `catalog:prayers:${category || "all"}`;
     const hit = cacheGet<any>(key);

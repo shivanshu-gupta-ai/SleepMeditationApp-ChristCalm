@@ -11,30 +11,42 @@ type Props = {
   sessions: number;
 };
 
-/** Engaged-user stats strip — optimize & stay on track (not onboarding). */
+/**
+ * Home glance strip for engaged users.
+ * Same theology as Journey: no flame, hide weak/broken rhythm (&lt;2), soft labels.
+ */
 export function JourneyStats({ minutes, streak, sessions }: Props) {
   const { colors, fonts, spacing, shadows, isDark } = useTheme();
+  const showRhythm = streak >= 2;
 
-  const items = [
-    {
-      value: streak,
-      label: "Day streak",
-      icon: "flame-outline" as const,
-      color: isDark ? colors.premium : colors.primaryDark,
-    },
+  const items: Array<{
+    value: number;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+  }> = [
     {
       value: minutes,
       label: "Minutes",
-      icon: "time-outline" as const,
+      icon: "time-outline",
       color: colors.primary,
     },
     {
       value: sessions,
       label: "Sessions",
-      icon: "leaf-outline" as const,
-      color: isDark ? colors.secondary : colors.premium,
+      icon: "leaf-outline",
+      color: isDark ? colors.secondary : colors.primaryDark,
     },
   ];
+
+  if (showRhythm) {
+    items.push({
+      value: streak,
+      label: "Day rhythm",
+      icon: "leaf-outline",
+      color: isDark ? colors.premium : colors.primaryDark,
+    });
+  }
 
   return (
     <FadeIn delay={10}>
@@ -45,6 +57,11 @@ export function JourneyStats({ minutes, streak, sessions }: Props) {
           marginBottom: layout.sectionGap,
         }}
         testID="journey-stats"
+        accessibilityLabel={
+          showRhythm
+            ? `${minutes} minutes, ${sessions} sessions, ${streak} day rhythm`
+            : `${minutes} minutes, ${sessions} sessions`
+        }
       >
         {items.map((it) => (
           <View

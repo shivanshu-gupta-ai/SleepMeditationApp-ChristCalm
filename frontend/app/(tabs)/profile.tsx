@@ -12,11 +12,9 @@ import {
   Button,
   Surface,
   FadeIn,
-  ProgressRing,
   FeedbackCard,
 } from "@/src/components/ui";
 import { useResponsive } from "@/src/hooks/use-responsive";
-import { getStreak, getCompletedCount } from "@/src/utils/session-progress";
 import {
   isFocusPromptEnabled,
   openSystemFocusSettings,
@@ -41,16 +39,11 @@ export default function Profile() {
   const { isPremium, subscriptionTier, plan } = usePremium();
   const { supported: rcSupported, presentCustomerCenter, presentPaywallIfNeeded } =
     useRevenueCat();
-  const { colors, fonts, spacing, radius, shadows, preference, setPreference, isDark } =
-    useTheme();
+  const { colors, fonts, spacing, radius, preference, setPreference } = useTheme();
   const { bottomClearance, isCompact } = useResponsive();
-  const [localStreak, setLocalStreak] = useState(0);
-  const [completed, setCompleted] = useState(0);
   const [focusPrompt, setFocusPrompt] = useState(true);
 
   useEffect(() => {
-    getStreak().then(setLocalStreak);
-    getCompletedCount().then(setCompleted);
     isFocusPromptEnabled().then(setFocusPrompt);
   }, []);
 
@@ -59,12 +52,6 @@ export default function Profile() {
     const idx = order.indexOf(preference);
     setPreference(order[(idx + 1) % order.length]);
   };
-
-  const minutes = user?.minutes_meditated ?? 0;
-  const weekGoal = 60; // gentle weekly goal for ring
-  const ringProgress = Math.min(1, minutes / weekGoal || completed / 7);
-  const streak = Math.max(user?.streak ?? 0, localStreak);
-  const sessions = Math.max(user?.prayers_completed ?? 0, completed);
 
   return (
     <Screen
@@ -162,115 +149,7 @@ export default function Profile() {
         </View>
       </FadeIn>
 
-      {/* Progress ring — weekly calm rhythm */}
-      <FadeIn delay={60}>
-        <Surface style={{ alignItems: "center", marginBottom: layout.sectionGap, paddingVertical: spacing.xl }}>
-          <ProgressRing
-            progress={ringProgress || 0.05}
-            size={isCompact ? 140 : 160}
-            label={`${minutes}`}
-            sublabel="minutes with Him"
-            testID="profile-progress-ring"
-          />
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 13,
-              color: colors.textSecondary,
-              marginTop: spacing.md,
-              textAlign: "center",
-            }}
-          >
-            Gentle goal: {weekGoal} min / season of rest
-          </Text>
-        </Surface>
-      </FadeIn>
-
       <FadeIn delay={80}>
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: spacing.sm,
-            marginBottom: layout.sectionGap,
-          }}
-        >
-          {[
-            {
-              value: streak,
-              label: "Day streak",
-              icon: "flame-outline" as const,
-              bg: isDark ? colors.surface : colors.tileB,
-              inverted: false,
-              iconColor: isDark ? colors.premium : colors.primaryDark,
-            },
-            {
-              value: minutes,
-              label: "Minutes",
-              icon: "time-outline" as const,
-              bg: isDark ? colors.surface : colors.tileA,
-              inverted: false,
-              iconColor: colors.primary,
-            },
-            {
-              value: sessions,
-              label: "Sessions",
-              icon: "leaf-outline" as const,
-              bg: isDark ? colors.surface : colors.tileC,
-              inverted: !isDark,
-              iconColor: isDark ? colors.secondary : colors.premium,
-            },
-            {
-              value: completed,
-              label: "Completed",
-              icon: "checkmark-circle-outline" as const,
-              bg: isDark ? colors.surface : colors.tileD,
-              inverted: false,
-              iconColor: colors.accentSOS,
-            },
-          ].map((s) => (
-            <View
-              key={s.label}
-              style={{
-                width: "48%",
-                flexGrow: 1,
-                minWidth: "46%",
-                backgroundColor: s.bg,
-                borderRadius: layout.surfaceRadius,
-                borderWidth: isDark || s.inverted ? 0 : 1,
-                borderColor: s.inverted ? "transparent" : colors.borderSoft,
-                padding: spacing.lg,
-                ...(isDark ? null : shadows.soft),
-              }}
-            >
-              <Ionicons name={s.icon} size={18} color={s.iconColor} />
-              <Text
-                style={{
-                  fontFamily: fonts.headingBold,
-                  fontSize: 28,
-                  color: s.inverted ? colors.white : colors.textPrimary,
-                  marginTop: 12,
-                  letterSpacing: -0.6,
-                }}
-              >
-                {s.value}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  color: s.inverted ? "rgba(255,255,255,0.72)" : colors.textMuted,
-                  marginTop: 4,
-                }}
-              >
-                {s.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </FadeIn>
-
-      <FadeIn delay={120}>
         <Text
           style={{
             fontFamily: fonts.bodyMedium,
@@ -336,6 +215,12 @@ export default function Profile() {
           Journey
         </Text>
         <Surface padded={false} style={{ overflow: "hidden" }}>
+          <MenuItem
+            icon="stats-chart-outline"
+            label="Your Journey"
+            onPress={() => router.push("/(tabs)/stats")}
+            testID="menu-stats"
+          />
           <MenuItem
             icon="create-outline"
             label="Journal"

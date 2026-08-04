@@ -7,7 +7,7 @@ import { DID_YOU_KNOW } from "../copy";
 
 /**
  * Screen 11 — Did You Know?
- * Soft education facts; Grace listening.
+ * Normalize overthinking, anxiety, and emotional weight — not phone stats.
  */
 export function DidYouKnowScreen() {
   const { colors, fonts, spacing, radius, shadows } = useTheme();
@@ -30,7 +30,16 @@ export function DidYouKnowScreen() {
           color: colors.textPrimary,
           textAlign: "center",
           marginTop: spacing.md,
+        },
+        sub: {
+          fontFamily: fonts.body,
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textSecondary,
+          textAlign: "center",
+          marginTop: spacing.sm,
           marginBottom: spacing.lg,
+          maxWidth: 320,
         },
         card: {
           width: "100%",
@@ -63,10 +72,11 @@ export function DidYouKnowScreen() {
         },
         fact: {
           flex: 1,
-          fontFamily: fonts.body,
+          fontFamily: fonts.bodyMedium,
           fontSize: 15,
-          lineHeight: 22,
+          lineHeight: 21,
           color: colors.textPrimary,
+          letterSpacing: -0.15,
         },
       }),
     [colors, fonts, spacing, radius, shadows]
@@ -76,16 +86,17 @@ export function DidYouKnowScreen() {
     <View style={styles.root} testID="onboarding-screen-didYouKnow">
       <GraceMoodImage mood="listening" size={110} testID="grace-did-you-know" />
       <Text style={styles.title}>{DID_YOU_KNOW.title}</Text>
+      <Text style={styles.sub}>{DID_YOU_KNOW.sub}</Text>
       <View style={styles.card}>
         {DID_YOU_KNOW.facts.map((fact, i) => (
           <View
-            key={fact}
+            key={fact.text}
             style={[styles.row, i < DID_YOU_KNOW.facts.length - 1 && styles.rowBorder]}
           >
             <View style={styles.bullet}>
-              <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
+              <Ionicons name={fact.icon} size={14} color={colors.primary} />
             </View>
-            <Text style={styles.fact}>{fact}</Text>
+            <Text style={styles.fact}>{fact.text}</Text>
           </View>
         ))}
       </View>

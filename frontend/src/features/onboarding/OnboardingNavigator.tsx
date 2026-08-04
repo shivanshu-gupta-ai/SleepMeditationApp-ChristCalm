@@ -1,5 +1,12 @@
-import React, { useCallback, useMemo } from "react";
-import { Text, TouchableOpacity, Animated } from "react-native";
+import React, { useCallback, useMemo, useRef } from "react";
+import {
+  Text,
+  TouchableOpacity,
+  Animated,
+  PanResponder,
+  type GestureResponderEvent,
+  type PanResponderGestureState,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
@@ -71,10 +78,21 @@ const SCREEN_MAP: Record<OnboardingRouteId, ScreenComponent> = {
   howAppWorks: HowAppWorksScreen,
 };
 
+/** First four value screens: welcome + 3 benefits — swipeable intro carousel. */
+const INTRO_IDS = new Set<OnboardingRouteId>([
+  "welcome",
+  "benefit1",
+  "benefit2",
+  "benefit3",
+]);
+
+const SWIPE_THRESHOLD = 56;
+const SWIPE_VELOCITY = 0.35;
+
 function OnboardingFlow() {
   const router = useRouter();
   const { markOnboardingComplete } = useAuth();
-  const { colors } = useTheme();
+  const { colors, spacing, radius, shadows } = useTheme();
   const obStyles = useObStyles();
   const {
     step,
@@ -88,6 +106,12 @@ function OnboardingFlow() {
     exitOpacity,
   } = useOnboarding();
 
+  const isIntro = INTRO_IDS.has(screen.id);
+  const goNextRef = useRef(goNext);
+  const goBackRef = useRef(goBack);
+  goNextRef.current = goNext;
+  goBackRef.current = goBack;
+
   const handlePrimary = useCallback(() => {
     if (screen.id === "howAppWorks") {
       finish();
@@ -98,7 +122,6 @@ function OnboardingFlow() {
 
   const handleSecondary = useCallback(() => {
     if (screen.id === "welcome") {
-      // Returning user: open Sign in tab
       markOnboardingComplete().then(() =>
         router.replace("/(auth)/sign-in?mode=signin")
       );
@@ -107,9 +130,36 @@ function OnboardingFlow() {
     goNext();
   }, [screen.id, markOnboardingComplete, router, goNext]);
 
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (
+          _e: GestureResponderEvent,
+          g: PanResponderGestureState
+        ) => {
+          if (!isIntro) return false;
+          return Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.15;
+        },
+        onPanResponderRelease: (
+          _e: GestureResponderEvent,
+          g: PanResponderGestureState
+        ) => {
+          if (!isIntro) return;
+          const goForward =
+            g.dx < -SWIPE_THRESHOLD || g.vx < -SWIPE_VELOCITY;
+          const goBackward =
+            g.dx > SWIPE_THRESHOLD || g.vx > SWIPE_VELOCITY;
+          if (goForward) goNextRef.current();
+          else if (goBackward) goBackRef.current();
+        },
+      }),
+    [isIntro]
+  );
+
   const footer = useMemo(() => {
     if (!screen.ctaLabel) return null;
     const isFinale = screen.id === "howAppWorks";
+    const introCta = isIntro;
     return (
       <>
         <TouchableOpacity
@@ -117,6 +167,13 @@ function OnboardingFlow() {
             obStyles.cta,
             !canProceed && obStyles.ctaDisabled,
             isFinale && { minHeight: 52 },
+            introCta && {
+              minHeight: 56,
+              borderRadius: radius.full,
+              paddingVertical: 16,
+              marginHorizontal: 4,
+              ...shadows.glow,
+            },
           ]}
           onPress={handlePrimary}
           disabled={!canProceed}
@@ -125,10 +182,18 @@ function OnboardingFlow() {
           accessibilityLabel={screen.ctaLabel}
           accessibilityState={{ disabled: !canProceed }}
         >
-          <Text style={obStyles.ctaText}>{screen.ctaLabel}</Text>
+          <Text style={[obStyles.ctaText, introCta && { fontSize: 17 }]}>
+            {screen.ctaLabel}
+          </Text>
           <Ionicons
-            name={isFinale ? "arrow-forward-circle" : "arrow-forward"}
-            size={isFinale ? 22 : 20}
+            name={
+              isFinale
+                ? "arrow-forward-circle"
+                : screen.id === "benefit3"
+                  ? "sparkles"
+                  : "arrow-forward"
+            }
+            size={isFinale || introCta ? 22 : 20}
             color={colors.white}
           />
         </TouchableOpacity>
@@ -139,7 +204,17 @@ function OnboardingFlow() {
         ) : null}
       </>
     );
-  }, [screen, obStyles, handlePrimary, handleSecondary, colors.white, canProceed]);
+  }, [
+    screen,
+    obStyles,
+    handlePrimary,
+    handleSecondary,
+    colors.white,
+    canProceed,
+    isIntro,
+    radius.full,
+    shadows.glow,
+  ]);
 
   const ScreenComponent = SCREEN_MAP[screen.id];
 
@@ -155,10 +230,15 @@ function OnboardingFlow() {
           screen.id !== "howAppWorks"
         }
         footer={footer}
-        scrollable={screen.id !== "calculating" && screen.id !== "splash"}
+        scrollable={
+          screen.id !== "calculating" &&
+          screen.id !== "splash" &&
+          !isIntro
+        }
       >
         <Animated.View
           style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}
+          {...(isIntro ? panResponder.panHandlers : {})}
         >
           <ScreenComponent />
         </Animated.View>

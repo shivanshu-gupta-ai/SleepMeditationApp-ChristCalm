@@ -104,7 +104,7 @@ Options: short labels (Guided meditations, Scripture for hard moments, Short pra
 
 ### 11. Did You Know?
 **Title:** Did you know?  
-Facts (short): phone 50+ times/day · noise hardens hearing God · short stillness changes a day · you don't carry alone
+Facts (short, numbered impact): 2+ hrs/day lost to overthinking · ~700 hrs/year · 1 in 3 face weekly anxiety · 10 min stillness can interrupt the spiral
 
 ### 12. Age
 **Title:** How old are you?  

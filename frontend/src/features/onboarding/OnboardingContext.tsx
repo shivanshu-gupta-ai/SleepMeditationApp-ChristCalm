@@ -115,23 +115,35 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, [draft, hydrated]);
 
   const animateTo = useCallback(
-    (next: number) => {
+    (next: number, direction: "forward" | "back" = "forward") => {
+      const outY = direction === "forward" ? -14 : 14;
+      const inY = direction === "forward" ? 16 : -16;
       Animated.parallel([
-        Animated.timing(fade, { toValue: 0, duration: 160, useNativeDriver: true }),
-        Animated.timing(slide, { toValue: -10, duration: 160, useNativeDriver: true }),
+        Animated.timing(fade, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slide, {
+          toValue: outY,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
       ]).start(() => {
         setStep(next);
-        slide.setValue(12);
+        slide.setValue(inY);
         Animated.parallel([
           Animated.timing(fade, {
             toValue: 1,
-            duration: 300,
+            duration: 360,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }),
           Animated.timing(slide, {
             toValue: 0,
-            duration: 300,
+            duration: 360,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }),
@@ -199,7 +211,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           : prev
       );
     }
-    animateTo(next);
+    animateTo(next, "forward");
   }, [step, draft, animateTo, finish]);
 
   const goToStep = useCallback(
@@ -215,15 +227,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
             : prev
         );
       }
-      animateTo(clamped);
+      animateTo(clamped, clamped >= step ? "forward" : "back");
     },
-    [animateTo]
+    [animateTo, step]
   );
 
   const goBackStep = useCallback(() => {
     const prev = previousStepIndex(step);
     if (prev == null) return false;
-    animateTo(prev);
+    animateTo(prev, "back");
     return true;
   }, [step, animateTo]);
 

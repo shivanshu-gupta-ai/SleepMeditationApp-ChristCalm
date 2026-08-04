@@ -1,9 +1,22 @@
 import React from "react";
-import { BenefitSlide } from "../components/BenefitSlide";
+import { IntroHeroSlide } from "../components/IntroHeroSlide";
+import { INTRO_SLIDES } from "../copy";
 
-/** Screen 2 — Benefit 1: Stop the noise. */
+/** Screen 2 — Quiet the noise. */
 export function Benefit1Screen() {
-  return <BenefitSlide slideIndex={0} testID="onboarding-screen-benefit1" />;
+  const slide = INTRO_SLIDES[1];
+  return (
+    <IntroHeroSlide
+      content={{
+        overline: slide.overline,
+        headline: slide.headline,
+        supporting: slide.supporting,
+        variant: slide.variant,
+      }}
+      pageIndex={1}
+      testID="onboarding-screen-benefit1"
+    />
+  );
 }
 
 export default Benefit1Screen;

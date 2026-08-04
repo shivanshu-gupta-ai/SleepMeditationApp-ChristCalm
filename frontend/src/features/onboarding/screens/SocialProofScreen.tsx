@@ -6,7 +6,7 @@ import { SOCIAL_PROOF_COPY } from "../copy";
 
 /**
  * Screen 20 — Social Proof
- * Rating, community size, testimonial. Exact design copy.
+ * Rating + multiple short reviews (scrollable via parent layout).
  */
 export function SocialProofScreen() {
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
@@ -15,11 +15,11 @@ export function SocialProofScreen() {
     () =>
       StyleSheet.create({
         root: {
-          flex: 1,
+          flexGrow: 1,
           paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.md,
           alignItems: "center",
-          justifyContent: "center",
         },
         title: {
           fontFamily: fonts.headingBold,
@@ -28,13 +28,13 @@ export function SocialProofScreen() {
           letterSpacing: -0.4,
           color: colors.textPrimary,
           textAlign: "center",
-          marginTop: spacing.lg,
-          marginBottom: spacing.xl,
+          marginTop: spacing.md,
+          marginBottom: spacing.lg,
           maxWidth: 320,
         },
         ratingBlock: {
           alignItems: "center",
-          marginBottom: spacing.xl,
+          marginBottom: spacing.lg,
         },
         ratingRow: {
           flexDirection: "row",
@@ -43,54 +43,78 @@ export function SocialProofScreen() {
         },
         rating: {
           fontFamily: fonts.headingBold,
-          fontSize: 40,
+          fontSize: 36,
           letterSpacing: -1,
           color: colors.textPrimary,
         },
         stars: {
-          fontSize: 22,
+          fontSize: 18,
           color: isDark ? colors.premium : colors.premiumDark,
           letterSpacing: 2,
         },
         community: {
           fontFamily: fonts.body,
-          fontSize: 15,
+          fontSize: 14,
           color: colors.textSecondary,
           marginTop: spacing.sm,
           textAlign: "center",
         },
+        list: {
+          width: "100%",
+          maxWidth: 360,
+          gap: spacing.sm,
+        },
         quoteCard: {
           width: "100%",
-          maxWidth: 340,
           backgroundColor: colors.surface,
-          borderRadius: radius.xl,
-          padding: spacing.lg,
+          borderRadius: radius.lg,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.md,
           borderWidth: 1,
           borderColor: colors.borderSoft,
           ...shadows.soft,
         },
+        cardStars: {
+          fontSize: 12,
+          letterSpacing: 1.5,
+          color: isDark ? colors.premium : colors.premiumDark,
+          marginBottom: 6,
+        },
         quote: {
-          fontFamily: fonts.scriptureItalic,
-          fontStyle: "italic",
-          fontSize: 17,
-          lineHeight: 26,
+          fontFamily: fonts.body,
+          fontSize: 15,
+          lineHeight: 22,
           color: colors.textPrimary,
-          textAlign: "center",
+          letterSpacing: -0.1,
+        },
+        footerRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: spacing.sm,
+          gap: 8,
         },
         attribution: {
-          fontFamily: fonts.bodyMedium,
-          fontSize: 14,
+          fontFamily: fonts.bodyBold,
+          fontSize: 13,
           color: colors.primary,
-          textAlign: "center",
-          marginTop: spacing.md,
+        },
+        meta: {
+          fontFamily: fonts.body,
+          fontSize: 12,
+          color: colors.textMuted,
+          flexShrink: 1,
+          textAlign: "right",
         },
       }),
     [colors, fonts, spacing, radius, shadows, isDark]
   );
 
+  const starLabel = (n: number) => "★".repeat(n) + "☆".repeat(Math.max(0, 5 - n));
+
   return (
     <View style={styles.root} testID="onboarding-screen-socialProof">
-      <GraceMoodImage mood="hopeful" size={120} testID="grace-social-proof" />
+      <GraceMoodImage mood="hopeful" size={100} testID="grace-social-proof" />
       <Text style={styles.title}>{SOCIAL_PROOF_COPY.title}</Text>
 
       <View style={styles.ratingBlock}>
@@ -103,9 +127,24 @@ export function SocialProofScreen() {
         <Text style={styles.community}>{SOCIAL_PROOF_COPY.community}</Text>
       </View>
 
-      <View style={styles.quoteCard}>
-        <Text style={styles.quote}>“{SOCIAL_PROOF_COPY.quote}”</Text>
-        <Text style={styles.attribution}>{SOCIAL_PROOF_COPY.attribution}</Text>
+      <View style={styles.list}>
+        {SOCIAL_PROOF_COPY.reviews.map((r) => (
+          <View key={`${r.name}-${r.quote.slice(0, 24)}`} style={styles.quoteCard}>
+            <Text
+              style={styles.cardStars}
+              accessibilityLabel={`${r.stars} out of 5 stars`}
+            >
+              {starLabel(r.stars)}
+            </Text>
+            <Text style={styles.quote}>“{r.quote}”</Text>
+            <View style={styles.footerRow}>
+              <Text style={styles.attribution}>— {r.name}</Text>
+              <Text style={styles.meta} numberOfLines={1}>
+                {r.meta}
+              </Text>
+            </View>
+          </View>
+        ))}
       </View>
     </View>
   );

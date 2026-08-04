@@ -251,12 +251,11 @@ export default function OnboardingStepLayout({
         scroll: { flexGrow: 1, paddingBottom: spacing.sm },
         footer: {
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.sm,
-          paddingBottom: spacing.sm,
-          gap: 6,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: colors.borderSoft,
-          backgroundColor: isDark ? colors.backgroundElevated : colors.background,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.md,
+          gap: 8,
+          borderTopWidth: 0,
+          backgroundColor: "transparent",
         },
       }),
     [colors, spacing, radius, isDark]

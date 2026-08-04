@@ -84,7 +84,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     transform: [{ rotate: `${fabRotate.value * 45}deg` }],
   }));
 
-  const HIDDEN = new Set(["prayers"]);
+  const HIDDEN = new Set(["prayers", "journal"]);
   const visibleRoutes = state.routes.filter((route) => {
     if (HIDDEN.has(route.name)) return false;
     const opts = descriptors[route.key]?.options as { href?: string | null };

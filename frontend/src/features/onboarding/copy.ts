@@ -16,30 +16,79 @@ export type OnboardingChoice = {
 
 export const WELCOME_COPY = {
   overline: "A sacred space",
-  headline: "Peace I leave with you; my peace I give you.",
+  headline: "Welcome to ChristCalm",
+  scripture: "Peace I leave with you; my peace I give you.",
   reference: "John 14:27",
+  supporting: "Grace walks with you.",
+  /** @deprecated use supporting */
   sub: "Grace walks with you.",
   cta: "Begin My Journey",
 } as const;
 
+/** Four-screen visual intro carousel (welcome + benefits). */
+export const INTRO_SLIDES = [
+  {
+    id: "welcome" as const,
+    pageIndex: 0,
+    overline: "A sacred space",
+    headline: "Welcome to ChristCalm",
+    scripture: "Peace I leave with you; my peace I give you.",
+    reference: "John 14:27",
+    supporting: "Grace walks with you.",
+    variant: "welcome" as const,
+    cta: "Begin My Journey",
+  },
+  {
+    id: "benefit1" as const,
+    pageIndex: 1,
+    overline: "A quieter mind",
+    headline: "Step out of the noise. Rest in His peace.",
+    supporting:
+      "Gentle Christian meditations help you slow down and become still.",
+    variant: "noise" as const,
+    cta: "Continue",
+  },
+  {
+    id: "benefit2" as const,
+    pageIndex: 2,
+    overline: "Rooted in Scripture",
+    headline: "Let His Word settle your heart.",
+    supporting:
+      "Guided Scripture, prayer and reflection for difficult moments.",
+    variant: "scripture" as const,
+    cta: "Continue",
+  },
+  {
+    id: "benefit3" as const,
+    pageIndex: 3,
+    overline: "Made for your season",
+    headline: "Support that meets you where you are.",
+    supporting:
+      "Personalized around your emotions, faith journey and daily rhythm.",
+    variant: "personal" as const,
+    cta: "Personalize My Journey",
+  },
+] as const;
+
+/** @deprecated prefer INTRO_SLIDES — kept for any legacy imports */
 export const BENEFIT_SLIDES = [
   {
     id: "benefit1" as const,
     index: 0,
-    lead: "Stop the noise.",
-    body: "Find peace that stays.",
+    lead: INTRO_SLIDES[1].headline,
+    body: INTRO_SLIDES[1].supporting,
   },
   {
     id: "benefit2" as const,
     index: 1,
-    lead: "Heal your mind.",
-    body: "Scripture-rooted rest.",
+    lead: INTRO_SLIDES[2].headline,
+    body: INTRO_SLIDES[2].supporting,
   },
   {
     id: "benefit3" as const,
     index: 2,
-    lead: "Make it personal.",
-    body: "Matched to how you feel.",
+    lead: INTRO_SLIDES[3].headline,
+    body: INTRO_SLIDES[3].supporting,
   },
 ] as const;
 
@@ -139,11 +188,24 @@ export const DESIRED_SUPPORT: OnboardingChoice[] = [
 
 export const DID_YOU_KNOW = {
   title: "Did you know?",
+  sub: "You’re not alone in this.",
   facts: [
-    "Most people check their phone 50+ times a day",
-    "Noise makes it harder to hear God",
-    "Short daily stillness can change a whole day",
-    "You don't have to carry it alone",
+    {
+      text: "The average person loses 2+ hours a day to overthinking.",
+      icon: "time-outline" as const,
+    },
+    {
+      text: "That’s ~700 hours a year — almost a full month of mental noise.",
+      icon: "calendar-outline" as const,
+    },
+    {
+      text: "1 in 3 adults wrestle with anxiety week to week.",
+      icon: "water-outline" as const,
+    },
+    {
+      text: "Just 10 minutes of stillness can interrupt the spiral.",
+      icon: "leaf-outline" as const,
+    },
   ],
 } as const;
 
@@ -210,8 +272,48 @@ export const SOCIAL_PROOF_COPY = {
   rating: "4.8",
   stars: "★★★★★",
   community: "12,400+ on this journey",
+  /** @deprecated use reviews[0] */
   quote: "I didn't realize how much peace I was losing.",
+  /** @deprecated use reviews[0] */
   attribution: "— Rachel",
+  reviews: [
+    {
+      quote: "I didn't realize how much peace I was losing.",
+      name: "Rachel",
+      meta: "Anxiety & rest",
+      stars: 5,
+    },
+    {
+      quote: "The overthinking got quieter. I sleep without replaying the day.",
+      name: "Marcus",
+      meta: "2 months with ChristCalm",
+      stars: 5,
+    },
+    {
+      quote: "Scripture finally feels near again — not another task on my list.",
+      name: "Elena",
+      meta: "Faith & stillness",
+      stars: 5,
+    },
+    {
+      quote: "Ten minutes at night changed my mornings. I'm less heavy.",
+      name: "David",
+      meta: "Evening practice",
+      stars: 5,
+    },
+    {
+      quote: "I used to carry every worry alone. This app helped me lay it down.",
+      name: "Priya",
+      meta: "Overthinking",
+      stars: 5,
+    },
+    {
+      quote: "Gentle, not gimmicky. Peace without the pressure.",
+      name: "James",
+      meta: "App Store review",
+      stars: 5,
+    },
+  ],
 } as const;
 
 export const COMMITMENT_COPY = {

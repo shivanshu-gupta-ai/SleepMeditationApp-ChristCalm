@@ -8,8 +8,8 @@ import { FloatingTabBar } from "@/src/components/ui/FloatingTabBar";
 
 /**
  * Floating tabs + Start Calm FAB.
- * Visible: Home · Meditate · Wisdom · Journal · Me
- * Hidden: Prayers library (deferred)
+ * Visible: Home · Meditate · Wisdom · Journey · Me
+ * Hidden routes: Journal (via Me), Prayers library (deferred)
  */
 export default function TabsLayout() {
   const { user, loading } = useAuth();
@@ -74,14 +74,18 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="journal"
+        name="stats"
         options={{
-          title: "Journal",
+          title: "Journey",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "create" : "create-outline"} size={size} color={color} />
+            <Ionicons
+              name={focused ? "compass" : "compass-outline"}
+              size={size}
+              color={color}
+            />
           ),
-          tabBarAccessibilityLabel: "Journal",
-          tabBarButtonTestID: "tab-journal",
+          tabBarAccessibilityLabel: "Your journey",
+          tabBarButtonTestID: "tab-stats",
         }}
       />
       <Tabs.Screen
@@ -93,6 +97,14 @@ export default function TabsLayout() {
           ),
           tabBarAccessibilityLabel: "Profile",
           tabBarButtonTestID: "tab-profile",
+        }}
+      />
+      {/* Journal kept as a stackable tab route; open from Me */}
+      <Tabs.Screen
+        name="journal"
+        options={{
+          href: null,
+          title: "Journal",
         }}
       />
       {/* Prayer library deferred — fully hidden from navigation */}

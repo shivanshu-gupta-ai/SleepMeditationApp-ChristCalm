@@ -1,69 +1,23 @@
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/context/ThemeContext";
-import { GraceMoodImage } from "../components/GraceMoodImage";
-import { WELCOME_COPY } from "../copy";
+import React from "react";
+import { IntroHeroSlide } from "../components/IntroHeroSlide";
+import { INTRO_SLIDES } from "../copy";
 
-/** Screen 1 — Welcome: Grace first, scripture, one short sub. */
+/** Screen 1 — Welcome to ChristCalm + soft scripture under. */
 export function WelcomeScreen() {
-  const { colors, fonts, spacing } = useTheme();
-
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        root: {
-          flex: 1,
-          paddingHorizontal: spacing.lg,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        overline: {
-          fontFamily: fonts.bodyMedium,
-          fontSize: 13,
-          letterSpacing: 0.4,
-          color: colors.primary,
-          textAlign: "center",
-          marginTop: spacing.xl,
-        },
-        headline: {
-          fontFamily: fonts.scriptureItalic,
-          fontStyle: "italic",
-          fontSize: 22,
-          lineHeight: 32,
-          letterSpacing: -0.3,
-          color: colors.textPrimary,
-          textAlign: "center",
-          marginTop: spacing.md,
-          maxWidth: 320,
-        },
-        reference: {
-          fontFamily: fonts.bodyMedium,
-          fontSize: 12,
-          color: colors.primary,
-          textAlign: "center",
-          marginTop: spacing.sm,
-          letterSpacing: 0.4,
-        },
-        sub: {
-          fontFamily: fonts.body,
-          fontSize: 15,
-          lineHeight: 22,
-          color: colors.textSecondary,
-          textAlign: "center",
-          marginTop: spacing.xl,
-        },
-      }),
-    [colors, fonts, spacing]
-  );
-
+  const slide = INTRO_SLIDES[0];
   return (
-    <View style={styles.root} testID="onboarding-screen-welcome">
-      <GraceMoodImage mood="welcome" size={160} testID="grace-welcome" />
-      <Text style={styles.overline}>{WELCOME_COPY.overline}</Text>
-      <Text style={styles.headline}>“{WELCOME_COPY.headline}”</Text>
-      <Text style={styles.reference}>{WELCOME_COPY.reference}</Text>
-      <Text style={styles.sub}>{WELCOME_COPY.sub}</Text>
-    </View>
+    <IntroHeroSlide
+      content={{
+        overline: slide.overline,
+        headline: slide.headline,
+        scripture: slide.scripture,
+        reference: slide.reference,
+        supporting: slide.supporting,
+        variant: slide.variant,
+      }}
+      pageIndex={0}
+      testID="onboarding-screen-welcome"
+    />
   );
 }
 

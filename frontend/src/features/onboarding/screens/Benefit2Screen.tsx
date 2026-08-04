@@ -1,9 +1,22 @@
 import React from "react";
-import { BenefitSlide } from "../components/BenefitSlide";
+import { IntroHeroSlide } from "../components/IntroHeroSlide";
+import { INTRO_SLIDES } from "../copy";
 
-/** Screen 3 — Benefit 2: Heal your mind. */
+/** Screen 3 — Scripture-rooted rest. */
 export function Benefit2Screen() {
-  return <BenefitSlide slideIndex={1} testID="onboarding-screen-benefit2" />;
+  const slide = INTRO_SLIDES[2];
+  return (
+    <IntroHeroSlide
+      content={{
+        overline: slide.overline,
+        headline: slide.headline,
+        supporting: slide.supporting,
+        variant: slide.variant,
+      }}
+      pageIndex={2}
+      testID="onboarding-screen-benefit2"
+    />
+  );
 }
 
 export default Benefit2Screen;
