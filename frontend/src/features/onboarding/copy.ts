@@ -17,8 +17,6 @@ export type OnboardingChoice = {
 export const WELCOME_COPY = {
   overline: "A sacred space",
   headline: "Welcome to ChristCalm",
-  scripture: "Peace I leave with you; my peace I give you.",
-  reference: "John 14:27",
   supporting: "Grace walks with you.",
   /** @deprecated use supporting */
   sub: "Grace walks with you.",
@@ -32,8 +30,6 @@ export const INTRO_SLIDES = [
     pageIndex: 0,
     overline: "A sacred space",
     headline: "Welcome to ChristCalm",
-    scripture: "Peace I leave with you; my peace I give you.",
-    reference: "John 14:27",
     supporting: "Grace walks with you.",
     variant: "welcome" as const,
     cta: "Begin My Journey",

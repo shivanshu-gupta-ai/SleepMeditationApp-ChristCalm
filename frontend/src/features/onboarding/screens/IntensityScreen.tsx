@@ -97,14 +97,15 @@ export function IntensityScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-intensity">
+      <IntensityMascot value={value} size={168} testID="grace-intensity" />
+
       <OnboardingQuestion
         title={INTENSITY_QUESTION.title}
         subtitle={INTENSITY_QUESTION.sub}
         center
         density="roomy"
+        showGrace={false}
       />
-
-      <IntensityMascot value={value} size={168} testID="grace-intensity" />
 
       <View style={styles.sliderBlock}>
         <View style={styles.valueRow}>

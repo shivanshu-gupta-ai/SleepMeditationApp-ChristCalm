@@ -24,22 +24,22 @@ const HEAVY: GraceStageConfig = {
   glow: "muted",
 };
 
-/** Full onboarding route → mascot stage */
+/** Full onboarding route → mascot stage (expression matches question feeling) */
 export const ONBOARDING_GRACE: Record<OnboardingRouteId, GraceStageConfig> = {
   splash: { expression: "splash", profile: "idleCalm", glow: "gold", enterReact: "none" },
   welcome: { expression: "welcome", profile: "idleWave", glow: "gold", enterReact: "celebrate" },
   benefit1: { expression: "peaceful", profile: "idleCalm", glow: "primary", enterReact: "exhale" },
   benefit2: { expression: "thoughtful", profile: "idleThink", glow: "gold" },
   benefit3: { expression: "hopeful", profile: "idleHopeful", glow: "primary" },
-  name: { ...LISTEN, enterReact: "lean" },
-  heart: LISTEN,
-  faith: LISTEN,
-  concerns: LISTEN,
-  timing: LISTEN,
-  support: LISTEN,
+  name: { expression: "welcome", profile: "idleListen", glow: "gold", enterReact: "lean" },
+  heart: { expression: "listening", profile: "idleListen", glow: "primary", enterReact: "lean" },
+  faith: { expression: "thoughtful", profile: "idleThink", glow: "gold" },
+  concerns: { expression: "heavy", profile: "idleHeavy", glow: "muted", enterReact: "exhale" },
+  timing: { expression: "peaceful", profile: "idleCalm", glow: "primary" },
+  support: { expression: "hopeful", profile: "idleHopeful", glow: "primary", enterReact: "lean" },
   didYouKnow: { expression: "listening", profile: "idleListen", glow: "muted" },
-  age: LISTEN,
-  intensity: LISTEN,
+  age: { expression: "listening", profile: "idleListen", glow: "primary" },
+  intensity: { expression: "listening", profile: "idleListen", glow: "primary" },
   calculating: { expression: "thoughtful", profile: "idleThink", glow: "primary" },
   profileReveal: { expression: "thoughtful", profile: "idleThink", glow: "primary" },
   lifetimeLoss: HEAVY,

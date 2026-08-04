@@ -7,8 +7,7 @@ import { useOnboarding } from "../OnboardingContext";
 
 /**
  * Screen 5 — Name (optional)
- * Exact copy from Onboarding-Design-Spec §3.5
- * Stores draft.name in OnboardingContext
+ * Grace on top; centered copy matching the question layout pattern.
  */
 export function NameScreen() {
   const { draft, patch } = useOnboarding();
@@ -22,31 +21,35 @@ export function NameScreen() {
         root: {
           flex: 1,
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.md,
+          paddingTop: spacing.sm,
           paddingBottom: spacing.sm,
-        },
-        headerRow: {
-          flexDirection: "row",
           alignItems: "center",
-          gap: spacing.md,
-          marginBottom: spacing.lg,
         },
-        headerText: { flex: 1 },
+        graceWrap: {
+          alignItems: "center",
+          marginBottom: spacing.md,
+        },
         title: {
           fontFamily: fonts.headingBold,
           fontSize: 24,
           lineHeight: 32,
           letterSpacing: -0.4,
           color: colors.textPrimary,
+          textAlign: "center",
           marginBottom: spacing.xs,
+          width: "100%",
         },
         sub: {
           fontFamily: fonts.body,
           fontSize: 15,
           lineHeight: 22,
           color: colors.textSecondary,
+          textAlign: "center",
+          marginBottom: spacing.lg,
+          width: "100%",
         },
         input: {
+          width: "100%",
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
           paddingVertical: 16,
@@ -56,6 +59,7 @@ export function NameScreen() {
           color: colors.textPrimary,
           borderWidth: 1.5,
           borderColor: colors.borderSoft,
+          textAlign: "center",
         },
         friendLink: {
           marginTop: spacing.md,
@@ -66,6 +70,7 @@ export function NameScreen() {
           fontFamily: fonts.body,
           fontSize: 14,
           color: colors.textSecondary,
+          textAlign: "center",
         },
       }),
     [colors, fonts, spacing, radius]
@@ -73,13 +78,17 @@ export function NameScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-name">
-      <View style={styles.headerRow}>
-        <OnboardingGrace size={72} testID="grace-name" reactToken={reactToken} reactKind="nod" />
-        <View style={styles.headerText}>
-          <Text style={styles.title}>{NAME_COPY.title}</Text>
-          <Text style={styles.sub}>{NAME_COPY.sub}</Text>
-        </View>
+      <View style={styles.graceWrap}>
+        <OnboardingGrace
+          size={112}
+          testID="grace-name"
+          reactToken={reactToken}
+          reactKind="nod"
+        />
       </View>
+
+      <Text style={styles.title}>{NAME_COPY.title}</Text>
+      <Text style={styles.sub}>{NAME_COPY.sub}</Text>
 
       <TextInput
         style={styles.input}

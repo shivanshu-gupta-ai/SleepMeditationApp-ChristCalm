@@ -153,7 +153,7 @@ export const ONBOARDING_SEQUENCE: readonly OnboardingScreenDef[] = [
     type: "loading",
     grace: "thoughtful",
     showProgress: true,
-    showBack: false,
+    showBack: true,
     ctaLabel: "",
   },
   {
