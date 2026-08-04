@@ -84,7 +84,13 @@ export function DidYouKnowScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-didYouKnow">
-      <GraceMoodImage mood="listening" size={110} testID="grace-did-you-know" />
+      <GraceMoodImage
+        mood="listening"
+        profile="idleListen"
+        glowTone="muted"
+        size={110}
+        testID="grace-did-you-know"
+      />
       <Text style={styles.title}>{DID_YOU_KNOW.title}</Text>
       <Text style={styles.sub}>{DID_YOU_KNOW.sub}</Text>
       <View style={styles.card}>

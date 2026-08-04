@@ -22,13 +22,13 @@ import {
 } from "@/src/utils/focus-mode";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
-  system: "System",
+  system: "Light",
   light: "Light",
   dark: "Dark",
 };
 
 const THEME_ICONS: Record<ThemePreference, keyof typeof Ionicons.glyphMap> = {
-  system: "phone-portrait-outline",
+  system: "sunny-outline",
   light: "sunny-outline",
   dark: "moon-outline",
 };
@@ -48,8 +48,10 @@ export default function Profile() {
   }, []);
 
   const cycleTheme = () => {
-    const order: ThemePreference[] = ["dark", "light", "system"];
-    const idx = order.indexOf(preference);
+    // Light is product default; dark only when the user opts in (no System).
+    const order: ThemePreference[] = ["light", "dark"];
+    const current = preference === "dark" ? "dark" : "light";
+    const idx = order.indexOf(current);
     setPreference(order[(idx + 1) % order.length]);
   };
 

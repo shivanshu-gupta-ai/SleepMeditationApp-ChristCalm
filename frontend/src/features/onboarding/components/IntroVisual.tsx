@@ -13,6 +13,7 @@ import Animated, {
 import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "./GraceMoodImage";
 import type { GraceExpression } from "../types";
+import type { MotionProfileId, ReactKind } from "../mascot/motionProfiles";
 
 export type IntroVisualVariant = "welcome" | "noise" | "scripture" | "personal";
 
@@ -26,6 +27,27 @@ const MOOD: Record<IntroVisualVariant, GraceExpression | "splash"> = {
   noise: "peaceful",
   scripture: "thoughtful",
   personal: "hopeful",
+};
+
+const PROFILE: Record<IntroVisualVariant, MotionProfileId> = {
+  welcome: "idleWave",
+  noise: "idleCalm",
+  scripture: "idleThink",
+  personal: "idleHopeful",
+};
+
+const ENTER: Record<IntroVisualVariant, ReactKind> = {
+  welcome: "celebrate",
+  noise: "exhale",
+  scripture: "none",
+  personal: "none",
+};
+
+const GLOW: Record<IntroVisualVariant, "primary" | "gold" | "muted" | "warm"> = {
+  welcome: "gold",
+  noise: "primary",
+  scripture: "gold",
+  personal: "primary",
 };
 
 /**
@@ -273,6 +295,9 @@ export function IntroVisual({ variant, testID }: Props) {
       <View style={styles.graceWrap}>
         <GraceMoodImage
           mood={MOOD[variant]}
+          profile={PROFILE[variant]}
+          glowTone={GLOW[variant]}
+          enterReact={ENTER[variant]}
           size={variant === "welcome" ? 240 : 220}
           testID={`${testID}-grace`}
         />

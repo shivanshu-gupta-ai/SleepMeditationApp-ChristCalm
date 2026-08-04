@@ -1,33 +1,9 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import {
-  Image,
-  View,
-  StyleSheet,
-  Animated,
-  Easing,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
-import { useTheme } from "@/src/context/ThemeContext";
+import React, { useEffect, useState } from "react";
+import { type StyleProp, type ViewStyle } from "react-native";
 import type { GraceExpression } from "../types";
-
-/**
- * ChristCalm bunny mascot moods (transparent PNG cutouts).
- * Gentle idle bob for interactive feel.
- */
-
-const FALLBACK = require("@/assets/images/grace-mascot.png");
-
-const MOOD_ASSETS: Record<GraceExpression | "splash", number> = {
-  welcome: require("@/assets/images/onboarding/grace-welcome.png"),
-  listening: require("@/assets/images/onboarding/grace-listening.png"),
-  thoughtful: require("@/assets/images/onboarding/grace-thoughtful.png"),
-  heavy: require("@/assets/images/onboarding/grace-heavy.png"),
-  hopeful: require("@/assets/images/onboarding/grace-hopeful.png"),
-  committed: require("@/assets/images/onboarding/grace-committed.png"),
-  peaceful: require("@/assets/images/onboarding/grace-peaceful.png"),
-  splash: require("@/assets/images/onboarding/grace-splash.png"),
-};
+import { GraceActor } from "../mascot/GraceActor";
+import { profileForExpression } from "../mascot/expressionMap";
+import type { MotionProfileId, ReactKind } from "../mascot/motionProfiles";
 
 export type GraceMoodImageProps = {
   mood?: GraceExpression | "splash";
@@ -36,84 +12,59 @@ export type GraceMoodImageProps = {
   animate?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  /** Optional motion profile override */
+  profile?: MotionProfileId;
+  showGlow?: boolean;
+  glowTone?: "primary" | "gold" | "muted" | "warm";
+  /** One-shot react when token changes */
+  reactToken?: number;
+  reactKind?: ReactKind;
+  /** Fire enter react once on mount */
+  enterReact?: ReactKind;
 };
 
+/**
+ * Grace mascot — thin wrapper over GraceActor for backward-compatible API.
+ */
 export function GraceMoodImage({
   mood = "welcome",
   size = 140,
   animate = true,
   style,
   testID = "grace-mood",
+  profile,
+  showGlow = true,
+  glowTone = "primary",
+  reactToken = 0,
+  reactKind = "none",
+  enterReact = "none",
 }: GraceMoodImageProps) {
-  const { colors, shadows, isDark } = useTheme();
-  const src = MOOD_ASSETS[mood] ?? FALLBACK;
-  const bob = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(1)).current;
-  const prevMood = useRef(mood);
+  const [enterToken, setEnterToken] = useState(0);
+  const [enterKind, setEnterKind] = useState<ReactKind>("none");
 
   useEffect(() => {
-    if (prevMood.current !== mood) {
-      prevMood.current = mood;
-      fade.setValue(0.4);
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+    if (enterReact !== "none") {
+      setEnterKind(enterReact);
+      setEnterToken((t) => t + 1);
     }
-  }, [mood, fade]);
+  }, [enterReact, mood]);
 
-  useEffect(() => {
-    if (!animate) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, {
-          toValue: -8,
-          duration: 1400,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bob, {
-          toValue: 0,
-          duration: 1400,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [animate, bob]);
-
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        wrap: {
-          width: size + 16,
-          height: size + 16,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        img: {
-          width: size,
-          height: size,
-        },
-      }),
-    [size]
-  );
+  const effectiveToken = reactToken > 0 ? reactToken : enterToken;
+  const effectiveKind = reactToken > 0 ? reactKind : enterKind;
 
   return (
-    <View
-      style={[styles.wrap, style]}
+    <GraceActor
+      expression={mood}
+      profile={profile ?? profileForExpression(mood)}
+      size={size}
+      animate={animate}
+      showGlow={showGlow}
+      glowTone={glowTone}
+      reactToken={effectiveToken}
+      reactKind={effectiveKind}
+      style={style}
       testID={testID}
-      accessibilityRole="image"
-      accessibilityLabel="ChristCalm mascot"
-    >
-      <Animated.View style={{ opacity: fade, transform: [{ translateY: bob }] }}>
-        <Image source={src} style={styles.img} resizeMode="contain" />
-      </Animated.View>
-    </View>
+    />
   );
 }
 

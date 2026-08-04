@@ -90,7 +90,13 @@ export function ProfileRevealScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-profileReveal">
-      <GraceMoodImage mood="thoughtful" size={128} testID="grace-profile" />
+      <GraceMoodImage
+        mood="thoughtful"
+        profile="idleThink"
+        glowTone="primary"
+        size={128}
+        testID="grace-profile"
+      />
       <Text style={styles.overline}>{PROFILE_REVEAL.overline}</Text>
       <Text style={styles.title}>{profile.title}</Text>
       <Text style={styles.description}>{profile.description}</Text>
