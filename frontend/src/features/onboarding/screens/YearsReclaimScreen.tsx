@@ -81,7 +81,14 @@ export function YearsReclaimScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-yearsReclaim">
-      <GraceMoodImage mood="hopeful" size={120} testID="grace-years-reclaim" />
+      <GraceMoodImage
+        mood="hopeful"
+        profile="idleHopeful"
+        glowTone="gold"
+        enterReact="celebrate"
+        size={120}
+        testID="grace-years-reclaim"
+      />
       <Text style={styles.lead}>{YEARS_RECLAIM_COPY.lead}</Text>
       <Text style={styles.mid}>{YEARS_RECLAIM_COPY.mid}</Text>
       <Text style={styles.years} accessibilityRole="text">

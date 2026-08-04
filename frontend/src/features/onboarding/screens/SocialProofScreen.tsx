@@ -114,7 +114,13 @@ export function SocialProofScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-socialProof">
-      <GraceMoodImage mood="hopeful" size={100} testID="grace-social-proof" />
+      <GraceMoodImage
+        mood="hopeful"
+        profile="idleHopeful"
+        glowTone="gold"
+        size={100}
+        testID="grace-social-proof"
+      />
       <Text style={styles.title}>{SOCIAL_PROOF_COPY.title}</Text>
 
       <View style={styles.ratingBlock}>

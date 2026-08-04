@@ -6,7 +6,14 @@ export {
 } from "./OnboardingContext";
 export { GraceCompanion } from "./components/GraceCompanion";
 export { GraceMoodImage } from "./components/GraceMoodImage";
+export { OnboardingGrace } from "./components/OnboardingGrace";
 export { IntensityMascot, intensityBandFromValue, intensityLabel } from "./components/IntensityMascot";
+export {
+  GraceActor,
+  MOTION_PROFILES,
+  graceConfigForRoute,
+  profileForExpression,
+} from "./mascot";
 export { GracePlaceholder } from "./components/GracePlaceholder";
 export { OnboardingOption } from "./components/OnboardingOption";
 export { ProgressBar } from "./components/ProgressBar";

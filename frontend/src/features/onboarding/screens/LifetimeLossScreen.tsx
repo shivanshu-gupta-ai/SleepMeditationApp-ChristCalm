@@ -74,7 +74,13 @@ export function LifetimeLossScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-lifetimeLoss">
-      <GraceMoodImage mood="heavy" size={120} testID="grace-lifetime-loss" />
+      <GraceMoodImage
+        mood="heavy"
+        profile="idleHeavy"
+        glowTone="muted"
+        size={120}
+        testID="grace-lifetime-loss"
+      />
       <Text style={styles.lead}>{LIFETIME_LOSS_COPY.lead}</Text>
       <Text style={styles.years} accessibilityRole="text">
         {lostYears}

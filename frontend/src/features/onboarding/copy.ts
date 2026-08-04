@@ -103,23 +103,15 @@ export const NAME_COPY = {
 
 export const HEART_QUESTION = {
   title: "How has your heart been feeling?",
-  sub: "Select all that fit.",
+  sub: "Pick what fits best.",
 } as const;
 
+/** 4 core states — anxiety, overload, weariness, distance (ChristCalm’s lane). */
 export const EMOTIONAL_STATES: OnboardingChoice[] = [
+  { id: "anxious", label: "Anxious", sub: "Mind won’t quiet", icon: "water-outline" },
+  { id: "overwhelmed", label: "Overwhelmed", sub: "Too much at once", icon: "layers-outline" },
   { id: "weary", label: "Weary", sub: "Running on empty", icon: "moon-outline" },
-  { id: "anxious", label: "Anxious", sub: "Mind won't quiet", icon: "water-outline" },
-  { id: "numb", label: "Numb", sub: "Going through motions", icon: "remove-circle-outline" },
-  { id: "overwhelmed", label: "Overwhelmed", sub: "Too much", icon: "layers-outline" },
-  {
-    id: "hopeful_tired",
-    label: "Hopeful but tired",
-    sub: "Want peace again",
-    icon: "partly-sunny-outline",
-  },
-  { id: "peaceful", label: "Peaceful", sub: "In a good place", icon: "flower-outline" },
   { id: "lonely", label: "Lonely", sub: "Distant from God", icon: "person-outline" },
-  { id: "restless", label: "Restless", sub: "Can't settle", icon: "flash-outline" },
 ];
 
 export const FAITH_QUESTION = {
@@ -127,45 +119,38 @@ export const FAITH_QUESTION = {
   sub: "No wrong answer.",
 } as const;
 
+/** 4 stages that cover seeker → struggle without overload. */
 export const FAITH_STAGES: OnboardingChoice[] = [
-  { id: "seeking", label: "Seeking", sub: "Exploring", icon: "compass-outline" },
-  { id: "new", label: "New to faith", sub: "Just beginning", icon: "leaf-outline" },
-  { id: "growing", label: "Growing", sub: "Deepening", icon: "trending-up-outline" },
+  { id: "seeking", label: "Seeking", sub: "Exploring faith", icon: "compass-outline" },
+  { id: "growing", label: "Growing", sub: "Deepening daily", icon: "trending-up-outline" },
   { id: "returning", label: "Returning", sub: "Coming back", icon: "refresh-outline" },
-  { id: "deep", label: "Deeply rooted", sub: "Faith is central", icon: "heart-outline" },
   { id: "struggling", label: "Struggling", sub: "Doubt or distance", icon: "cloudy-outline" },
 ];
 
 export const CONCERNS_QUESTION = {
   title: "What weighs on your heart?",
-  sub: "Select all that feel true.",
+  sub: "Select what feels true.",
 } as const;
 
+/** 4 concerns the app can actually serve. */
 export const CONCERNS: OnboardingChoice[] = [
-  { id: "anxiety", label: "Anxiety & Fear", icon: "water-outline" },
-  { id: "sleep", label: "Sleep & Rest", icon: "bed-outline" },
-  { id: "grief", label: "Grief or Loss", icon: "heart-outline" },
-  { id: "loneliness", label: "Loneliness", icon: "person-outline" },
+  { id: "anxiety", label: "Anxiety & overthinking", icon: "water-outline" },
+  { id: "sleep", label: "Sleep & rest", icon: "bed-outline" },
   { id: "overwhelm", label: "Overwhelm", icon: "layers-outline" },
-  { id: "faith_purpose", label: "Faith & Purpose", icon: "compass-outline" },
-  { id: "relationships", label: "Relationships", icon: "people-outline" },
-  { id: "guilt_shame", label: "Guilt or Shame", icon: "hand-left-outline" },
-  { id: "decision_fatigue", label: "Decision fatigue", icon: "git-branch-outline" },
-  { id: "far_from_god", label: "Far from God", icon: "cloudy-night-outline" },
+  { id: "faith_purpose", label: "Faith & nearness to God", icon: "compass-outline" },
 ];
 
 export const TIMING_QUESTION = {
   title: "When do you most need peace?",
-  sub: "We'll meet you there.",
+  sub: "We’ll meet you there.",
 } as const;
 
+/** 4 moments that drive meditation + sleep product use. */
 export const PREFERRED_TIMES: OnboardingChoice[] = [
   { id: "morning", label: "Morning", icon: "sunny-outline" },
-  { id: "midday", label: "Midday", icon: "partly-sunny-outline" },
   { id: "evening", label: "Evening", icon: "moon-outline" },
   { id: "before_sleep", label: "Before sleep", icon: "bed-outline" },
   { id: "anxiety_hits", label: "When anxiety hits", icon: "flash-outline" },
-  { id: "all_day", label: "All day", icon: "time-outline" },
 ];
 
 export const SUPPORT_QUESTION = {
@@ -173,15 +158,12 @@ export const SUPPORT_QUESTION = {
   sub: "Choose what matters most.",
 } as const;
 
+/** 4 product pillars. */
 export const DESIRED_SUPPORT: OnboardingChoice[] = [
   { id: "guided_meditations", label: "Guided meditations", icon: "headset-outline" },
   { id: "scripture_hold", label: "Scripture for hard moments", icon: "book-outline" },
-  { id: "short_prayers", label: "Short prayers", icon: "hand-left-outline" },
   { id: "sleep_peace", label: "Peaceful sleep", icon: "bed-outline" },
-  { id: "encouragement_distance", label: "When I feel distant", icon: "sparkles-outline" },
-  { id: "wisdom_decisions", label: "Wisdom for daily life", icon: "bulb-outline" },
-  { id: "not_alone", label: "Not walking alone", icon: "people-outline" },
-  { id: "gentle_reminders", label: "Gentle stillness reminders", icon: "notifications-outline" },
+  { id: "short_prayers", label: "Short prayers", icon: "hand-left-outline" },
 ];
 
 // —— 11–15 ——
@@ -213,12 +195,11 @@ export const AGE_QUESTION = {
   title: "How old are you?",
 } as const;
 
+/** 4 broad bands — enough for personalization, not a census. */
 export const AGE_RANGES: OnboardingChoice[] = [
-  { id: "under_18", label: "Under 18", icon: "leaf-outline" },
   { id: "18_24", label: "18–24", icon: "sunny-outline" },
   { id: "25_34", label: "25–34", icon: "partly-sunny-outline" },
-  { id: "35_44", label: "35–44", icon: "moon-outline" },
-  { id: "45_54", label: "45–54", icon: "star-outline" },
+  { id: "35_54", label: "35–54", icon: "moon-outline" },
   { id: "55_plus", label: "55+", icon: "flower-outline" },
 ];
 

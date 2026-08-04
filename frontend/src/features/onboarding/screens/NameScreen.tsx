@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
-import { GraceMoodImage } from "../components/GraceMoodImage";
+import { OnboardingGrace } from "../components/OnboardingGrace";
 import { NAME_COPY } from "../copy";
 import { useOnboarding } from "../OnboardingContext";
 
@@ -13,6 +13,8 @@ import { useOnboarding } from "../OnboardingContext";
 export function NameScreen() {
   const { draft, patch } = useOnboarding();
   const { colors, fonts, spacing, radius } = useTheme();
+  const [reactToken, setReactToken] = useState(0);
+  const lastNod = useRef(0);
 
   const styles = useMemo(
     () =>
@@ -72,7 +74,7 @@ export function NameScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-name">
       <View style={styles.headerRow}>
-        <GraceMoodImage mood="listening" size={72} testID="grace-name" />
+        <OnboardingGrace size={72} testID="grace-name" reactToken={reactToken} reactKind="nod" />
         <View style={styles.headerText}>
           <Text style={styles.title}>{NAME_COPY.title}</Text>
           <Text style={styles.sub}>{NAME_COPY.sub}</Text>
@@ -84,7 +86,14 @@ export function NameScreen() {
         placeholder={NAME_COPY.placeholder}
         placeholderTextColor={colors.textMuted}
         value={draft.name}
-        onChangeText={(name) => patch({ name })}
+        onChangeText={(name) => {
+          patch({ name });
+          const now = Date.now();
+          if (now - lastNod.current > 900) {
+            lastNod.current = now;
+            setReactToken((t) => t + 1);
+          }
+        }}
         autoCapitalize="words"
         autoCorrect={false}
         returnKeyType="done"

@@ -50,7 +50,13 @@ export function SplashScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-splash" accessibilityLabel="ChristCalm">
       <Animated.View style={[styles.glow, glowStyle]} pointerEvents="none" />
-      <GraceMoodImage mood="splash" size={180} testID="grace-splash" />
+      <GraceMoodImage
+        mood="splash"
+        profile="idleCalm"
+        glowTone="gold"
+        size={180}
+        testID="grace-splash"
+      />
     </View>
   );
 }

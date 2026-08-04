@@ -6,12 +6,12 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useColorScheme } from "react-native";
 import { darkColors, lightColors, type ColorTokens } from "@/src/theme/tokens";
 import { createShadows, fonts, radius, spacing, type ShadowTokens } from "@/src/theme/primitives";
 import { storage } from "@/src/utils/storage";
 
-export type ThemePreference = "system" | "light" | "dark";
+/** Explicit appearance only — system no longer drives dark automatically. */
+export type ThemePreference = "light" | "dark" | "system";
 
 export type ThemeContextValue = {
   colors: ColorTokens;
@@ -25,46 +25,50 @@ export type ThemeContextValue = {
   shadows: ShadowTokens;
 };
 
-const PREF_KEY = "cc_theme_preference";
-/** App launches in dark by default (premium night aesthetic). */
-const DEFAULT_PREFERENCE: ThemePreference = "dark";
+/** v2 key: product default flipped from dark → light (ignore old dark auto-default). */
+const PREF_KEY = "cc_theme_preference_v2";
+const DEFAULT_PREFERENCE: ThemePreference = "light";
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+function normalizePreference(raw: string | null | undefined): ThemePreference {
+  // Only explicit dark is dark; "system" and anything else → light.
+  if (raw === "dark") return "dark";
+  return "light";
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemScheme = useColorScheme();
   const [preference, setPreferenceState] = useState<ThemePreference>(DEFAULT_PREFERENCE);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    storage.getItem<ThemePreference>(PREF_KEY, DEFAULT_PREFERENCE).then((stored) => {
-      // Persist dark as the product default. Keep explicit light/system if user set them.
-      if (stored === "light" || stored === "dark" || stored === "system") {
-        setPreferenceState(stored);
-      } else {
-        setPreferenceState(DEFAULT_PREFERENCE);
-        storage.setItem(PREF_KEY, DEFAULT_PREFERENCE).catch(() => {});
+    storage.getItem<string>(PREF_KEY, DEFAULT_PREFERENCE).then((stored) => {
+      const next = normalizePreference(stored);
+      setPreferenceState(next);
+      if (stored !== next) {
+        storage.setItem(PREF_KEY, next).catch(() => {});
       }
       setHydrated(true);
     });
   }, []);
 
   const setPreference = useCallback((p: ThemePreference) => {
-    setPreferenceState(p);
-    storage.setItem(PREF_KEY, p).catch(() => {});
+    // Coerce system → light so OS dark never sneaks in
+    const next = p === "system" ? "light" : p === "dark" ? "dark" : "light";
+    setPreferenceState(next);
+    storage.setItem(PREF_KEY, next).catch(() => {});
   }, []);
 
   const cyclePreference = useCallback(() => {
     setPreferenceState((prev) => {
-      // Cycle: dark → light → system → dark
-      const next: ThemePreference =
-        prev === "dark" ? "light" : prev === "light" ? "system" : "dark";
+      // Explicit only: light ↔ dark
+      const next: ThemePreference = prev === "dark" ? "light" : "dark";
       storage.setItem(PREF_KEY, next).catch(() => {});
       return next;
     });
   }, []);
 
-  const isDark =
-    preference === "dark" || (preference === "system" && systemScheme === "dark");
+  // Dark only when user explicitly chose dark — never from OS.
+  const isDark = preference === "dark";
 
   const value = useMemo<ThemeContextValue>(
     () => ({

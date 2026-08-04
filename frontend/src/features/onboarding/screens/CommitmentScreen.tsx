@@ -25,6 +25,7 @@ export function CommitmentScreen() {
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
 
   const [holding, setHolding] = useState(false);
+  const [celebrateToken, setCelebrateToken] = useState(0);
   const progress = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0.2)).current;
@@ -45,6 +46,7 @@ export function CommitmentScreen() {
       commitmentAccepted: true,
       commitmentDate: new Date().toISOString(),
     });
+    setCelebrateToken((t) => t + 1);
     setHolding(false);
   }, [patch]);
 
@@ -201,6 +203,10 @@ export function CommitmentScreen() {
         <Animated.View style={graceLift}>
           <GraceMoodImage
             mood={done ? "committed" : "hopeful"}
+            profile={done ? "idleCelebrate" : "idleCalm"}
+            glowTone="gold"
+            reactToken={celebrateToken}
+            reactKind="celebrate"
             size={128}
             testID="grace-commitment"
           />

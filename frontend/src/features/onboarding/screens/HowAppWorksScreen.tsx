@@ -132,7 +132,14 @@ export function HowAppWorksScreen() {
           { opacity: headerOpacity, transform: [{ translateY: headerY }] },
         ]}
       >
-        <GraceMoodImage mood="peaceful" size={108} testID="grace-how-app-works" />
+        <GraceMoodImage
+          mood="peaceful"
+          profile="idleWave"
+          glowTone="primary"
+          enterReact="celebrate"
+          size={108}
+          testID="grace-how-app-works"
+        />
         <Text style={styles.title}>{HOW_APP_WORKS_COPY.title}</Text>
         <Text style={styles.sub}>{HOW_APP_WORKS_COPY.sub}</Text>
       </Animated.View>

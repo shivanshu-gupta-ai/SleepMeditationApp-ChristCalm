@@ -100,7 +100,13 @@ export function CalculatingScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-calculating">
-      <GraceMoodImage mood="thoughtful" size={130} testID="grace-calculating" />
+      <GraceMoodImage
+        mood="thoughtful"
+        profile="idleThink"
+        glowTone="primary"
+        size={130}
+        testID="grace-calculating"
+      />
       <Text style={styles.title}>Preparing…</Text>
       <View style={styles.bars}>
         {CALCULATING_STEPS.map((label, i) => (

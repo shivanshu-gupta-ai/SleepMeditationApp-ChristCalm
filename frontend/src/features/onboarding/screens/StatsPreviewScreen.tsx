@@ -77,7 +77,13 @@ export function StatsPreviewScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-statsPreview">
-      <GraceMoodImage mood="peaceful" size={110} testID="grace-stats-preview" />
+      <GraceMoodImage
+        mood="peaceful"
+        profile="idleCalm"
+        glowTone="primary"
+        size={110}
+        testID="grace-stats-preview"
+      />
 
       <View style={styles.cards}>
         <View style={[styles.card, styles.cardBefore]}>
