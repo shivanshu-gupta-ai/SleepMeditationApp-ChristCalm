@@ -24,9 +24,9 @@ type Props = {
 
 const MOOD: Record<IntroVisualVariant, GraceExpression | "splash"> = {
   welcome: "welcome",
-  noise: "peaceful",
-  scripture: "thoughtful",
-  personal: "hopeful",
+  noise: "notification",
+  scripture: "smile",
+  personal: "anxiety",
 };
 
 const PROFILE: Record<IntroVisualVariant, MotionProfileId> = {
@@ -194,103 +194,9 @@ export function IntroVisual({ variant, testID }: Props) {
         </Animated.View>
       ) : null}
 
-      {variant === "noise" ? (
-        <Animated.View style={[styles.noiseLayer, dissolveStyle]} pointerEvents="none">
-          {[
-            { top: "12%", left: "8%", icon: "notifications-outline" as const, rot: -8 },
-            { top: "18%", right: "10%", icon: "mail-outline" as const, rot: 6 },
-            { top: "42%", left: "4%", icon: "chatbubble-outline" as const, rot: -4 },
-            { top: "48%", right: "6%", icon: "alert-circle-outline" as const, rot: 10 },
-          ].map((n, i) => (
-            <View
-              key={i}
-              style={[
-                styles.noiseChip,
-                {
-                  top: n.top as any,
-                  left: n.left as any,
-                  right: n.right as any,
-                  transform: [{ rotate: `${n.rot}deg` }],
-                  backgroundColor: colors.surface,
-                  borderColor: colors.borderSoft,
-                  ...shadows.soft,
-                },
-              ]}
-            >
-              <Ionicons name={n.icon} size={16} color={colors.textMuted} />
-              <View style={[styles.noiseLine, { backgroundColor: colors.borderSoft }]} />
-              <View
-                style={[
-                  styles.noiseLine,
-                  { width: 28, backgroundColor: colors.borderSoft, opacity: 0.7 },
-                ]}
-              />
-            </View>
-          ))}
-          {/* Tangled soft lines */}
-          <View style={[styles.tangle, { borderColor: colors.primary + "33", top: "30%", left: "20%" }]} />
-          <View style={[styles.tangle, { borderColor: colors.textMuted + "40", top: "36%", right: "18%", width: 70 }]} />
-        </Animated.View>
-      ) : null}
 
-      {variant === "personal" ? (
-        <>
-          <Animated.View
-            style={[
-              styles.floatCard,
-              floatAStyle,
-              {
-                top: "14%",
-                left: "6%",
-                backgroundColor: colors.surface,
-                borderColor: colors.borderSoft,
-                ...shadows.soft,
-              },
-            ]}
-          >
-            <Ionicons name="water-outline" size={14} color={colors.primary} />
-            <Text style={[styles.floatLabel, { fontFamily: fonts.bodyMedium, color: colors.textPrimary }]}>
-              Anxiety
-            </Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.floatCard,
-              floatBStyle,
-              {
-                top: "20%",
-                right: "4%",
-                backgroundColor: colors.surface,
-                borderColor: colors.borderSoft,
-                ...shadows.soft,
-              },
-            ]}
-          >
-            <Ionicons name="book-outline" size={14} color={colors.premium} />
-            <Text style={[styles.floatLabel, { fontFamily: fonts.bodyMedium, color: colors.textPrimary }]}>
-              Daily Scripture
-            </Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.floatCard,
-              floatAStyle,
-              {
-                bottom: "12%",
-                right: "10%",
-                backgroundColor: colors.surface,
-                borderColor: colors.borderSoft,
-                ...shadows.soft,
-              },
-            ]}
-          >
-            <Ionicons name="moon-outline" size={14} color={colors.primary} />
-            <Text style={[styles.floatLabel, { fontFamily: fonts.bodyMedium, color: colors.textPrimary }]}>
-              Sleep
-            </Text>
-          </Animated.View>
-        </>
-      ) : null}
+
+
 
       <View style={styles.graceWrap}>
         <GraceMoodImage

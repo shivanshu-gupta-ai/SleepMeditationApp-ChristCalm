@@ -28,15 +28,20 @@ import { profileForExpression } from "./expressionMap";
 
 const FALLBACK = require("@/assets/images/grace-mascot.png");
 
-export const GRACE_MOOD_ASSETS: Record<GraceExpression | "splash", number> = {
-  welcome: require("@/assets/images/onboarding/grace-welcome.png"),
-  listening: require("@/assets/images/onboarding/grace-listening.png"),
-  thoughtful: require("@/assets/images/onboarding/grace-thoughtful.png"),
-  heavy: require("@/assets/images/onboarding/grace-heavy.png"),
-  hopeful: require("@/assets/images/onboarding/grace-hopeful.png"),
-  committed: require("@/assets/images/onboarding/grace-committed.png"),
-  peaceful: require("@/assets/images/onboarding/grace-peaceful.png"),
-  splash: require("@/assets/images/onboarding/grace-splash.png"),
+export const GRACE_MOOD_ASSETS: Record<GraceExpression | "splash", any> = {
+  welcome: require("@/animation/gif/bunnyhelloanimation.gif"),
+  listening: require("@/animation/gif/bunnythinking.gif"),
+  thoughtful: require("@/animation/gif/bunnythinking.gif"),
+  heavy: require("@/animation/gif/sadbunny.gif"),
+  hopeful: require("@/animation/gif/bunnysmile.gif"),
+  committed: require("@/animation/gif/bunnysmile.gif"),
+  peaceful: require("@/animation/gif/bunnysmile.gif"),
+  notification: require("@/animation/gif/bunnynotification.gif"),
+  smile: require("@/animation/gif/bunnysmile.gif"),
+  anxiety: require("@/animation/gif/bunnyanxietyscreen.gif"),
+  fact: require("@/animation/gif/bunnyfact.gif"),
+  thinking: require("@/animation/gif/bunnythinking.gif"),
+  splash: require("@/animation/gif/bunnyhelloanimation.gif"),
 };
 
 export type GraceActorProps = {
@@ -72,6 +77,7 @@ export function GraceActor({
   testID = "grace-actor",
 }: GraceActorProps) {
   const { colors, isDark } = useTheme();
+  const gifSize = Math.round(size * 1.5);
   const profileId = profileProp ?? profileForExpression(expression);
   const profile = MOTION_PROFILES[profileId];
   const src = GRACE_MOOD_ASSETS[expression] ?? FALLBACK;
@@ -100,13 +106,13 @@ export function GraceActor({
 
   // Enter + expression crossfade
   useEffect(() => {
-    opacity.value = 0.35;
-    translateY.value = 10;
-    opacity.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) });
-    translateY.value = withTiming(0, { duration: 360, easing: Easing.out(Easing.cubic) });
+    opacity.value = 0.2;
+    translateY.value = 8;
+    opacity.value = withTiming(1, { duration: 420, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
+    translateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
   }, [expression, opacity, translateY]);
 
-  // Idle loop
+  // Smooth idle loop
   useEffect(() => {
     cancelAnimation(bob);
     cancelAnimation(scale);
@@ -122,18 +128,20 @@ export function GraceActor({
     }
 
     const ms = profile.bobMs;
+    const smoothEase = Easing.bezier(0.42, 0, 0.58, 1);
+
     bob.value = withRepeat(
       withSequence(
-        withTiming(-profile.bobAmp, { duration: ms, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: ms, easing: Easing.inOut(Easing.sin) })
+        withTiming(-profile.bobAmp, { duration: ms, easing: smoothEase }),
+        withTiming(0, { duration: ms, easing: smoothEase })
       ),
       -1,
       false
     );
     scale.value = withRepeat(
       withSequence(
-        withTiming(profile.scaleHi, { duration: ms, easing: Easing.inOut(Easing.sin) }),
-        withTiming(profile.scaleLo, { duration: ms, easing: Easing.inOut(Easing.sin) })
+        withTiming(profile.scaleHi, { duration: ms, easing: smoothEase }),
+        withTiming(profile.scaleLo, { duration: ms, easing: smoothEase })
       ),
       -1,
       false
@@ -141,8 +149,8 @@ export function GraceActor({
     if (profile.swayAmp > 0) {
       sway.value = withRepeat(
         withSequence(
-          withTiming(profile.swayAmp, { duration: ms * 1.1, easing: Easing.inOut(Easing.sin) }),
-          withTiming(-profile.swayAmp, { duration: ms * 1.1, easing: Easing.inOut(Easing.sin) })
+          withTiming(profile.swayAmp, { duration: ms * 1.1, easing: smoothEase }),
+          withTiming(-profile.swayAmp, { duration: ms * 1.1, easing: smoothEase })
         ),
         -1,
         true
@@ -152,8 +160,8 @@ export function GraceActor({
     }
     glowOp.value = withRepeat(
       withSequence(
-        withTiming(profile.glowHi, { duration: ms, easing: Easing.inOut(Easing.sin) }),
-        withTiming(profile.glowLo, { duration: ms, easing: Easing.inOut(Easing.sin) })
+        withTiming(profile.glowHi, { duration: ms, easing: smoothEase }),
+        withTiming(profile.glowLo, { duration: ms, easing: smoothEase })
       ),
       -1,
       false
@@ -243,26 +251,26 @@ export function GraceActor({
     () =>
       StyleSheet.create({
         wrap: {
-          width: size + 24,
-          height: size + 24,
+          width: gifSize + 24,
+          height: gifSize + 24,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "transparent",
         },
         glow: {
           position: "absolute",
-          width: size * 0.85,
-          height: size * 0.85,
-          borderRadius: size,
+          width: gifSize * 0.85,
+          height: gifSize * 0.85,
+          borderRadius: gifSize,
           backgroundColor: glowColor,
         },
         img: {
-          width: size,
-          height: size,
+          width: gifSize,
+          height: gifSize,
           backgroundColor: "transparent",
         },
       }),
-    [size, glowColor]
+    [gifSize, glowColor]
   );
 
   return (

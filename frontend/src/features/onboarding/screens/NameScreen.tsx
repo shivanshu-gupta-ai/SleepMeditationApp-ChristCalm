@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingGrace } from "../components/OnboardingGrace";
+import { GraceMoodImage } from "../components/GraceMoodImage";
 import { NAME_COPY } from "../copy";
 import { useOnboarding } from "../OnboardingContext";
 
@@ -26,12 +27,10 @@ export function NameScreen() {
           paddingBottom: spacing.sm,
         },
         headerRow: {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: spacing.md,
           marginBottom: spacing.lg,
+          width: "100%",
         },
-        headerText: { flex: 1 },
+        headerText: { width: "100%" },
         title: {
           fontFamily: fonts.headingBold,
           fontSize: 24,
@@ -39,14 +38,17 @@ export function NameScreen() {
           letterSpacing: -0.4,
           color: colors.textPrimary,
           marginBottom: spacing.xs,
+          textAlign: "left",
         },
         sub: {
           fontFamily: fonts.body,
           fontSize: 15,
           lineHeight: 22,
           color: colors.textSecondary,
+          textAlign: "left",
         },
         input: {
+          width: "100%",
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
           paddingVertical: 16,
@@ -56,6 +58,7 @@ export function NameScreen() {
           color: colors.textPrimary,
           borderWidth: 1.5,
           borderColor: colors.borderSoft,
+          textAlign: "left",
         },
         friendLink: {
           marginTop: spacing.md,
@@ -66,6 +69,7 @@ export function NameScreen() {
           fontFamily: fonts.body,
           fontSize: 14,
           color: colors.textSecondary,
+          textAlign: "center",
         },
       }),
     [colors, fonts, spacing, radius]
@@ -73,8 +77,16 @@ export function NameScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-name">
+      <GraceMoodImage
+        mood="thinking"
+        size={110}
+        showGlow={false}
+        testID="grace-name"
+        reactToken={reactToken}
+        reactKind="nod"
+        style={{ alignSelf: "center", marginBottom: spacing.md }}
+      />
       <View style={styles.headerRow}>
-        <OnboardingGrace size={72} testID="grace-name" reactToken={reactToken} reactKind="nod" />
         <View style={styles.headerText}>
           <Text style={styles.title}>{NAME_COPY.title}</Text>
           <Text style={styles.sub}>{NAME_COPY.sub}</Text>

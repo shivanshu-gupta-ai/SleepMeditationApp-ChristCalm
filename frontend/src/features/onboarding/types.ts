@@ -59,7 +59,12 @@ export type GraceExpression =
   | "heavy"
   | "hopeful"
   | "committed"
-  | "peaceful";
+  | "peaceful"
+  | "notification"
+  | "smile"
+  | "anxiety"
+  | "fact"
+  | "thinking";
 
 export type OnboardingScreenDef = {
   /** Route key / component id */
