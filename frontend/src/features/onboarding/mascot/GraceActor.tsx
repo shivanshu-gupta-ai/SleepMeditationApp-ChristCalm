@@ -85,11 +85,8 @@ export function GraceActor({
   testID = "grace-actor",
 }: GraceActorProps) {
   const { colors, isDark } = useTheme();
-  // Base scale factor for mascot GIF expressions is 1.8
-  // helloanimation1.gif (welcome/splash) and notification1.gif (notification) size reduced by 20%
-  const isReduced = expression === "welcome" || expression === "splash" || expression === "notification";
-  const scaleFactor = isReduced ? 1.8 * 0.8 : 1.8;
-  const gifSize = Math.round(size * scaleFactor);
+  // Target browser screen display dimension for all mascot GIF files: 396x396 pixels
+  const gifSize = 396;
   const profileId = profileProp ?? profileForExpression(expression);
   const profile = MOTION_PROFILES[profileId];
   const src = GRACE_MOOD_ASSETS[expression] ?? FALLBACK;
