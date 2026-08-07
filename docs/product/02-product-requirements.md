@@ -10,11 +10,11 @@ ChristCalm provides:
 
 1. Emotion-filtered Scripture meditations with audio  
 2. One-tap SOS breathing with verses  
-3. Conversational Wisdom (RAG + LLM, guardrailed)  
-4. Prayer library + AI prayer entry point  
-5. Private journal with mood  
-6. Light progress (streak, minutes, practices)  
-7. Soft freemium after first practice  
+3. Conversational Wisdom (RAG + LLM, streaming, guardrailed; optional voice)  
+4. Private journal with mood (+ voice-to-text; optional Share with Wisdom)  
+5. **Journey** progress (streak, minutes, sessions, charts — recognition, not shame)  
+6. Conversion-first onboarding (27 steps + escalating paywalls) + soft freemium after first practice  
+7. Prayer **catalog** (API); dedicated Prayers UI is deferred in the reference app  
 
 ## Personas
 
@@ -32,27 +32,28 @@ ChristCalm provides:
 
 | # | Feature | Acceptance |
 |---|---------|------------|
-| 1 | Onboarding (27 screens, design v3.1) | Completes; draft persisted; auth gate; lands Home |
-| 2 | Auth (email + at least one social) | Session secure; `/me` works |
-| 3 | Home | Greeting, emotions, SOS, path, today’s word |
+| 1 | Onboarding (27 screens, design v3.1) | Completes; draft persisted; **escalating paywalls**; lands **auth** then Home |
+| 2 | Auth (email + Apple) | Session secure; `GET /auth/me` works |
+| 3 | Home | Stage-aware greeting, emotions, SOS, path, today’s word, first-steps / JourneyStats |
 | 4 | Meditate list + filter | Filter by emotion; cards show duration, Scripture |
-| 5 | Meditation player | Play/pause, scrub, verse, complete → stats |
+| 5 | Meditation player | Play/pause, scrub, verse, complete → progress + soft paywall |
 | 6 | SOS | 4-7-8 cycles; start/pause; rotating verses |
-| 7 | Wisdom chat | Text; history; quota; guardrails |
-| 8 | Journal | Create + list entries with mood tags |
-| 9 | Prayers library | Categories + list |
-| 10 | Profile | Name, stats, theme toggle, sign out |
-| 11 | Soft paywall | After first practice; monthly + annual |
-| 12 | Dual theme | Dark default; light available |
+| 7 | Wisdom chat | Text + **stream**; history; quota; guardrails |
+| 8 | Journal | Create + list; mood tags; voice optional |
+| 9 | **Journey** tab | Ranges, hero, chart, recent sessions |
+| 10 | Me (Profile) | Name/plan, theme, subscription, links; **not** primary stats home |
+| 11 | Monetization | Onboarding ladder + in-app paywall; monthly + annual via RevenueCat |
+| 12 | Dual theme | **Light default**; dark opt-in |
 
-### Should ship
+### Should ship / shipped in reference
 
 | Feature | Notes |
 |---------|--------|
-| Wisdom voice | Mic → transcribe → chat |
-| Analytics events | Anonymized product events |
+| Wisdom voice | Mic → S3 presign → Transcribe → chat/journal |
+| Analytics events | Local buffer + `POST /analytics/events` (no journal/wisdom bodies) |
 | Offline-ready covers | Bundle cover images client-side |
-| First-steps checklist on Home | After onboarding |
+| First-steps checklist on Home | New-user stage |
+| Prayers library UI | Catalog API yes; **tab deferred** |
 
 ### Won’t ship in MVP
 

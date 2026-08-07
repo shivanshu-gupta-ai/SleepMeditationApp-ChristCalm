@@ -80,7 +80,7 @@ Use this as the **implementation order** for an AI agent or human team rebuildin
 3. Sync on auth.  
 4. Gate first-run → onboarding once.  
 
-**Exit:** New install walks Welcome → Home without paywall.
+**Exit:** New install walks full onboarding (incl. paywall ladder) → auth → Home.
 
 ---
 
@@ -173,7 +173,7 @@ Ship dual theme Nest dark + Cooper light from docs/product/05.
 
 ## What “done” looks like (demo script)
 
-1. Fresh install → onboarding → covenant → Home  
+1. Fresh install → onboarding (incl. paywalls) → auth → Home  
 2. Tap **Anxious** → open **Cast Your Cares** → play 30s → complete  
 3. Soft paywall appears → dismiss  
 4. Open SOS → one breathing cycle  

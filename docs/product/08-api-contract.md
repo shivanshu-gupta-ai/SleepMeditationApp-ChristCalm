@@ -11,26 +11,15 @@ This contract is **stack-agnostic**. Implement with FastAPI, Express, Vapor, Spr
 
 ## Auth
 
+**Reference app:** Cognito handles email sign-up/sign-in and Apple Hosted UI on the **client**. The API validates Bearer JWTs and exposes user/config endpoints (no password endpoints on the API).
+
 | Method | Path | Auth | Notes |
 |--------|------|------|-------|
-| GET | `/auth/config` | No | Public client ids / flags |
-| POST | `/auth/signup` | No | Email + password |
-| POST | `/auth/signin` | No | Returns token + user |
+| GET | `/auth/config` | No | Public client ids / Apple-ready flags |
 | GET | `/auth/me` | Yes | Current user |
-| POST | `/auth/onboarding` | Yes | Save onboarding draft |
-| GET | `/auth/google/start` | No | OAuth start (if used) |
-| GET | `/auth/google/callback` | No | OAuth callback |
+| POST | `/auth/onboarding` | Yes | Save onboarding draft after sign-in |
 
-### POST `/auth/signup`
-
-```json
-// request
-{ "email": "a@b.com", "password": "…", "name": "Ada" }
-// response
-{ "token": "…", "user": { /* UserOut */ } }
-```
-
-Rate limit guidance: ~30 / 15 min / IP for signup & signin.
+Optional alternate stacks may implement password `signup`/`signin` on the API; this monorepo does **not**.
 
 ### POST `/auth/onboarding`
 
@@ -196,12 +185,16 @@ Rate-limited per user (~12/hour). Message stored only in `{prefix}-user-feedback
 |--------|------|------|------|
 | GET | `/wisdom/status` | No | Corpus/model diagnostic |
 | GET | `/wisdom/quota` | Yes | Remaining monthly turns |
-| POST | `/wisdom/chat` | Yes | **~12 / hour / user** (+ IP) |
+| POST | `/wisdom/chat` | Yes | Full reply; **~12 / hour / user** burst |
+| POST | `/wisdom/chat/stream` | Yes | **SSE** token stream (primary client path) |
 | GET | `/wisdom/history` | Yes | Past turns |
 | POST | `/wisdom/voice/presign` | Yes | Upload URL for audio |
-| POST | `/wisdom/voice/transcribe` | Yes | Job → text |
-| POST | `/ai/prayer` | Yes | Legacy alias → wisdom-style |
+| POST | `/wisdom/voice/transcribe` | Yes | Speech → text (counts toward AI quota) |
 | GET | `/ai/prayers/history` | Yes | Legacy |
+
+### POST `/wisdom/chat/stream`
+
+Same body as `/wisdom/chat`. Response: `text/event-stream` with incremental content events (reference client accumulates deltas into the assistant bubble). Falls back to non-stream chat when unavailable.
 
 ### POST `/wisdom/chat`
 

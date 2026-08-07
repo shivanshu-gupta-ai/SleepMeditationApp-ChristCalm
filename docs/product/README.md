@@ -1,5 +1,7 @@
 # ChristCalm — Complete product & engineering pack
 
+**Last synced to code:** 2026-08-07 (Journey tab, light theme default, 27-step onboarding, streaming Wisdom, Apple auth).
+
 **Single folder that explains everything** about ChristCalm: product, UX, design, content, API, AI, architecture, repo structure, deploy, config, and how to rebuild in **any language** (Swift, Kotlin, React Native, Flutter, web, …).
 
 Implementation of the current Expo + FastAPI + AWS stack is documented in full. Treat **product behavior + contracts** as mandatory; treat **AWS/Expo paths** as the reference blueprint you may reimplement.
@@ -21,7 +23,7 @@ Implementation of the current Expo + FastAPI + AWS stack is documented in full. 
 
 ### Definition of done (MVP)
 
-User can: complete onboarding → auth → emotion → meditation complete → SOS → Wisdom (guardrailed) → journal → profile stats → soft paywall after first practice.
+User can: complete **27-step onboarding** (including escalating paywalls) → **auth** (email or Apple) → Home emotion → meditation complete → SOS → Wisdom (streaming + optional voice) → journal → **Journey** stats → soft paywall after first practice.
 
 ---
 
@@ -80,20 +82,23 @@ Open → “How do you feel?” → Meditation (or SOS / Wisdom)
      → Complete practice → progress + soft paywall
 ```
 
-## Feature modules
+## Feature modules (current product)
 
-| Module | Job |
-|--------|-----|
-| Onboarding | Personalize + covenant + how it works |
-| Auth | Email + Apple/Google via Cognito |
-| Home | Path, emotions, SOS, today’s word |
-| Meditate | Filter + play sessions |
-| SOS | 4-7-8 + verses |
-| Wisdom | Guardrailed RAG chat |
-| Prayers | Categories + AI entry |
-| Journal | Mood + text |
-| Profile | Stats, theme, subscription |
-| Paywall | Soft freemium |
+| Module | Job | Nav |
+|--------|-----|-----|
+| Onboarding | 27 steps: personalize → insight → loss/hope → commitment → escalating paywalls → how it works | `/onboarding` |
+| Auth | Email + password; **Sign in with Apple** (Cognito Hosted UI) | `/(auth)/*` |
+| Home | Stage-aware greeting, Today’s Path, emotions, today’s word, quick paths | Tab |
+| Meditate | Emotion filter + session cards → full-screen player | Tab |
+| Wisdom | Guardrailed RAG chat (**SSE stream** + optional voice) | Tab |
+| Journey | Practice recognition: ranges, chart, breakdown, recent sessions | Tab (`stats`) |
+| Me | Account, plan, theme, links to Journey / Journal / SOS | Tab (`profile`) |
+| Journal | Mood + text + voice-to-text; open from Me / Home | Hidden tab |
+| SOS | 4-7-8 breathing + rotating verses | Modal `/sos` |
+| Paywall | Onboarding ladder + in-app modal + soft after first practice | Modal `/paywall` |
+| Prayers | Catalog API still ships; **UI deferred** (hidden tab) | Deferred |
+
+**Visible tabs:** Home · Meditate · Wisdom · Journey · Me (+ center **Start Calm** FAB).
 
 ---
 
@@ -102,13 +107,13 @@ Open → “How do you feel?” → Meditation (or SOS / Wisdom)
 | Layer | Choice |
 |-------|--------|
 | Client | Expo 54 · React Native · TypeScript · Expo Router |
-| API | FastAPI + Mangum on AWS Lambda |
+| API | FastAPI + Mangum on AWS Lambda (`backend/api/routes/*`) |
 | Edge | API Gateway HTTP API |
 | Data | DynamoDB (on-demand) |
-| Auth | Amazon Cognito (email + Apple + Google) |
+| Auth | Amazon Cognito (email + **Apple**; Google IdP optional in infra only) |
 | AI | Amazon Bedrock Converse + multi-model fallback |
 | Voice | S3 + Amazon Transcribe |
-| Payments | RevenueCat |
+| Payments | RevenueCat (`christcalm_premium`) |
 | Secrets | SSM Parameter Store |
 | IaC | Terraform |
 | CI package | CodeBuild (`config/ci/buildspec.yml`) |
@@ -123,16 +128,16 @@ Any equivalent stack is valid if **01–11** are satisfied.
 ChristCalmApp/
 ├── docs/              ★ Documentation hub
 │   ├── product/       ★ You are here — complete product pack (01–18)
-│   ├── design/        → product design system + onboarding
 │   ├── architecture/  Stack notes + links to product 12–18
-│   └── engineering/   Testing, RevenueCat, ops for this repo
-├── frontend/          Expo app
-├── backend/           FastAPI + AI corpus
+│   ├── engineering/   Testing, RevenueCat, ops for this repo
+│   └── screenshots/   Generated screen catalog PDF
+├── frontend/          Expo app (features: auth · onboarding · stats · subscriptions)
+├── backend/           FastAPI + api/routes + AI corpus
 ├── infrastructure/    Terraform AWS
 ├── config/            Env templates, auth, buildspec
-├── assets/            Meditation media sources
+├── assets/            Meditation media sources (audio gitignored)
 ├── scripts/           deploy, preview, sync, bootstrap
-└── tests/             Pytest
+└── tests/             Pytest (reports local-only)
 ```
 
 Detail: [12-repository-structure.md](./12-repository-structure.md) · Docs hub: [../README.md](../README.md)

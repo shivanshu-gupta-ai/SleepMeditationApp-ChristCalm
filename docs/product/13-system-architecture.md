@@ -58,8 +58,7 @@
      ┌───────┴────────┬──────────────┐
      ▼                ▼              ▼
  Bedrock LLM     Cognito IdP    S3 + Transcribe
- (Wisdom RAG)    (email/Apple/  (voice notes)
-                  Google)
+ (Wisdom RAG)    (email+Apple)  (voice notes)
      │
      ▼
  SSM Parameter Store (secrets at cold start)
@@ -282,7 +281,7 @@ Default: **serverless** — no Fargate/Docker required.
    [DynamoDB]    [Cognito]      [Bedrock]    [S3 voice]
         ▲             │
         │             ▼
-   [SSM secrets]  [Apple/Google IdP]
+   [SSM secrets]  [Apple IdP]
         ▲
    [Terraform apply]
         ▲
@@ -316,7 +315,7 @@ Warm instances skip steps 2–3 cost.
 |----------|-----|
 | Serverless API | Idle cost ~0; mobile traffic spiky |
 | Catalog in code | Simple, fast, versioned with deploy |
-| Cognito | Email + Apple + Google federation |
+| Cognito | Email + Apple federation (Google optional in infra; not in reference client) |
 | Bedrock | IAM auth, multi-model fallback, no long-lived AI keys in app |
 | RevenueCat | Cross-platform entitlements |
 | SSM-first secrets | No secret `.env` in git or laptops long-term |

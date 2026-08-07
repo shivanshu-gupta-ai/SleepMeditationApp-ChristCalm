@@ -20,9 +20,14 @@ One codebase for both.
 
 ```
 backend/
-├── server.py          # App, middleware, routes, Pydantic I/O models
+├── server.py          # App, middleware, include_router
 ├── handler.py         # Mangum
 ├── seed_data.py       # EMOTIONS, MEDITATIONS, PRAYERS, DEVOTIONALS
+├── api/
+│   ├── models.py
+│   ├── deps.py
+│   ├── middleware.py
+│   └── routes/        # health, auth, catalog, user_content, wisdom, billing, analytics
 ├── auth/cognito.py
 ├── ai/
 │   ├── llm.py
@@ -36,7 +41,7 @@ backend/
 └── data/dynamodb.py
 ```
 
-Lambda zip (via CodeBuild) includes: `server.py`, `handler.py`, `seed_data.py`, packages `auth/`, `ai/` (with corpus), `core/`, `data/`, and `requirements-lambda.txt` install.
+Lambda zip (via CodeBuild) includes: `server.py`, `handler.py`, `seed_data.py`, packages `api/`, `auth/`, `ai/` (with corpus), `core/`, `data/`, and `requirements-lambda.txt` install.
 
 ---
 
@@ -71,7 +76,7 @@ Order of precedence (typical):
 
 ---
 
-## Routing map (`server.py`)
+## Routing map (`api/routes/*` via `server.py`)
 
 Prefix: `/api`
 
@@ -80,32 +85,31 @@ Prefix: `/api`
 
 ### Auth
 - `GET /auth/config`
-- `POST /auth/signup`, `POST /auth/signin`
 - `GET /auth/me`
 - `POST /auth/onboarding`
-- OAuth Google start/callback (if enabled)
-- Cognito path: Bearer validated in `get_current_user`
+- Cognito Bearer validated in `get_current_user` (email + Apple tokens)
 
 ### Catalog
 - `GET /emotions`
 - `GET /meditations`, `GET /meditations/{id}`
+- `POST /meditations/rate`, `POST /meditations/complete`
+- `GET /meditations/ratings`
 - `GET /prayers`
 - `GET /devotional/today`
 
 ### User content
 - `POST /mood/log`, `GET /mood/history`
 - `POST /journal`, `GET /journal`
-- `POST /meditations/complete`
+- `POST /feedback`, `GET /feedback`
 
 ### Wisdom / AI
 - `GET /wisdom/status`
 - `GET /wisdom/quota`
 - `POST /wisdom/chat`
+- `POST /wisdom/chat/stream` (SSE)
 - `GET /wisdom/history`
 - `POST /wisdom/voice/presign`
 - `POST /wisdom/voice/transcribe`
-- `POST /ai/prayer` (legacy alias)
-- `GET /ai/prayers/history`
 
 ### Subscriptions
 - `POST /subscription/sync`

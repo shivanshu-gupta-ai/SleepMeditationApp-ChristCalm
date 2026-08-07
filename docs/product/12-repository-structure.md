@@ -13,14 +13,14 @@ Root path: `ChristCalmApp/` (also published as SleepMeditationApp-ChristCalm).
 ChristCalmApp/
 ├── docs/                         # ★ Documentation hub
 │   ├── product/                  # Canonical product + architecture pack (this folder)
-│   ├── design/                   # Design redirects → product/03–05
 │   ├── architecture/             # Stack notes → product/12–18
-│   └── engineering/              # Testing, RevenueCat, ops
+│   ├── engineering/              # Testing, RevenueCat, ops
+│   └── screenshots/              # Screen catalog PDF
 ├── README.md                     # Quick start + links into docs/product/
 │
 ├── frontend/                     # Mobile/web client (Expo Router + React Native)
 │   ├── app/                      # File-based routes only
-│   ├── src/                      # Features, UI kit, theme, API client
+│   ├── src/                      # Features (auth, onboarding, stats, subscriptions), UI, theme
 │   ├── assets/                   # Bundled images, Grace, meditation covers
 │   ├── scripts/                  # cmd-guard, sync-shims
 │   ├── package.json
@@ -30,9 +30,10 @@ ChristCalmApp/
 │   └── tsconfig.json
 │
 ├── backend/                      # FastAPI API (local uvicorn OR Lambda via Mangum)
-│   ├── server.py                 # Routes, middleware, models
+│   ├── server.py                 # App + include_router
 │   ├── handler.py                # Lambda entry (Mangum)
 │   ├── seed_data.py              # Emotions, meditations, prayers, devotionals
+│   ├── api/                      # models, deps, middleware, routes/*
 │   ├── requirements.txt          # Local / full deps
 │   ├── requirements-lambda.txt   # Slim Lambda package deps
 │   ├── auth/                     # Cognito JWT validation, user upsert
@@ -81,16 +82,21 @@ ChristCalmApp/
 │   ├── preview.sh
 │   ├── run-backend-local.sh
 │   ├── sync-env-from-aws.sh
+│   ├── sync-env-from-github.sh
+│   ├── push-env-to-github.sh
 │   ├── setup-config.sh
 │   ├── seed-test-user.sh
 │   ├── seed-apple-ssm-once.sh
+│   ├── enable-apple-sign-in.sh
 │   ├── check-bedrock-models.sh
 │   ├── sync-meditation-covers.sh
+│   ├── capture-screen-catalog.mjs
 │   ├── build-lambda.sh
 │   └── lib/aws-auth.sh
 │
 ├── tests/                        # Pytest (backend)
 │   ├── backend/
+│   ├── reports/                  # Local/CI artifacts (gitignored)
 │   ├── conftest.py
 │   └── README.md
 │
@@ -114,7 +120,7 @@ ChristCalmApp/
 | UI kit | `frontend/src/components/ui/` |
 | HTTP client | `frontend/src/api/client.ts` |
 | Analytics client | `frontend/src/utils/analytics.ts` |
-| API routes | `backend/server.py` |
+| API routes | `backend/api/routes/*` (mounted by `server.py`) |
 | Auth (server) | `backend/auth/cognito.py` |
 | Wisdom AI | `backend/ai/*` + `backend/ai/corpus/` |
 | Catalog seed | `backend/seed_data.py` |
@@ -134,23 +140,23 @@ ChristCalmApp/
 
 | File | Screen |
 |------|--------|
-| `index.tsx` | Boot / redirect (auth, onboarding, home) |
-| `_layout.tsx` | Root providers (theme, auth, revenuecat, fonts) |
-| `onboarding.tsx` | Multi-step onboarding |
-| `paywall.tsx` | Subscription paywall |
-| `sos.tsx` | 4-7-8 panic relief |
-| `wisdom.tsx` | Wisdom chat (AI companion) |
-| `oauth.tsx` | OAuth return |
+| `index.tsx` | Gate: onboarding → sign-in → home |
+| `_layout.tsx` | Root providers (auth, connectivity, theme, revenuecat, fonts) |
+| `onboarding.tsx` | 27-step onboarding |
+| `paywall.tsx` | In-app subscription paywall (modal) |
+| `sos.tsx` | 4-7-8 panic relief (modal) |
+| `oauth.tsx` | Hosted UI / Apple return |
 | `meditation/[id].tsx` | Full-screen player |
 | `(tabs)/_layout.tsx` | Floating tab bar + FAB |
 | `(tabs)/home.tsx` | Home dashboard |
 | `(tabs)/meditate.tsx` | Meditation library |
-| `(tabs)/wisdom.tsx` | Wisdom chat |
-| `(tabs)/journal.tsx` | Journal |
-| `(tabs)/prayers.tsx` | Prayer library |
-| `(tabs)/profile.tsx` | Profile / Me |
-| `(auth)/sign-in.tsx` | Sign in |
-| `(auth)/sign-up.tsx` | Sign up |
+| `(tabs)/wisdom.tsx` | Wisdom chat (streaming) |
+| `(tabs)/stats.tsx` | **Journey** tab |
+| `(tabs)/profile.tsx` | Me |
+| `(tabs)/journal.tsx` | Journal (hidden tab; open from Me) |
+| `(tabs)/prayers.tsx` | Prayer library (**deferred** / hidden) |
+| `(auth)/sign-in.tsx` | Sign in + create-account mode |
+| `(auth)/sign-up.tsx` | Sign up (legacy route still present) |
 | `(auth)/confirm-email.tsx` | Email confirm |
 | `(auth)/forgot-password.tsx` | Forgot password |
 | `(auth)/reset-password.tsx` | Reset password |
@@ -167,7 +173,8 @@ src/
 │   ├── emotion-icons.ts
 │   └── meditation-covers.ts      # Local cover map by track
 ├── context/
-│   ├── ThemeContext.tsx          # light / dark / system
+│   ├── ThemeContext.tsx          # light default / dark opt-in
+│   ├── ConnectivityContext.tsx
 │   └── ViewportContext.tsx
 ├── features/
 │   ├── auth/
@@ -233,7 +240,8 @@ src/
 
 ```
 backend/
-├── server.py           # FastAPI app, all /api routes, Pydantic models
+├── server.py           # FastAPI app + include_router for api.routes
+├── api/                # models, deps, middleware, routes/*
 ├── handler.py          # Mangum(app) for Lambda
 ├── seed_data.py        # In-memory catalog
 ├── auth/cognito.py     # Validate Cognito access token → user
@@ -253,7 +261,8 @@ backend/
 
 | Module | Responsibility |
 |--------|----------------|
-| `server.py` | HTTP surface, middleware (CORS, timing, catalog cache), orchestration |
+| `server.py` | App factory, middleware, mounts `api.routes` |
+| `api/routes/*` | health, auth, catalog, user_content, wisdom, billing, analytics |
 | `auth/cognito.py` | JWT/Cognito GetUser, Dynamo upsert |
 | `ai/llm.py` | Model invocation, fallbacks, system prompts |
 | `ai/wisdom_rag.py` | Load corpus, retrieve passages |
@@ -352,7 +361,7 @@ tests/
 | `frontend/app/*` | App routes / screens |
 | `frontend/src/features/*` | Domain modules |
 | `frontend/src/theme` | Design tokens |
-| `backend/server.py` | API router |
+| `backend/api/routes/*` | API surface |
 | `backend/ai` | AI service package |
 | `backend/seed_data.py` | Content CMS or seed JSON |
 | `infrastructure/terraform` | IaC of choice |

@@ -12,21 +12,29 @@ High-converting first-run experience: personalization → insight → loss avers
 ```
 app/onboarding.tsx                    → thin Expo Router entry
 src/features/onboarding/
-  OnboardingNavigator.tsx             → layout shell + CTA footer
+  OnboardingNavigator.tsx             → layout shell + CTA footer + intro swipe
   OnboardingContext.tsx               → shared draft, patch/toggle, Next/Back, canProceed
-  sequence.ts                         → 27 screens (0–26), CTAs, paywall rules
-  copy.ts                             → design-spec titles + option catalogs
+  sequence.ts                         → 27 screens (0–26), CTAs, paywall ladder rules
+  copy.ts                             → titles, option catalogs, paywall marketing copy
   types.ts                            → route ids, Grace expressions
+  deriveProfile.ts                    → spiritual profile from answers
+  lifetimeStats.ts                    → years-lost / reclaim math
+  paywallConfig.ts                    → timer keys + tier config
+  mascot/                             → GraceActor, motion profiles, expression map
   components/
     ProgressBar.tsx                   → continuous flow progress
     OnboardingStepLayout.tsx          → shell (back, progress, footer CTA)
-    GraceMoodImage / Option / Question
-  screens/                            → one component per design screen
+    GraceMoodImage / OnboardingGrace  → thin wrappers over GraceActor
+    IntroVisual / IntroHeroSlide      → welcome + benefit carousel visuals
+    IntensityMascot / YearDotGrid
+    EscalatingPaywall / ScarcityTimer
+    OnboardingOption / OnboardingQuestion
+  screens/                            → one component per design screen (all 27)
 ```
 
 **Navigation model:** single route `/onboarding` with an internal step index.  
-**State:** `OnboardingProvider` + `useOnboarding()` — all answers live in one draft, persisted to AsyncStorage `cc_onboarding_draft`.  
-**Exit:** last CTA → `markOnboardingComplete` → `/(auth)/sign-up`.
+**State:** `OnboardingProvider` + `useOnboarding()` — draft in AsyncStorage `cc_onboarding_draft`.  
+**Exit:** last CTA (`howAppWorks`) → `markOnboardingComplete` → **`/(auth)/sign-in`** (create-account mode available). Welcome secondary “Already have an account?” also completes onboarding and opens sign-in.
 
 ## Screen sequence (0–26)
 
@@ -34,7 +42,7 @@ src/features/onboarding/
 |---|-----|-------|------|
 | 0 | `splash` | Splash | static |
 | 1 | `welcome` | Welcome + Scripture | hook |
-| 2–4 | `benefit1`…`benefit3` | Benefits | value |
+| 2–4 | `benefit1`…`benefit3` | Benefits (swipeable intro with welcome) | value |
 | 5 | `name` | Name | input |
 | 6 | `heart` | Heart feelings | multi-select |
 | 7 | `faith` | Faith journey | single |
@@ -53,15 +61,15 @@ src/features/onboarding/
 | 21 | `commitment` | Commitment ritual | ritual |
 | 22 | `statsPreview` | Before / after | motivation |
 | 23–25 | `paywallFull` / `paywall50` / `paywall80` | Escalating paywalls | monetization |
-| 26 | `howAppWorks` | How the app works | education → Home |
+| 26 | `howAppWorks` | How the app works | education → **auth** |
 
-Copy, options, timers, and Grace expression map: **see Onboarding-Design-Spec.md** (source of truth).
+Copy, options, timers, and Grace expression map: **see Onboarding-Design-Spec.md** and live `copy.ts` / `expressionMap.ts`.
 
 ## Progress
 
-- `ProgressBar` spans the **entire** flow (`(step + 1) / 27`).
-- Splash hides the bar; calculating / some paywalls hide **back**.
-- Paywall ladder: after leaving full price, back does **not** return to an earlier offer tier (`previousStepIndex` in `sequence.ts`).
+- `ProgressBar` spans the flow (`(step + 1) / 27`).
+- Splash and finale (`howAppWorks`) hide the bar; some paywall tiers hide **back**.
+- Paywall ladder: after leaving full price, back does **not** return to an earlier offer tier (`previousStepIndex` in `sequence.ts` — 50%/80% jump to `statsPreview`).
 
 ## Data model (client)
 
@@ -74,7 +82,7 @@ interface OnboardingDraft {
   preferredTime: string | null;
   desiredSupport: string[];
   ageRange: string | null;
-  dailyLoad: number | null;       // 0–10
+  dailyLoad: number | null;       // 0–10 intensity
   profileType: string | null;     // derived
   commitmentAccepted: boolean;
   commitmentDate: string | null;
@@ -83,36 +91,36 @@ interface OnboardingDraft {
 }
 ```
 
-Synced fields after auth: `POST /auth/onboarding` (`draftToApiPayload`).
+Synced after auth: `POST /api/auth/onboarding` (`draftToApiPayload`).
 
-## Timers (paywalls)
+## Timers (paywalls) — implemented
 
-| Offer | Duration | Storage key (planned) |
-|-------|----------|------------------------|
+| Offer | Duration | Storage key |
+|-------|----------|-------------|
 | Full price | 12 min | `cc_paywall_full_expiry` |
 | 50% off | 5 min | `cc_paywall_50_expiry` |
 | 80% off | 3 min | `cc_paywall_80_expiry` |
 
-Persist expiry timestamps in AsyncStorage (spec §4 / §8). Not implemented in skeleton.
+`ScarcityTimer` persists expiry timestamps in AsyncStorage; `EscalatingPaywall` purchases via RevenueCat default offering.
 
 ## Implementation status
 
 | Layer | Status |
 |-------|--------|
-| Sequence + navigator + ProgressBar | Done |
-| OnboardingContext (shared answers) | Done |
-| Screens 0–5 UI | Done |
-| Screens 6–10 personalization questions | Done |
-| Screens 11–15 (facts → profile reveal) | Done |
-| Screens 16–19 (lifetime loss → reclaim) | Done |
-| Screens 20–22 (proof · commitment · stats) | Done |
-| Screens 23–25 escalating paywalls + timers | Done (RevenueCat purchase) |
-| Screen 26 How the App Works → sign-in | Done (staggered cards + exit fade) |
-| Scarcity timers + RevenueCat on paywalls | Pending |
-| Profile derivation math | Pending |
+| Sequence + navigator + ProgressBar | **Done** |
+| OnboardingContext (shared answers) | **Done** |
+| All screens 0–26 UI | **Done** |
+| GraceActor motion + mood assets (PNG) | **Done** |
+| Intro carousel (welcome + benefits) | **Done** |
+| Profile derivation (`deriveProfile`) | **Done** |
+| Lifetime loss / reclaim math | **Done** |
+| Escalating paywalls + scarcity timers | **Done** |
+| RevenueCat purchase on paywall tiers | **Done** |
+| Exit → sign-in | **Done** |
 
 ## Principles (product)
 
-- Copy: headline + at most one short line; Grace is the visual focus (`GraceMoodImage`).  
-- Motion: fade + gentle slide (250–350ms); subtle pulse only on final timer.  
-- Soft paywall after first practice on Home remains a **secondary** trigger; in-flow paywalls are primary conversion.  
+- Copy: headline + at most one short line; Grace is the visual focus (`GraceMoodImage` / `GraceActor`).  
+- Motion: fade + gentle slide; respect reduce-motion.  
+- Soft paywall after first practice on Home remains a **secondary** trigger; **in-flow paywalls are primary conversion**.  
+- Theme after launch: **light default** (onboarding itself uses the shared theme).  

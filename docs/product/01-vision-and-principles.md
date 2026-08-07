@@ -18,7 +18,7 @@ Positioning: **high-end wellness (Calm / Headspace caliber) + biblical depth.**
 
 ## Non-negotiable principles
 
-1. **Light + dark themes** — Full dual theme; default **dark** (Nest). Light is Cooper.
+1. **Light + dark themes** — Full dual theme; default **light (Cooper)**. Dark (Nest) is explicit opt-in only (OS dark does not force the app).
 2. **One screen, one job** — Clear hierarchy; cards as atoms; avoid nested cards.
 3. **Stack independence** — Product truth lives in contracts and UX, not in Expo/Swift/Flutter APIs.
 

@@ -2,31 +2,36 @@
 
 ## Information architecture
 
-### Primary navigation
+### Primary navigation (current app)
 
 Floating bottom tab bar (pill) + center **FAB** (“Start calm”).
 
-| Slot | Label | Job |
-|------|-------|-----|
-| 1 | **Home** | Begin calm today |
-| 2 | **Meditate** | Pick & play a session |
-| 3 | **FAB** | Sheet: emotion / SOS / Wisdom |
-| 4 | **Wisdom** | Share a heart concern |
-| 5 | **Me** | Progress, journal entry, profile |
+| Slot | Label | Route | Job |
+|------|-------|-------|-----|
+| 1 | **Home** | `(tabs)/home` | Begin calm today |
+| 2 | **Meditate** | `(tabs)/meditate` | Pick & play a session |
+| 3 | **FAB** | — | Sheet: How I feel · SOS · Wisdom |
+| 4 | **Wisdom** | `(tabs)/wisdom` | Share a heart concern |
+| 5 | **Journey** | `(tabs)/stats` | Practice recognition & progress |
+| 6 | **Me** | `(tabs)/profile` | Account, plan, theme, deep links |
 
-**Note:** Journal may be its own tab or under Me. Prayer library may live under Home card, Meditate section, or dedicated route. Current reference app uses tabs: Home · Meditate · Wisdom · Journal · Profile, plus stack routes for SOS, player, paywall, auth, onboarding, AI prayer.
+**Hidden tab routes** (`href: null`):
+
+| Route | Access |
+|-------|--------|
+| **Journal** | Me → Journal · Home quick path · Share with Wisdom |
+| **Prayers** | **Deferred** — screen file exists but not in nav; catalog API still live |
 
 ### Stack / modal routes (not tabs)
 
 | Route | Purpose |
 |-------|---------|
-| Onboarding | First-run wizard |
-| Auth (sign-in, sign-up, confirm, forgot, reset) | Account |
-| OAuth callback | Social return |
-| Meditation player `/meditation/:id` | Immersive player |
-| SOS | Panic relief |
-| Paywall | Subscription |
-| AI Prayer | Legacy / alternate entry to Wisdom-style prayer |
+| `/onboarding` | First-run wizard (27 steps) |
+| `/(auth)/*` | Sign-in (unified sign-up mode), confirm, forgot, reset |
+| `/oauth` | Apple / Hosted UI return |
+| `/meditation/:id` | Immersive player |
+| `/sos` | Panic relief (modal) |
+| `/paywall` | In-app subscription (modal) |
 
 ---
 
@@ -35,9 +40,10 @@ Floating bottom tab bar (pill) + center **FAB** (“Start calm”).
 ### A. First launch → first calm
 
 ```
-Install → Onboarding → (Auth if required) → Home
+Install → Onboarding (27 steps, incl. escalating paywalls)
+  → Auth (email or Apple) → Home
   → Tap emotion → Meditate filtered → Open session → Complete
-  → Soft paywall (optional dismiss) → Profile stats updated
+  → Soft paywall (optional dismiss) → Journey stats updated
 ```
 
 ### B. Panic / hard moment
@@ -139,71 +145,89 @@ Rotating Scripture
 Exit
 ```
 
-### 5. Wisdom — “Share a concern”
+### 5. Wisdom — “What’s on your heart?”
 
 ```
 Header + New + quota line
-Message list (bubbles)
-Starter chips when empty
+Message list (bubbles; streaming deltas)
+Starter chips when empty (Anxious / Grieving / Ashamed / Angry / Doubt)
 Composer: mic | text | Send
 ```
 
-**Empty starters (examples)**
+**Behavior (current):** primary path is **SSE streaming** (`POST /wisdom/chat/stream`) with non-stream fallback; voice via presign + Transcribe.
 
-- “I’m anxious and can’t settle.”  
-- “I feel alone tonight.”  
-- “I’m grieving and don’t know what to pray.”  
-
-### 6. Journal
+### 6. Journey — “Your Journey”
 
 ```
-Composer: mood tags + text + save
+Range: week | month | all
+JourneyHero (minutes · sessions · streak · rhythm)
+WeekActivityChart
+ReflectionInsight (when available)
+PracticeBreakdown
+MomentsCelebrate (milestones)
+RecentSessions
+```
+
+Empty: invitation to Meditate — recognition framing, not gamified pressure.
+
+### 7. Journal
+
+```
+Composer: mood tags + text + voice-to-text + save
 List of past entries (date, mood, snippet)
-Optional: share concern to Wisdom (body not required in analytics)
+Share with Wisdom (draft into Wisdom input; body not in analytics)
 ```
 
-### 7. Prayers
+Hidden tab — open from **Me** or Home quick path.
+
+### 8. Prayers (deferred UI)
+
+Catalog API (`GET /prayers`) remains. Reference app **hides** the Prayers tab. Do not document as primary nav until re-enabled.
+
+### 9. Profile / Me
 
 ```
-Categories: Morning, Evening, Anxiety, Gratitude, Healing
-List of prayers (title + body); premium gated if configured
-Entry to AI Prayer / Wisdom
-```
-
-### 8. Profile / Me
-
-```
-Avatar / name / plan badge
-Progress ring
-Stats: streak · minutes · practices
-Theme cycle (dark / light / system)
-Manage subscription
+Avatar initial / name / Free vs Premium
+Appearance: light ↔ dark (light is product default)
+Focus / reminder prefs
+Feedback card
+Links: Journey · Journal · Panic Relief (SOS) · Wisdom
+Unlock / Manage subscription (RevenueCat)
 Sign out
 ```
 
-### 9. Paywall
+**Stats live on Journey**, not a progress ring on Me.
+
+### 10. Paywall
+
+**Primary conversion — onboarding ladder** (see [04-onboarding.md](./04-onboarding.md)):
+
+| Tier | Role | Scarcity timer |
+|------|------|----------------|
+| Full | Plan picker (annual/monthly) | 12 min |
+| 50% | Discount | 5 min |
+| 80% | Final offer | 3 min |
+
+**Secondary — in-app** (`/paywall` modal + soft sheet after first practice):
 
 ```
-Warm headline (invitational)
+Warm headline
 Feature checklist
-Monthly card | Annual card (highlighted)
-Restore purchases
-Not now (dismiss)
+Monthly | Annual (RevenueCat packages)
+Restore · Not now
 ```
 
-**Tone:** Soft, transparent. No fake timers.
+### 11. Auth screens
 
-### 10. Auth screens
+- Unified **sign-in** with Create account mode (`?mode=signin|signup`)  
+- Confirm email · Forgot / reset password  
+- **Sign in with Apple** (Hosted UI + PKCE) when Cognito domain configured  
+- Google Sign-In **not implemented** in the client  
+- `/oauth` return handler  
 
-- Sign in / Sign up (email + password)  
-- Confirm email (if provider requires)  
-- Forgot / reset password  
-- Social: Apple, Google (as available)  
-- OAuth return handler  
+### 12. Onboarding
 
-### 11. Onboarding
-
-Full conversion flow (27 screens): design in [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md), product overview in [04-onboarding.md](./04-onboarding.md).
+Full conversion flow (**27 screens**, indices 0–26): design in [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md), overview in [04-onboarding.md](./04-onboarding.md). Exit → **auth**, then Home after session.
 
 ---
 
@@ -214,7 +238,7 @@ Full conversion flow (27 screens): design in [Onboarding-Design-Spec.md](./Onboa
 | Journal | “Cast one care here” | Write |
 | Meditate filter empty | Grace resting | Clear filter |
 | Wisdom | Grace listening + starters | Type or mic |
-| Progress zero | “Your first session unlocks this” | Go Home |
+| Journey zero | “Your first session unlocks this” | Meditate |
 
 ## Contextual chrome rules
 

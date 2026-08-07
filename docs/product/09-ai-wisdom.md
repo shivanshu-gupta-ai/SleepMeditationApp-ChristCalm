@@ -19,12 +19,15 @@ Client message
     → LLM generate (system prompt + voice guide + chunks + user text)
     → Store turn
     → Return reply + quota
+         OR stream deltas via POST /wisdom/chat/stream (SSE)
 ```
 
-Voice path (optional):
+**Reference client:** prefers **streaming** (`/wisdom/chat/stream`) and falls back to full `/wisdom/chat`.
+
+Voice path (optional; also used by Journal voice-to-text):
 
 ```
-Mic audio → presign upload → object storage → speech-to-text → same chat pipeline
+Mic audio → POST /wisdom/voice/presign → S3 PUT → POST /wisdom/voice/transcribe → text → chat pipeline
 ```
 
 ---

@@ -265,7 +265,7 @@ Short education cards:
 
 Optional first practices checklist.
 
-**CTA:** Start my journey → Home
+**CTA:** Start my journey → **sign-in / create account**, then Home after session
 
 ---
 
@@ -401,7 +401,7 @@ const TIMER_CONFIG = {
 
 - **Grace is the hero** — text never competes; prefer illustration + short lines
 - Progress: continuous thin bar only (no step-number chrome)
-- Soft 3D / cinematic Grace assets: `frontend/assets/images/onboarding/grace-*.jpg` (Imagine)
+- Soft 3D / cinematic Grace assets: `frontend/assets/images/onboarding/grace-*.png` (+ intensity frames)
 - Dot grid (17–18): code-drawn circles (exact counts) — high contrast, spare labels
 - Timer on final paywall: subtle pulse
 - Transitions: fade + gentle slide-up (250–350ms)

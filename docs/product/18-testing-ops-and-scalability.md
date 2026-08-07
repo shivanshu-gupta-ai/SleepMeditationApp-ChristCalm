@@ -57,7 +57,7 @@ See also [11-rebuild-playbook.md](./11-rebuild-playbook.md) acceptance list.
 
 ### Manual QA script
 
-1. Onboarding complete → Home  
+1. Onboarding complete → auth → Home  
 2. Emotion → player → complete → soft paywall  
 3. SOS one cycle  
 4. Wisdom emotional + denied coding prompt  

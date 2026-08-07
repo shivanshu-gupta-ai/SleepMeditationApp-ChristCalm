@@ -223,10 +223,10 @@ cd frontend && npx expo start --clear
 
 ## Design snapshot
 
-- **Dark (default):** Nest — pure black, charcoal cards, violet + gold, gold FAB  
-- **Light:** Cooper — cream-lavender, white cards, soft lavender + gold  
+- **Light (default):** Cooper — cream-lavender, white cards, soft lavender + gold  
+- **Dark (opt-in):** Nest — pure black, charcoal cards, violet + gold  
 - **Type:** Inter  
-- **Tokens:** `frontend/src/theme/`
+- **Tokens:** `frontend/src/theme/` · **Tabs:** Home · Meditate · Wisdom · Journey · Me
 
 ## Infrastructure notes
 

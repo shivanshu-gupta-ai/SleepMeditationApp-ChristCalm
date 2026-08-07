@@ -8,13 +8,13 @@
 - Low-friction entry (email + social)  
 - Tokens never logged; stored in **secure device storage**  
 
-### Supported methods (MVP)
+### Supported methods (current product)
 
 | Method | Notes |
 |--------|-------|
-| Email + password | Server hashes password; returns access token |
-| Apple Sign In | Required for many iOS apps with third-party login |
-| Google Sign In | Optional but recommended |
+| Email + password | Cognito user pool; confirm email when required |
+| **Sign in with Apple** | Cognito Hosted UI IdP + PKCE (`christcalm://oauth`); required when offering social on iOS |
+| Google Sign In | **Not implemented** in the reference client (optional IdP only if you add it later) |
 
 Hosted UI / native SDK / custom forms are all fine if the **API contract** is met.
 
@@ -46,7 +46,7 @@ Any IdP is valid. Map provider `sub` → `User.id`. Upsert user row on first val
 | Devotional | Yes | Yes | Yes |
 | Journal R/W | No | Yes | Yes |
 | Wisdom chat | No | Quota | Higher/unlimited |
-| Profile stats | No | Yes | Yes |
+| Journey / practice stats | No | Yes | Yes |
 | Complete meditation (stats) | No | Yes | Yes |
 
 \*Anonymous play is product-optional; reference app often requires account for progress.
@@ -77,12 +77,13 @@ Any IdP is valid. Map provider `sub` → `User.id`. Upsert user row on first val
 
 ### Products
 
-| Plan | Example product id | UX |
-|------|--------------------|-----|
-| Monthly | `christcalm_monthly` | ~$9.99/mo |
-| Annual | `cc_1999_1y_1w0` | $39.99/yr, highlighted |
+| Plan | Canonical product id | Aliases | Display (fallback) |
+|------|----------------------|---------|---------------------|
+| Monthly | `cc_999_1m` | `christcalm_monthly`, `monthly` | ~$9.99/mo |
+| Annual | `cc_1999_1y_1w0` | `christcalm_annual`, `annual`, `yearly` | ~$39.99/yr (highlighted) |
 
-Prices are store-configured; app shows localized price strings from the SDK.
+Entitlement: **`christcalm_premium`**. Offering: **`default`**.  
+Prices are store-configured; app shows localized price strings from RevenueCat when packages load.
 
 ---
 
@@ -90,27 +91,28 @@ Prices are store-configured; app shows localized price strings from the SDK.
 
 ### When to show
 
-1. **Primary:** After user completes **first practice** (value-first)  
-2. When tapping a premium-gated item  
-3. From Profile → Manage subscription  
+1. **Primary conversion — onboarding ladder** (screens `paywallFull` → `paywall50` → `paywall80`) with persisted scarcity timers (12m / 5m / 3m)  
+2. **Secondary:** Soft sheet after **first practice** (value-first, dismissible)  
+3. Premium-gated item tap  
+4. Me → Unlock Premium / Manage subscription  
 
 ### When NOT to show
 
-- During onboarding  
-- Blocking SOS  
-- On first app open before any calm  
+- Blocking **SOS**  
+- Replacing calm content with a hard wall on first open before any practice (outside onboarding)  
 
 ### Tone
 
-- Warm, invitational, transparent  
+- Warm, invitational, transparent on in-app modal  
+- Onboarding uses time-limited offers (documented timers) — still clear pricing, Restore, and skip paths  
 - Feature checklist, dual plan cards  
-- Restore purchases + Not now  
-- **No** fake countdown, fake “only 3 spots”, dark patterns  
+- Avoid fake “only 3 seats left” social-pressure copy  
 
 ### Soft vs hard
 
-- Soft: dismissible sheet after first practice  
-- Hard: gate on premium content only  
+- Soft: dismissible after first practice  
+- Hard: gate premium catalog items only  
+- Onboarding ladder: primary monetization moment before auth
 
 ---
 

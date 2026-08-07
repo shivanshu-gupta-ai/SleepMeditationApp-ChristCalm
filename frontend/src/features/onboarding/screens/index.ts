@@ -1,4 +1,4 @@
-/** Individual onboarding screens (skeleton). */
+/** Individual onboarding screens (one per design step). */
 export { SplashScreen } from "./SplashScreen";
 export { WelcomeScreen } from "./WelcomeScreen";
 export { Benefit1Screen } from "./Benefit1Screen";
