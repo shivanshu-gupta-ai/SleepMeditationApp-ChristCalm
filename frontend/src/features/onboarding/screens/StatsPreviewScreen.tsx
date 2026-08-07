@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "../components/GraceMoodImage";
 import { STATS_PREVIEW_COPY } from "../copy";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 22 — Stats Preview (Before / After)
@@ -81,7 +82,7 @@ export function StatsPreviewScreen() {
         mood="peaceful"
         profile="idleCalm"
         glowTone="primary"
-        size={110}
+        size={GRACE_DISPLAY.question}
         testID="grace-stats-preview"
       />
 

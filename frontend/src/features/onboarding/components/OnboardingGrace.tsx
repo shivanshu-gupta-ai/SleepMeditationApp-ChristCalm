@@ -3,6 +3,7 @@ import { type StyleProp, type ViewStyle } from "react-native";
 import { GraceMoodImage } from "./GraceMoodImage";
 import { useOnboarding } from "../OnboardingContext";
 import { graceConfigForRoute } from "../mascot/expressionMap";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 import type { ReactKind } from "../mascot/motionProfiles";
 
 type Props = {
@@ -19,7 +20,7 @@ type Props = {
  * Grace bound to the current onboarding route expression + motion profile.
  */
 export function OnboardingGrace({
-  size = 120,
+  size = GRACE_DISPLAY.question,
   style,
   testID = "onboarding-grace",
   reactToken,

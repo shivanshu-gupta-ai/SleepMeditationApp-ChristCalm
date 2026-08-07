@@ -26,6 +26,7 @@ import {
 } from "./motionProfiles";
 import { profileForExpression } from "./expressionMap";
 import {
+  GRACE_DISPLAY,
   GRACE_PNG_FALLBACKS,
   graceGifSource,
   type GraceMoodKey,
@@ -54,7 +55,7 @@ export type GraceActorProps = {
 export function GraceActor({
   expression = "welcome",
   profile: profileProp,
-  size = 140,
+  size = GRACE_DISPLAY.default,
   animate = true,
   showGlow = true,
   glowTone = "primary",

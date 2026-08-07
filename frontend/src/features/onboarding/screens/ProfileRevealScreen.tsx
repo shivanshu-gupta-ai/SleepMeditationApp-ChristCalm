@@ -5,6 +5,7 @@ import { GraceMoodImage } from "../components/GraceMoodImage";
 import { useOnboarding } from "../OnboardingContext";
 import { PROFILE_REVEAL } from "../copy";
 import { deriveSpiritualProfile } from "../deriveProfile";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 15 — Spiritual Profile Reveal
@@ -94,7 +95,7 @@ export function ProfileRevealScreen() {
         mood="seeker"
         profile="idleThink"
         glowTone="primary"
-        size={128}
+        size={GRACE_DISPLAY.stage}
         testID="grace-profile"
       />
       <Text style={styles.overline}>{PROFILE_REVEAL.overline}</Text>

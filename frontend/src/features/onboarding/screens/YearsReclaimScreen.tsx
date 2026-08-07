@@ -5,6 +5,7 @@ import { GraceMoodImage } from "../components/GraceMoodImage";
 import { useOnboarding } from "../OnboardingContext";
 import { YEARS_RECLAIM_COPY } from "../copy";
 import { deriveLifetimeStats } from "../lifetimeStats";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 19 — Years You Can Reclaim (hope)
@@ -86,7 +87,7 @@ export function YearsReclaimScreen() {
         profile="idleHopeful"
         glowTone="gold"
         enterReact="celebrate"
-        size={120}
+        size={GRACE_DISPLAY.question}
         testID="grace-years-reclaim"
       />
       <Text style={styles.lead}>{YEARS_RECLAIM_COPY.lead}</Text>

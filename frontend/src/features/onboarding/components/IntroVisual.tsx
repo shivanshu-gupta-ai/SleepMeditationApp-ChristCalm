@@ -14,6 +14,7 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "./GraceMoodImage";
 import type { GraceExpression } from "../types";
 import type { MotionProfileId, ReactKind } from "../mascot/motionProfiles";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 export type IntroVisualVariant = "welcome" | "noise" | "scripture" | "personal";
 
@@ -298,7 +299,7 @@ export function IntroVisual({ variant, testID }: Props) {
           profile={PROFILE[variant]}
           glowTone={GLOW[variant]}
           enterReact={ENTER[variant]}
-          size={variant === "welcome" ? 240 : 220}
+          size={variant === "welcome" ? GRACE_DISPLAY.hero : GRACE_DISPLAY.roomy}
           testID={`${testID}-grace`}
         />
       </View>

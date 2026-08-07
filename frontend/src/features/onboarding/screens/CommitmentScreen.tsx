@@ -12,6 +12,7 @@ import { GraceMoodImage } from "../components/GraceMoodImage";
 import { useOnboarding } from "../OnboardingContext";
 import { COMMITMENT_COPY } from "../copy";
 import { playHaptic } from "@/src/utils/haptics";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 const HOLD_MS = 1600;
 
@@ -207,7 +208,7 @@ export function CommitmentScreen() {
             showGlow={false}
             reactToken={celebrateToken}
             reactKind="celebrate"
-            size={128}
+            size={GRACE_DISPLAY.stage}
             testID="grace-commitment"
           />
         </Animated.View>

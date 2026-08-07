@@ -5,6 +5,7 @@ import { GraceMoodImage } from "../components/GraceMoodImage";
 import { useOnboarding } from "../OnboardingContext";
 import { CALCULATING_STEPS } from "../copy";
 import { deriveSpiritualProfile } from "../deriveProfile";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 14 — Calculating Insights
@@ -104,7 +105,7 @@ export function CalculatingScreen() {
         mood="preparing"
         profile="idleThink"
         glowTone="primary"
-        size={130}
+        size={GRACE_DISPLAY.stage}
         testID="grace-calculating"
       />
       <Text style={styles.title}>Preparing…</Text>

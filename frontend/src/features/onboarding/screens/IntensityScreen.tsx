@@ -10,6 +10,7 @@ import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen
 import { useOnboarding } from "../OnboardingContext";
 import { INTENSITY_QUESTION } from "../copy";
 import { playHaptic } from "@/src/utils/haptics";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 13 — Intensity slider with interactive mascot.
@@ -97,7 +98,7 @@ export function IntensityScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-intensity">
-      <IntensityMascot value={value} size={168} testID="grace-intensity" />
+      <IntensityMascot value={value} size={GRACE_DISPLAY.stage} testID="grace-intensity" />
 
       <OnboardingQuestionScreen
         title={INTENSITY_QUESTION.title}

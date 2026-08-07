@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "../components/GraceMoodImage";
 import { HOW_APP_WORKS_COPY } from "../copy";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 26 — How the App Works
@@ -137,7 +138,7 @@ export function HowAppWorksScreen() {
           profile="idleWave"
           glowTone="primary"
           enterReact="celebrate"
-          size={108}
+          size={GRACE_DISPLAY.question}
           testID="grace-how-app-works"
         />
         <Text style={styles.title}>{HOW_APP_WORKS_COPY.title}</Text>

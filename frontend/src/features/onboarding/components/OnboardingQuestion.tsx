@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingGrace } from "./OnboardingGrace";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 import type { ReactKind } from "../mascot/motionProfiles";
 
 type Props = {
@@ -44,7 +45,7 @@ export function OnboardingQuestion({
 }: Props) {
   const { colors, fonts, spacing } = useTheme();
   const compact = density === "compact";
-  const mascotSize = graceSize ?? (compact ? 100 : 120);
+  const mascotSize = graceSize ?? (compact ? GRACE_DISPLAY.question : GRACE_DISPLAY.roomy);
 
   const helper = compact ? subtitle || hint : subtitle;
   const showHint = compact ? false : Boolean(hint);

@@ -8,6 +8,7 @@ import {
   Easing,
 } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Interactive intensity mascot (0–10).
@@ -51,7 +52,7 @@ type Props = {
   testID?: string;
 };
 
-export function IntensityMascot({ value, size = 160, testID = "intensity-mascot" }: Props) {
+export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "intensity-mascot" }: Props) {
   const { colors, fonts, spacing, isDark } = useTheme();
   const band = intensityBandFromValue(value);
   const label = intensityLabel(value);

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "../components/GraceMoodImage";
 import { SOCIAL_PROOF_COPY } from "../copy";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 20 — Social Proof
@@ -118,7 +119,7 @@ export function SocialProofScreen() {
         mood="review"
         profile="idleHopeful"
         glowTone="gold"
-        size={100}
+        size={GRACE_DISPLAY.question}
         testID="grace-social-proof"
       />
       <Text style={styles.title}>{SOCIAL_PROOF_COPY.title}</Text>

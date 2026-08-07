@@ -5,6 +5,7 @@ import { GraceMoodImage } from "../components/GraceMoodImage";
 import { useOnboarding } from "../OnboardingContext";
 import { LIFETIME_LOSS_COPY } from "../copy";
 import { deriveLifetimeStats } from "../lifetimeStats";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 16 — Lifetime Loss (shock)
@@ -78,7 +79,7 @@ export function LifetimeLossScreen() {
         mood="tracktospend"
         profile="idleHeavy"
         glowTone="muted"
-        size={120}
+        size={GRACE_DISPLAY.question}
         testID="grace-lifetime-loss"
       />
       <Text style={styles.lead}>{LIFETIME_LOSS_COPY.lead}</Text>

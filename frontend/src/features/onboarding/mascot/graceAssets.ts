@@ -15,6 +15,23 @@ export const MEDIA_BASE_URL = (
 
 export type GraceMoodKey = GraceExpression | "splash";
 
+/**
+ * On-screen display sizes only — does not change GIF files on S3.
+ * Larger than earlier ~100–140 so Grace reads more like a hero mascot.
+ */
+export const GRACE_DISPLAY = {
+  /** Default GraceActor / GraceMoodImage */
+  default: 200,
+  /** Question lists (heart, faith, …) */
+  question: 180,
+  /** Name / roomy single-question screens */
+  roomy: 240,
+  /** Splash / intro carousel */
+  hero: 300,
+  /** Intensity / commitment stage */
+  stage: 220,
+} as const;
+
 /** Bundled static poses — always available without network */
 export const GRACE_PNG_FALLBACKS: Record<GraceMoodKey, ImageSourcePropType> = {
   welcome: require("@/assets/images/onboarding/grace-welcome.png"),
@@ -41,9 +58,15 @@ export const GRACE_PNG_FALLBACKS: Record<GraceMoodKey, ImageSourcePropType> = {
   review: require("@/assets/images/onboarding/grace-hopeful.png"),
 };
 
+/**
+ * Cache-bust when S3 objects are replaced (long CDN/browser max-age).
+ * Bump when re-uploading grace GIFs from a new asset drop.
+ */
+export const GRACE_GIF_VERSION = "20260808";
+
 /** S3 object key under onboarding/grace/ (filename matches expression) */
 export function graceGifUrl(mood: GraceMoodKey): string {
-  return `${MEDIA_BASE_URL}/onboarding/grace/${mood}.gif`;
+  return `${MEDIA_BASE_URL}/onboarding/grace/${mood}.gif?v=${GRACE_GIF_VERSION}`;
 }
 
 export function graceGifSource(mood: GraceMoodKey): { uri: string } {

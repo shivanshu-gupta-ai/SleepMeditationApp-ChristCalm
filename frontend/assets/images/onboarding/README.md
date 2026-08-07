@@ -39,17 +39,20 @@ Playback: `GraceActor` via `expo-image` with PNG `placeholder` and `onError` →
 
 ### Upload (after compressing)
 
+Sources usually come from a collaborator branch (extract with `git archive`, never merge GIF binaries into main).
+
 ```bash
-# Compress aggressively first (≈280px, lossy gifsicle) then:
-aws s3 sync ./dist/ s3://christcalm-preview-media-500696805306/onboarding/grace/ \
+# Compress aggressively first (≈280–300px, lossy Gifsicle) then:
+aws s3 sync ./canonical/ s3://christcalm-preview-media-500696805306/onboarding/grace/ \
   --cache-control "public,max-age=31536000,immutable" \
   --content-type "image/gif"
 ```
 
+After overwrite, bump `GRACE_GIF_VERSION` in `graceAssets.ts` so clients skip stale cache.
+
 Bucket policy must allow `s3:GetObject` on `onboarding/grace/*` (same pattern as `meditations/audio/*`).
 
 Do **not** commit raw multi‑MB GIFs under `frontend/animation/` or `assets/`.
-
 ## Regeneration
 
 1. `image_edit` from an existing Grace PNG (never pure text-only for variants).

@@ -4,6 +4,7 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { NAME_COPY } from "../copy";
 import { useOnboarding } from "../OnboardingContext";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 5 — Name (optional)
@@ -51,7 +52,7 @@ export function NameScreen() {
       title={NAME_COPY.title}
       subtitle={NAME_COPY.sub}
       density="roomy"
-      graceSize={112}
+      graceSize={GRACE_DISPLAY.roomy}
       graceReactToken={reactToken}
       graceReactKind="nod"
       verticallyCenter

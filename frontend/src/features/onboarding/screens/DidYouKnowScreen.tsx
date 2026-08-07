@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "../components/GraceMoodImage";
 import { DID_YOU_KNOW } from "../copy";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 11 — Did You Know?
@@ -88,7 +89,7 @@ export function DidYouKnowScreen() {
         mood="didYouKnow"
         profile="idleListen"
         glowTone="muted"
-        size={110}
+        size={GRACE_DISPLAY.question}
         testID="grace-did-you-know"
       />
       <Text style={styles.title}>{DID_YOU_KNOW.title}</Text>

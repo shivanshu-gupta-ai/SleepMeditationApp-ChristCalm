@@ -22,14 +22,12 @@ export const ENTITLEMENT_ID =
 export const OFFERING_ID =
   process.env.EXPO_PUBLIC_REVENUECAT_OFFERING_ID || "default";
 
-/** Canonical store product ids */
+/** Canonical store product ids (App Store SKUs) */
 export const PRODUCT_IDS = {
   monthly: process.env.EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY || "cc_999_1m",
   annualFull: process.env.EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_FULL || "cc_5999_1y",
   annualMid: process.env.EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_MID || "cc_3999_1y",
   annualLow: process.env.EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_LOW || "cc_1999_1y",
-  /** @deprecated legacy annual with trial suffix — still mapped as mid/full fallback */
-  annualLegacy: "cc_1999_1y_1w0",
 } as const;
 
 export type PlanId = "monthly" | "annualFull" | "annualMid" | "annualLow";
@@ -42,12 +40,16 @@ export const PACKAGE_KEYS: Record<PlanId, string> = {
   annualLow: "$rc_custom_annual_low",
 };
 
-/** All known product identifiers that grant premium (ASC + Test Store + aliases) */
+/**
+ * Product identifiers that map to a plan.
+ * ASC multi-tier SKUs + Test Store monthly id still used on $rc_monthly.
+ * Legacy SKUs (cc_1999_1y_1w0, christcalm_annual) archived in RC.
+ */
 export const PRODUCT_ID_ALIASES: Record<PlanId, readonly string[]> = {
-  monthly: ["cc_999_1m", "christcalm_monthly", "monthly"],
-  annualFull: ["cc_5999_1y", "christcalm_annual_full"],
-  annualMid: ["cc_3999_1y", "christcalm_annual_mid", "cc_1999_1y_1w0", "christcalm_annual"],
-  annualLow: ["cc_1999_1y", "christcalm_annual_low"],
+  monthly: ["cc_999_1m", "christcalm_monthly"],
+  annualFull: ["cc_5999_1y"],
+  annualMid: ["cc_3999_1y"],
+  annualLow: ["cc_1999_1y"],
 };
 
 export function planFromProductIdentifier(productId?: string | null): PlanId | null {

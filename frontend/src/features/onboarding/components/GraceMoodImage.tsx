@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { type StyleProp, type ViewStyle } from "react-native";
 import type { GraceExpression } from "../types";
 import { GraceActor } from "../mascot/GraceActor";
+import { GRACE_DISPLAY } from "../mascot/graceAssets";
 import { profileForExpression } from "../mascot/expressionMap";
 import type { MotionProfileId, ReactKind } from "../mascot/motionProfiles";
 
@@ -28,7 +29,7 @@ export type GraceMoodImageProps = {
  */
 export function GraceMoodImage({
   mood = "welcome",
-  size = 140,
+  size = GRACE_DISPLAY.default,
   animate = true,
   style,
   testID = "grace-mood",
