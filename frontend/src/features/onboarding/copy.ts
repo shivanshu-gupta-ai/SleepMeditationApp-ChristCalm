@@ -66,28 +66,6 @@ export const INTRO_SLIDES = [
   },
 ] as const;
 
-/** @deprecated prefer INTRO_SLIDES — kept for any legacy imports */
-export const BENEFIT_SLIDES = [
-  {
-    id: "benefit1" as const,
-    index: 0,
-    lead: INTRO_SLIDES[1].headline,
-    body: INTRO_SLIDES[1].supporting,
-  },
-  {
-    id: "benefit2" as const,
-    index: 1,
-    lead: INTRO_SLIDES[2].headline,
-    body: INTRO_SLIDES[2].supporting,
-  },
-  {
-    id: "benefit3" as const,
-    index: 2,
-    lead: INTRO_SLIDES[3].headline,
-    body: INTRO_SLIDES[3].supporting,
-  },
-] as const;
-
 export const NAME_COPY = {
   title: "What should I call you?",
   sub: "So Grace can speak to you.",
@@ -249,10 +227,6 @@ export const SOCIAL_PROOF_COPY = {
   rating: "4.8",
   stars: "★★★★★",
   community: "12,400+ on this journey",
-  /** @deprecated use reviews[0] */
-  quote: "I didn't realize how much peace I was losing.",
-  /** @deprecated use reviews[0] */
-  attribution: "— Rachel",
   reviews: [
     {
       quote: "I didn't realize how much peace I was losing.",

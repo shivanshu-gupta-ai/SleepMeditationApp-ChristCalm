@@ -106,7 +106,7 @@ Canonical design: [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md) · pr
 - `OnboardingNavigator.tsx` — 27-step machine (Next/Back, transitions, paywall back rules)  
 - `sequence.ts` — screen table, CTAs, Grace expression bands  
 - `screens/*` — one component per design screen (skeleton → full UI)  
-- Components: `ProgressBar`, `OnboardingStepLayout`, `GracePlaceholder`, Option/Question, GraceCompanion  
+- Components: `ProgressBar`, `OnboardingStepLayout`, `GraceMoodImage` / `GraceActor`, Option/Question  
 - Route: `app/onboarding.tsx` mounts the navigator  
 - Draft: `utils/onboarding-draft.ts` → AsyncStorage `cc_onboarding_draft`  
 

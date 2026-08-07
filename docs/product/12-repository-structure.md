@@ -178,9 +178,10 @@ src/
 │   │   ├── OnboardingNavigator.tsx  # Step machine (0–26)
 │   │   ├── sequence.ts              # Design sequence + paywall rules
 │   │   ├── types.ts
-│   │   ├── constants.ts             # Option catalogs
+│   │   ├── copy.ts                  # Screen copy + option catalogs
 │   │   ├── screens/                 # One component per design screen
-│   │   └── components/              # ProgressBar, layout, Grace placeholders
+│   │   └── components/              # ProgressBar, layout, GraceMoodImage
+│   ├── stats/                       # Journey tab stats
 │   └── subscriptions/
 │       ├── RevenueCatContext.tsx
 │       ├── use-premium.ts
@@ -194,8 +195,7 @@ src/
 │   ├── tokens.ts                 # Nest + Cooper color tokens
 │   ├── layout.ts                 # Spacing rhythm
 │   ├── fonts.ts
-│   ├── primitives.ts
-│   └── index.ts
+│   └── primitives.ts
 └── utils/
     ├── analytics.ts
     ├── api-cache.ts              # Catalog cache ~5 min
@@ -210,7 +210,7 @@ src/
 
 ### UI kit files (`frontend/src/components/ui/`)
 
-`BottomSheet`, `Button`, `Chip`, `EmotionFilter`, `EmptyState`, `ErrorState`, `FadeIn`, `FirstStepsChecklist`, `FloatingTabBar`, `JourneyStats`, `ListeningWave`, `LoadingState`, `PageHeader`, `PremiumBadge`, `PressableScale`, `ProgressRing`, `Screen`, `SectionHeader`, `StartCalmSheet`, `Surface`, `TextField`, `TodaysPath`
+`BottomSheet`, `Button`, `Chip`, `EmotionFilter`, `EmptyState`, `ErrorState`, `FadeIn`, `FirstStepsChecklist`, `FloatingTabBar`, `JourneyStats`, `ListeningWave`, `LoadingState`, `PageHeader`, `PremiumBadge`, `PressableScale`, `Screen`, `SectionHeader`, `StartCalmSheet`, `Surface`, `TextField`, `TodaysPath`
 
 ### Key client dependencies (reference)
 

@@ -60,11 +60,6 @@ export function useOnboarding(): OnboardingContextValue {
   return ctx;
 }
 
-/** Safe hook when a screen may render outside the provider (should not). */
-export function useOnboardingOptional(): OnboardingContextValue | null {
-  return useContext(OnboardingContext);
-}
-
 function canProceedForStep(step: number, draft: OnboardingDraft): boolean {
   const id = getScreenDef(step).id as OnboardingRouteId;
   switch (id) {

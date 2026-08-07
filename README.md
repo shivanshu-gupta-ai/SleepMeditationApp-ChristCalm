@@ -47,20 +47,20 @@ Docs hub: [`docs/README.md`](docs/README.md)
 ChristCalmApp/
 ├── docs/                     # ★ All documentation
 │   ├── product/              # Canonical product pack (any-stack rebuild)
-│   ├── design/               # Design index → product
 │   ├── architecture/         # Stack notes + product 12–18
-│   └── engineering/          # Testing, RevenueCat, ops
+│   ├── engineering/          # Testing, RevenueCat, ops
+│   └── screenshots/          # Generated screen catalog PDF
 ├── frontend/                 # Expo app (reference client)
 │   ├── app/                  # Routes (Expo Router)
-│   └── src/features/         # auth · subscriptions · onboarding
+│   └── src/features/         # auth · subscriptions · onboarding · stats
 ├── backend/                  # FastAPI + Lambda (reference API)
 │   ├── auth/ · ai/ · core/ · data/
 │   └── ai/corpus/            # Wisdom RAG markdown
 ├── infrastructure/terraform/ # AWS infra as code
 ├── config/                   # Env templates, auth samples, CI
-├── assets/meditations/       # Covers + audio sources
+├── assets/meditations/       # Covers + audio sources (audio gitignored)
 ├── skills/                   # Agent skills
-├── tests/                    # Pytest
+├── tests/                    # Pytest (reports are local-only)
 └── scripts/                  # deploy · preview · env sync
 ```
 

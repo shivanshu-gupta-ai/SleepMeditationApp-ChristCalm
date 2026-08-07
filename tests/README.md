@@ -3,7 +3,7 @@
 ```
 tests/
 ├── backend/          # Pytest (unit + API integration)
-├── reports/          # Archived run artifacts (JSON, JUnit XML)
+├── reports/          # Local/CI run artifacts only (gitignored; keep .gitkeep)
 │   └── pytest/
 ├── conftest.py       # Shared fixtures (loads env, BASE_URL)
 └── README.md
@@ -38,7 +38,7 @@ cd frontend && npx tsc --noEmit
 
 ## Reports
 
-Save CI or local artifacts under `tests/reports/`:
+Write local or CI artifacts under `tests/reports/` (gitignored — do not commit):
 
 ```bash
 mkdir -p tests/reports/pytest
@@ -54,4 +54,3 @@ ChristCalm-specific checklist (security threats, product QA, deploy):
 
 - [`tests/test_list.md`](./test_list.md)
 - Release path: [`docs/engineering/prod-sandbox-release.md`](../docs/engineering/prod-sandbox-release.md)
-- Pytest JUnit XML may live under `tests/reports/pytest/` (logs/scans are gitignored)

@@ -174,6 +174,6 @@ Stack: {YOUR_STACK}.
 | Path | Why separate |
 |------|----------------|
 | Live source code | Implementation; prefer product contracts if docs and code diverge temporarily |
-| `docs/architecture/`, `docs/design/`, `docs/engineering/` | Stack notes + redirects into this pack |
+| `docs/architecture/`, `docs/engineering/` | Stack notes + redirects into this pack |
 | `terraform.tfstate` / secrets | Never document real secrets here |
 | `node_modules` / `.venv` | Generated |

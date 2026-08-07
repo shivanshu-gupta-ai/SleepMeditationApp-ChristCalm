@@ -16,10 +16,10 @@ All product and engineering documentation for ChristCalm lives under **`docs/`**
 
 | Folder | Role |
 |--------|------|
-| [`product/`](product/) | **Canonical** product + architecture pack (docs 01–18). Source of truth for rebuilds. |
-| [`design/`](design/) | Design index → Nest/Cooper system, onboarding, screens (points into `product/`). |
+| [`product/`](product/) | **Canonical** product + architecture pack (docs 01–18). Source of truth for rebuilds. Design system & onboarding specs live here (`05-design-system`, `Onboarding-Design-Spec`). |
 | [`architecture/`](architecture/) | Reference-stack notes (Expo + AWS) + links to product architecture docs 12–18. |
 | [`engineering/`](engineering/) | Current-repo testing, RevenueCat, e2e for this monorepo. |
+| [`screenshots/`](screenshots/) | Generated screen catalog PDF (from `scripts/capture-screen-catalog.mjs`). |
 
 ### Conflict priority
 

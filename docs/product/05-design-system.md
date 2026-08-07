@@ -151,7 +151,6 @@ Every platform should implement equivalents of:
 | `EmotionFilter` | Horizontal emotion chips |
 | `BottomSheet` | Drag, scrim, soft corners |
 | `FloatingTabBar` | Pill + FAB cutout |
-| `ProgressRing` | Profile stats |
 | `ListeningWave` | Wisdom voice UI |
 | `EmptyState` | Grace + copy + CTA |
 | `LoadingState` / `ErrorState` | Calm feedback |

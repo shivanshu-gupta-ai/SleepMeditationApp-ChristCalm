@@ -20,7 +20,7 @@ src/features/onboarding/
   components/
     ProgressBar.tsx                   → continuous flow progress
     OnboardingStepLayout.tsx          → shell (back, progress, footer CTA)
-    GraceCompanion / Option / Question
+    GraceMoodImage / Option / Question
   screens/                            → one component per design screen
 ```
 

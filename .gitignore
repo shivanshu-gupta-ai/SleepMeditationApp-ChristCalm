@@ -20,13 +20,9 @@ node_modules/
 # Testing
 /coverage
 .pytest_cache/
-# Ephemeral test run logs / scans (keep intentional junit xml if committed)
-tests/reports/**/*.log
-tests/reports/**/secret_scan.json
-tests/reports/**/npm_audit.txt
-tests/reports/**/checklist_results.json
-tests/reports/**/deploy_code.log
-tests/reports/**/checklist_run.log
+# Generated test/report artifacts (keep directory via .gitkeep)
+tests/reports/**
+!tests/reports/**/.gitkeep
 
 # Next.js
 /.next/
@@ -57,15 +53,7 @@ yarn-error.log*
 .pnpm-debug.log*
 dump.rdb
 
-# Ephemeral test run logs / machine-local scan artifacts
-tests/reports/**/*.log
-tests/reports/**/secret_scan.json
-tests/reports/**/npm_audit.txt
-tests/reports/**/checklist_results.json
-tests/reports/**/deploy_code.log
-tests/reports/**/checklist_run.log
 tests/PRODUCTION_READINESS_REPORT.md
-tests/reports/checklist/PRODUCTION_READINESS_REPORT.md
 
 # System files
 .DS_Store

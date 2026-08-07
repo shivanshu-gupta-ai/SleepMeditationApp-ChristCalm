@@ -20,6 +20,5 @@ export { BottomSheet } from "@/src/components/ui/BottomSheet";
 export { StartCalmSheet } from "@/src/components/ui/StartCalmSheet";
 export { FloatingTabBar } from "@/src/components/ui/FloatingTabBar";
 export { ListeningWave } from "@/src/components/ui/ListeningWave";
-export { ProgressRing } from "@/src/components/ui/ProgressRing";
 export { JourneyStats } from "@/src/components/ui/JourneyStats";
 export { FeedbackCard } from "@/src/components/ui/FeedbackCard";
