@@ -218,13 +218,17 @@ export default function MeditationPlayer() {
           useNativeDriver: true,
         }).start();
 
-        // Soft paywall after first complete (and every 3rd) — after user sees celebration
+        // Soft paywall after first complete (and every 3rd) — RevenueCat UI via /paywall
         if (shouldOfferPaywallAfterCompletes(completedCount, isPremium)) {
           shouldShowSoftPaywall().then((show) => {
             if (show || isFirstComplete) {
               setTimeout(() => {
                 void markSoftPaywallShown();
-                void track("paywall_shown", { after_completes: completedCount });
+                void track("paywall_shown", {
+                  surface: "soft_post_practice",
+                  provider: "revenuecat",
+                  after_completes: completedCount,
+                });
                 endSession();
                 router.push("/paywall");
               }, 2800);

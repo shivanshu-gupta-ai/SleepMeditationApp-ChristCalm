@@ -245,6 +245,7 @@ export default function Profile() {
             icon="star-outline"
             label={isPremium ? "Upgrade / Change plan" : "Unlock Premium"}
             onPress={() => {
+              // Prefer RevenueCat hosted paywall; fall back to branded /paywall shell
               if (rcSupported) {
                 presentPaywallIfNeeded().catch(() => router.push("/paywall"));
               } else {

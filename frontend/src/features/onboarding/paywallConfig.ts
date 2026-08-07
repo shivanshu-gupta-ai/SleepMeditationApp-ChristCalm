@@ -1,6 +1,12 @@
 /**
- * Escalating paywall tiers — design §4 timers + marketing prices.
- * Purchases go through RevenueCat (default offering: $rc_annual / $rc_monthly).
+ * Escalating paywall tiers — design §4 timers + marketing fallbacks.
+ *
+ * **Checkout is always RevenueCat** (react-native-purchases):
+ * - Package purchase from the default offering (`$rc_annual` / `$rc_monthly`)
+ * - Or RevenueCat Paywalls UI when packages are missing / “See all plans”
+ *
+ * Marketing INR strings are offline fallbacks only. Live App Store / Play prices
+ * from RevenueCat product.priceString always win when offerings load.
  */
 
 export type PaywallTier = "full" | "fifty" | "eighty";

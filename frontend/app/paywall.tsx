@@ -1,15 +1,23 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Platform } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, Platform, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import BackButton from "@/src/components/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/features/auth";
-import { useRevenueCat } from "@/src/features/subscriptions";
-import { usePremium } from "@/src/features/subscriptions";
-import type { PlanId } from "@/src/features/subscriptions";
-import { Screen, Button, ErrorBanner, SectionHeader, PressableScale } from "@/src/components/ui";
+import {
+  useRevenueCat,
+  usePremium,
+  trackPaywallView,
+  trackPaywallPurchaseStart,
+  trackPaywallPurchaseSuccess,
+  trackPaywallPurchaseCancel,
+  trackPaywallPurchaseError,
+  trackPaywallSkip,
+  trackPaywallRestore,
+} from "@/src/features/subscriptions";
+import { Screen, Button, ErrorBanner, SectionHeader } from "@/src/components/ui";
 
 const FEATURES = [
   { icon: "leaf" as const, label: "Unlimited emotion-based meditations" },
@@ -20,62 +28,73 @@ const FEATURES = [
   { icon: "cloud-offline" as const, label: "Ad-free forever" },
 ];
 
-function formatPrice(plan: PlanId, getPackage: ReturnType<typeof useRevenueCat>["getPackage"]) {
-  const pkg = getPackage(plan);
-  if (!pkg) {
-    return plan === "monthly"
-      ? { main: "$9.99", sub: "billed monthly" }
-      : { main: "$39.99", sub: "$3.33 / month · billed yearly" };
-  }
-  const product = pkg.product;
-  if (plan === "annual" && product.pricePerMonthString) {
-    return {
-      main: product.priceString,
-      sub: `${product.pricePerMonthString} / month · billed yearly`,
-    };
-  }
-  return {
-    main: product.priceString,
-    sub: plan === "monthly" ? "billed monthly" : "billed yearly",
-  };
-}
-
+/**
+ * In-app paywall — branding shell; **checkout is RevenueCat Paywalls UI**
+ * (dashboard template / default offering). No separate billing integration.
+ */
 export default function Paywall() {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const { isPremium } = usePremium();
   const {
     supported,
-    loadingOfferings,
     purchasing,
-    getPackage,
-    purchase,
+    loadingOfferings,
     presentPaywall,
     restore,
     error: rcError,
     clearError,
+    getPackage,
   } = useRevenueCat();
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
-  const [plan, setPlan] = useState<PlanId>("annual");
   const [error, setError] = useState<string | null>(null);
   const displayError = error || rcError;
 
-  const monthlyPrice = formatPrice("monthly", getPackage);
-  const annualPrice = formatPrice("annual", getPackage);
-  const selectedPrice = formatPrice(plan, getPackage);
+  const annual = getPackage("annual");
+  const monthly = getPackage("monthly");
+  const priceHint =
+    annual?.product.priceString ||
+    monthly?.product.priceString ||
+    (supported ? "Plans from the App Store" : "Available on iOS & Android");
 
-  const subscribe = async () => {
+  useEffect(() => {
+    trackPaywallView("in_app", {
+      hasOfferings: Boolean(annual || monthly),
+    });
+  }, [annual, monthly]);
+
+  const close = (skipped = false) => {
+    if (skipped) trackPaywallSkip("in_app", "none", "close");
+    if (router.canGoBack()) router.back();
+    else router.replace("/(tabs)/home");
+  };
+
+  const onSubscribe = async () => {
     setError(null);
     clearError();
+    if (!supported || Platform.OS === "web") {
+      setError("Subscriptions are available in the ChristCalm iOS or Android app.");
+      return;
+    }
+    trackPaywallPurchaseStart("in_app", "rc_ui");
     try {
-      const active = await purchase(plan);
+      const active = await presentPaywall();
       if (active) {
+        trackPaywallPurchaseSuccess("in_app", "rc_ui");
         await refreshUser();
         router.replace("/(tabs)/home");
+      } else {
+        trackPaywallPurchaseCancel("in_app", "rc_ui");
       }
-    } catch (e: any) {
-      if (e?.userCancelled) return;
-      setError(e?.message || "Unable to complete purchase. Please try again.");
+    } catch (e: unknown) {
+      const err = e as { message?: string; userCancelled?: boolean };
+      if (err?.userCancelled) {
+        trackPaywallPurchaseCancel("in_app", "rc_ui");
+        return;
+      }
+      const msg = err?.message || "Unable to open subscription options.";
+      trackPaywallPurchaseError("in_app", "rc_ui", msg);
+      setError(msg);
     }
   };
 
@@ -84,30 +103,18 @@ export default function Paywall() {
     clearError();
     try {
       const active = await restore();
+      trackPaywallRestore("in_app", active);
       if (active) {
+        trackPaywallPurchaseSuccess("in_app", "restore");
         await refreshUser();
         router.replace("/(tabs)/home");
       } else {
         setError("No active subscription found for this account.");
       }
-    } catch (e: any) {
-      setError(e?.message || "Unable to restore purchases.");
-    }
-  };
-
-  /** RevenueCat-hosted paywall (dashboard template or default package UI). */
-  const onOpenRemotePaywall = async () => {
-    setError(null);
-    clearError();
-    try {
-      const active = await presentPaywall();
-      if (active) {
-        await refreshUser();
-        router.replace("/(tabs)/home");
-      }
-    } catch (e: any) {
-      if (e?.userCancelled) return;
-      setError(e?.message || "Unable to open subscription options.");
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      trackPaywallRestore("in_app", false);
+      setError(err?.message || "Unable to restore purchases.");
     }
   };
 
@@ -119,9 +126,9 @@ export default function Paywall() {
         size={26}
         style={{ alignSelf: "flex-end", padding: spacing.sm, marginBottom: spacing.sm }}
         testID="paywall-close-btn"
+        onBeforeBack={() => trackPaywallSkip("in_app", "none", "close")}
       />
 
-      {/* Nest dark: deep surface + gold star · Cooper light: soft lavender hero */}
       <LinearGradient
         colors={
           isDark
@@ -177,6 +184,19 @@ export default function Paywall() {
         >
           Full access to every meditation, prayer, and calm tool.
         </Text>
+        {!isPremium ? (
+          <Text
+            style={{
+              fontFamily: fonts.bodyBold,
+              fontSize: 15,
+              color: colors.textPrimary,
+              marginTop: spacing.md,
+            }}
+            testID="paywall-price-hint"
+          >
+            {priceHint}
+          </Text>
+        ) : null}
       </LinearGradient>
 
       {isPremium ? (
@@ -232,136 +252,9 @@ export default function Paywall() {
         ))}
       </View>
 
-      <SectionHeader title="Choose your plan" />
-
-      {/* Dual plan cards — Cooper+ style, calm palette */}
-      <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
-        {(["annual", "monthly"] as PlanId[]).map((p) => {
-          const price = p === "annual" ? annualPrice : monthlyPrice;
-          const active = plan === p;
-          const isAnnual = p === "annual";
-          return (
-            <PressableScale
-              key={p}
-              scaleTo={active ? 0.99 : 0.97}
-              onPress={() => setPlan(p)}
-              testID={`plan-${p}`}
-              haptic="light"
-              style={{
-                backgroundColor: active
-                  ? isAnnual
-                    ? colors.tileA
-                    : colors.tileB
-                  : colors.surface,
-                borderRadius: radius.lg,
-                padding: spacing.lg,
-                borderWidth: 2,
-                borderColor: active ? colors.primary : colors.borderSoft,
-                ...shadows.soft,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1, paddingRight: 12 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text
-                      style={{
-                        fontFamily: fonts.headingBold,
-                        fontSize: 18,
-                        color: colors.textPrimary,
-                      }}
-                    >
-                      {isAnnual ? "Yearly plan" : "Monthly plan"}
-                    </Text>
-                    {isAnnual ? (
-                      <View
-                        style={{
-                          backgroundColor: colors.premiumSoft,
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: radius.full,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: colors.premiumDark,
-                            fontFamily: fonts.bodyBold,
-                            fontSize: 11,
-                          }}
-                        >
-                          Best value
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text
-                    style={{
-                      fontFamily: fonts.headingBold,
-                      fontSize: 28,
-                      color: colors.textPrimary,
-                      marginTop: 8,
-                      letterSpacing: -0.5,
-                    }}
-                  >
-                    {price.main}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: 13,
-                      color: colors.textSecondary,
-                      marginTop: 4,
-                    }}
-                  >
-                    {price.sub}
-                  </Text>
-                  <View style={{ marginTop: spacing.md, gap: 6 }}>
-                    {["Unlimited meditations", "Wisdom chat", "Ad-free calm"].map((f) => (
-                      <View key={f} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
-                        <Text
-                          style={{
-                            fontFamily: fonts.body,
-                            fontSize: 13,
-                            color: colors.textSecondary,
-                          }}
-                        >
-                          {f}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                <View
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 13,
-                    borderWidth: 2,
-                    borderColor: active ? colors.primary : colors.border,
-                    backgroundColor: active ? colors.primary : "transparent",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {active ? (
-                    <Ionicons name="checkmark" size={16} color={colors.textOnPrimary} />
-                  ) : null}
-                </View>
-              </View>
-            </PressableScale>
-          );
-        })}
-      </View>
-
       {!isPremium ? (
         <>
-          {!supported ? (
+          {!supported || Platform.OS === "web" ? (
             <View
               style={{
                 backgroundColor: colors.primarySoft,
@@ -378,8 +271,8 @@ export default function Paywall() {
                   lineHeight: 20,
                 }}
               >
-                Subscriptions are purchased through the App Store or Google Play in the native
-                ChristCalm app.
+                Subscriptions are purchased through the App Store or Google Play via RevenueCat
+                in the native ChristCalm app.
               </Text>
             </View>
           ) : null}
@@ -398,56 +291,62 @@ export default function Paywall() {
           ) : null}
 
           <Button
-            label={`Subscribe · ${selectedPrice.main}${plan === "monthly" ? " / month" : " / year"}`}
+            label={
+              purchasing || loadingOfferings
+                ? "Opening…"
+                : supported && Platform.OS !== "web"
+                  ? "Continue to subscribe"
+                  : "Not available on web"
+            }
             icon="arrow-forward"
             iconPosition="right"
-            onPress={subscribe}
+            onPress={onSubscribe}
             loading={loadingOfferings || purchasing}
-            disabled={!supported}
+            disabled={!supported || Platform.OS === "web"}
             testID="paywall-subscribe-btn"
             style={{ marginTop: spacing.lg }}
           />
 
-          {supported ? (
-            <TouchableOpacity
-              onPress={onOpenRemotePaywall}
-              disabled={purchasing}
-              testID="paywall-remote-btn"
-              style={{ paddingVertical: spacing.sm, marginTop: spacing.xs }}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 14,
-                  color: colors.textSecondary,
-                  textAlign: "center",
-                  textDecorationLine: "underline",
-                }}
-              >
-                More plans (RevenueCat paywall)
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {supported ? (
+          {supported && Platform.OS !== "web" ? (
             <TouchableOpacity
               onPress={onRestore}
               disabled={purchasing}
               testID="paywall-restore-btn"
               style={{ paddingVertical: spacing.md }}
             >
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontFamily: fonts.bodyBold,
-                  color: colors.textSecondary,
-                  fontSize: 14,
-                }}
-              >
-                Restore purchases
-              </Text>
+              {purchasing ? (
+                <ActivityIndicator color={colors.textSecondary} />
+              ) : (
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontFamily: fonts.bodyBold,
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                  }}
+                >
+                  Restore purchases
+                </Text>
+              )}
             </TouchableOpacity>
           ) : null}
+
+          <TouchableOpacity
+            onPress={() => close(true)}
+            testID="paywall-not-now"
+            style={{ paddingVertical: spacing.sm }}
+          >
+            <Text
+              style={{
+                textAlign: "center",
+                fontFamily: fonts.body,
+                color: colors.textMuted,
+                fontSize: 14,
+              }}
+            >
+              Not now
+            </Text>
+          </TouchableOpacity>
         </>
       ) : null}
 
@@ -462,10 +361,10 @@ export default function Paywall() {
         }}
       >
         {Platform.OS === "ios"
-          ? "Payment charged to your Apple ID. Auto-renews unless canceled 24h before period end."
+          ? "Payment charged to your Apple ID via RevenueCat. Auto-renews unless canceled 24h before period end."
           : Platform.OS === "android"
-            ? "Payment charged to your Google Play account. Auto-renews unless canceled."
-            : "Cancel anytime · Managed through your app store subscription settings"}
+            ? "Payment charged to your Google Play account via RevenueCat. Auto-renews unless canceled."
+            : "Managed through your app store subscription settings"}
       </Text>
     </Screen>
   );

@@ -11,7 +11,20 @@ import {
 } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/features/auth";
-import { useRevenueCat, type PlanId } from "@/src/features/subscriptions";
+import {
+  useRevenueCat,
+  type PlanId,
+  trackPaywallView,
+  trackPaywallPlanSelect,
+  trackPaywallPurchaseStart,
+  trackPaywallPurchaseSuccess,
+  trackPaywallPurchaseCancel,
+  trackPaywallPurchaseError,
+  trackPaywallSkip,
+  trackPaywallTimerExpire,
+  type PaywallSurface,
+  type PaywallTierProp,
+} from "@/src/features/subscriptions";
 import { useOnboarding } from "../OnboardingContext";
 import { ScarcityTimer } from "./ScarcityTimer";
 import {
@@ -27,9 +40,19 @@ type Props = {
   testID?: string;
 };
 
+function surfaceForTier(tier: PaywallTier): PaywallSurface {
+  if (tier === "full") return "onboarding_full";
+  if (tier === "fifty") return "onboarding_50";
+  return "onboarding_80";
+}
+
+function tierProp(tier: PaywallTier): PaywallTierProp {
+  return tier;
+}
+
 /**
  * Escalating onboarding paywall (screens 23–25).
- * UI + scarcity per design; checkout via RevenueCat purchase / presentPaywall.
+ * Custom UI + scarcity; **all checkout via RevenueCat** (package purchase or RC Paywall UI).
  */
 export function EscalatingPaywall({ tier, testID }: Props) {
   const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
@@ -51,8 +74,11 @@ export function EscalatingPaywall({ tier, testID }: Props) {
   const [localError, setLocalError] = useState<string | null>(null);
   const pulse = useMemo(() => new Animated.Value(1), []);
 
+  const surface = surfaceForTier(tier);
+  const tProp = tierProp(tier);
   const copy = PAYWALL_COPY[tier];
-  const marketing = PAYWALL_MARKETING[tier === "full" ? "full" : tier === "fifty" ? "fifty" : "eighty"];
+  const marketing =
+    PAYWALL_MARKETING[tier === "full" ? "full" : tier === "fifty" ? "fifty" : "eighty"];
 
   const timerSeconds =
     tier === "full"
@@ -70,9 +96,14 @@ export function EscalatingPaywall({ tier, testID }: Props) {
   useEffect(() => {
     const stepIndex = tier === "full" ? 23 : tier === "fifty" ? 24 : 25;
     patch({ highestPaywallSeen: stepIndex });
-  }, [tier, patch]);
+    trackPaywallView(surface, {
+      tier: tProp,
+      hasOfferings: Boolean(getPackage("annual") || getPackage("monthly")),
+    });
+    // Intentional once-per-mount for this tier
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tier]);
 
-  // Pulse timer on 80% tier
   useEffect(() => {
     if (tier !== "eighty") return;
     const loop = Animated.loop(
@@ -97,92 +128,107 @@ export function EscalatingPaywall({ tier, testID }: Props) {
 
   const annualPkg = getPackage("annual");
   const monthlyPkg = getPackage("monthly");
+  const hasStorePackages = Boolean(annualPkg || monthlyPkg);
 
-  const annualPrice =
-    annualPkg?.product.priceString ||
-    (tier === "full"
-      ? PAYWALL_MARKETING.full.yearlyNow
-      : tier === "fifty"
-        ? PAYWALL_MARKETING.fifty.yearlyNow
-        : PAYWALL_MARKETING.eighty.yearlyNow);
-  const monthlyPrice =
-    monthlyPkg?.product.priceString || PAYWALL_MARKETING.full.monthly;
+  /** Prefer live App Store / Play price from RevenueCat; marketing only as offline fallback. */
+  const annualPrice = annualPkg?.product.priceString || PAYWALL_MARKETING.full.yearlyNow;
+  const monthlyPrice = monthlyPkg?.product.priceString || PAYWALL_MARKETING.full.monthly;
+  const usingStorePrices = Boolean(annualPkg || monthlyPkg);
+
+  const selectPlan = useCallback(
+    (p: PlanId) => {
+      setPlan(p);
+      trackPaywallPlanSelect(surface, p, tProp);
+    },
+    [surface, tProp]
+  );
 
   const onExpire = useCallback(() => {
     setExpired(true);
-    // Design: when discount timer hits zero, fall back toward less generous tier
-    // Escalation path still allows advancing via secondary CTA.
-  }, []);
+    trackPaywallTimerExpire(tProp);
+  }, [tProp]);
 
   const afterPurchase = useCallback(async () => {
     await refreshUser();
-    // Skip remaining paywalls → How the App Works
     goToStep(26);
   }, [refreshUser, goToStep]);
 
-  const onPrimary = useCallback(async () => {
-    setLocalError(null);
-    clearError();
-    if (tier !== "full" && expired) {
-      // Discount gone — escalate or skip
-      if (tier === "fifty") goNext();
-      else goNext();
-      return;
-    }
-    try {
-      if (supported) {
-        // Prefer package purchase for explicit yearly selection
-        if (tier === "full") {
-          const ok = await purchase(plan);
-          if (ok) await afterPurchase();
-          return;
-        }
-        // Discount tiers: annual package (offer framing is UI; store price is source of truth)
-        const ok = await purchase("annual");
-        if (ok) await afterPurchase();
+  /** Checkout only through RevenueCat — package or hosted paywall UI. */
+  const checkoutWithRevenueCat = useCallback(
+    async (selected: PlanId | "rc_ui") => {
+      setLocalError(null);
+      clearError();
+
+      if (!supported || Platform.OS === "web") {
+        setLocalError("Subscriptions are available in the ChristCalm iOS or Android app.");
+        trackPaywallPurchaseError(surface, selected, "not_supported", tProp);
         return;
       }
-      // Web / no SDK: open remote paywall if possible, else skip
+
+      trackPaywallPurchaseStart(surface, selected, tProp);
+
       try {
-        const ok = await presentPaywall();
-        if (ok) await afterPurchase();
-        else goNext();
-      } catch {
-        goNext();
+        let ok = false;
+        if (selected === "rc_ui" || !hasStorePackages) {
+          ok = await presentPaywall();
+          if (ok) {
+            trackPaywallPurchaseSuccess(surface, "rc_ui", tProp);
+            await afterPurchase();
+          } else {
+            trackPaywallPurchaseCancel(surface, "rc_ui", tProp);
+          }
+          return;
+        }
+
+        ok = await purchase(selected);
+        if (ok) {
+          trackPaywallPurchaseSuccess(surface, selected, tProp);
+          await afterPurchase();
+        } else {
+          trackPaywallPurchaseCancel(surface, selected, tProp);
+        }
+      } catch (e: unknown) {
+        const err = e as { message?: string; userCancelled?: boolean };
+        if (err?.userCancelled) {
+          trackPaywallPurchaseCancel(surface, selected, tProp);
+          return;
+        }
+        const msg = err?.message || "Unable to complete purchase.";
+        trackPaywallPurchaseError(surface, selected, msg, tProp);
+        setLocalError(msg);
       }
-    } catch (e: unknown) {
-      const err = e as { message?: string; userCancelled?: boolean };
-      if (err?.userCancelled) return;
-      setLocalError(err?.message || "Unable to complete purchase.");
+    },
+    [
+      supported,
+      hasStorePackages,
+      purchase,
+      presentPaywall,
+      afterPurchase,
+      clearError,
+      surface,
+      tProp,
+    ]
+  );
+
+  const onPrimary = useCallback(async () => {
+    if (tier !== "full" && expired) {
+      trackPaywallSkip(surface, tProp, "timer_expired");
+      goNext();
+      return;
     }
-  }, [
-    tier,
-    expired,
-    supported,
-    plan,
-    purchase,
-    presentPaywall,
-    afterPurchase,
-    goNext,
-    clearError,
-  ]);
+    // Discount tiers buy annual; full tier uses selected plan
+    const planToBuy: PlanId = tier === "full" ? plan : "annual";
+    await checkoutWithRevenueCat(planToBuy);
+  }, [tier, expired, plan, checkoutWithRevenueCat, goNext, surface, tProp]);
 
   const onSecondary = useCallback(() => {
-    // Full → 50%, 50% → 80%, 80% → how app works
+    trackPaywallSkip(surface, tProp, copy.secondaryCta);
     goNext();
-  }, [goNext]);
+  }, [goNext, surface, tProp, copy.secondaryCta]);
 
   const onOpenRcPaywall = useCallback(async () => {
-    setLocalError(null);
-    clearError();
-    try {
-      const ok = await presentPaywall();
-      if (ok) await afterPurchase();
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      setLocalError(err?.message || "Unable to open subscription options.");
-    }
-  }, [presentPaywall, afterPurchase, clearError]);
+    await checkoutWithRevenueCat("rc_ui");
+  }, [checkoutWithRevenueCat]);
 
   const urgencyColor = tier === "eighty" ? (isDark ? "#E89B6E" : "#C45C3A") : colors.primary;
 
@@ -351,6 +397,7 @@ export function EscalatingPaywall({ tier, testID }: Props) {
           color: colors.textMuted,
           textAlign: "center",
           marginTop: spacing.sm,
+          lineHeight: 16,
         },
       }),
     [colors, fonts, spacing, radius, shadows, tier, urgencyColor]
@@ -360,7 +407,9 @@ export function EscalatingPaywall({ tier, testID }: Props) {
   const primaryLabel =
     tier !== "full" && expired
       ? "Continue"
-      : copy.primaryCta;
+      : !supported || Platform.OS === "web"
+        ? "Continue"
+        : copy.primaryCta;
 
   return (
     <View style={styles.root} testID={testID}>
@@ -397,7 +446,7 @@ export function EscalatingPaywall({ tier, testID }: Props) {
         <View style={styles.plans}>
           <TouchableOpacity
             style={[styles.planCard, plan === "annual" && styles.planCardSelected]}
-            onPress={() => setPlan("annual")}
+            onPress={() => selectPlan("annual")}
             testID="paywall-plan-annual"
           >
             <View style={styles.planRow}>
@@ -408,14 +457,14 @@ export function EscalatingPaywall({ tier, testID }: Props) {
               <View>
                 <Text style={styles.planPrice}>{annualPrice}</Text>
                 <Text style={styles.planPriceSub}>
-                  {annualPkg ? "billed yearly" : PAYWALL_MARKETING.full.yearlySuffix}
+                  {usingStorePrices ? "billed yearly" : PAYWALL_MARKETING.full.yearlySuffix}
                 </Text>
               </View>
             </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.planCard, plan === "monthly" && styles.planCardSelected]}
-            onPress={() => setPlan("monthly")}
+            onPress={() => selectPlan("monthly")}
             testID="paywall-plan-monthly"
           >
             <View style={styles.planRow}>
@@ -423,7 +472,7 @@ export function EscalatingPaywall({ tier, testID }: Props) {
               <View>
                 <Text style={styles.planPrice}>{monthlyPrice}</Text>
                 <Text style={styles.planPriceSub}>
-                  {monthlyPkg ? "billed monthly" : PAYWALL_MARKETING.full.monthlySuffix}
+                  {usingStorePrices ? "billed monthly" : PAYWALL_MARKETING.full.monthlySuffix}
                 </Text>
               </View>
             </View>
@@ -431,9 +480,11 @@ export function EscalatingPaywall({ tier, testID }: Props) {
         </View>
       ) : (
         <View style={styles.priceRow}>
-          <Text style={styles.strike}>
-            {"yearlyList" in marketing ? marketing.yearlyList : "₹4,999"}
-          </Text>
+          {usingStorePrices && annualPkg?.product.priceString ? null : (
+            <Text style={styles.strike}>
+              {"yearlyList" in marketing ? marketing.yearlyList : ""}
+            </Text>
+          )}
           <Text style={styles.discountPrice}>
             {annualPrice}
             <Text style={{ fontSize: 16 }}> / year</Text>
@@ -446,9 +497,12 @@ export function EscalatingPaywall({ tier, testID }: Props) {
       )}
 
       <TouchableOpacity
-        style={[styles.primaryBtn, (busy || (expired && tier === "eighty")) && styles.primaryBtnDisabled]}
+        style={[
+          styles.primaryBtn,
+          (busy || (expired && tier === "eighty" && supported)) && styles.primaryBtnDisabled,
+        ]}
         onPress={onPrimary}
-        disabled={busy || (expired && tier === "eighty")}
+        disabled={busy}
         testID={`paywall-primary-${tier}`}
       >
         {busy ? (
@@ -458,18 +512,29 @@ export function EscalatingPaywall({ tier, testID }: Props) {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.secondary} onPress={onSecondary} testID={`paywall-secondary-${tier}`}>
+      <TouchableOpacity
+        style={styles.secondary}
+        onPress={onSecondary}
+        testID={`paywall-secondary-${tier}`}
+      >
         <Text style={styles.secondaryText}>{copy.secondaryCta}</Text>
       </TouchableOpacity>
 
       {supported && Platform.OS !== "web" ? (
-        <TouchableOpacity style={styles.rcLink} onPress={onOpenRcPaywall} testID="paywall-rc-hosted">
-          <Text style={styles.rcLinkText}>More plans</Text>
+        <TouchableOpacity
+          style={styles.rcLink}
+          onPress={onOpenRcPaywall}
+          disabled={busy}
+          testID="paywall-rc-hosted"
+        >
+          <Text style={styles.rcLinkText}>See all plans (App Store)</Text>
         </TouchableOpacity>
       ) : null}
 
       <Text style={styles.storeNote}>
-        {supported ? "Billed via App Store / Google Play. Cancel anytime." : "Requires iOS or Android app."}
+        {supported && Platform.OS !== "web"
+          ? "Payments are processed by Apple or Google via RevenueCat. Cancel anytime in your store account."
+          : "In-app purchases run on iOS / Android. You can continue setup and subscribe later."}
       </Text>
     </View>
   );
