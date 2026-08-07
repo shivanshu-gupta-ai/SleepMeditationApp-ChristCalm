@@ -3,6 +3,7 @@ import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useAuth } from "@/src/features/auth";
+import { usePremium } from "@/src/features/subscriptions";
 import { LoadingState } from "@/src/components/ui";
 import { FloatingTabBar } from "@/src/components/ui/FloatingTabBar";
 
@@ -10,12 +11,14 @@ import { FloatingTabBar } from "@/src/components/ui/FloatingTabBar";
  * Floating tabs + Start Calm FAB.
  * Visible: Home · Meditate · Wisdom · Journey · Me
  * Hidden routes: Journal (via Me), Prayers library (deferred)
+ * Hard paywall: non-premium users redirected to /paywall
  */
 export default function TabsLayout() {
   const { user, loading } = useAuth();
+  const { isPremium, rcReady } = usePremium();
   const { colors } = useTheme();
 
-  if (loading) {
+  if (loading || (user && !rcReady && !isPremium)) {
     return (
       <LoadingState
         message="Opening your space…"
@@ -24,6 +27,7 @@ export default function TabsLayout() {
     );
   }
   if (!user) return <Redirect href="/(auth)/sign-in" />;
+  if (!isPremium) return <Redirect href="/paywall" />;
 
   return (
     <Tabs

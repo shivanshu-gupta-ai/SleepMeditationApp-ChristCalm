@@ -14,7 +14,6 @@ import {
   trackPaywallPurchaseSuccess,
   trackPaywallPurchaseCancel,
   trackPaywallPurchaseError,
-  trackPaywallSkip,
   trackPaywallRestore,
 } from "@/src/features/subscriptions";
 import { Screen, Button, ErrorBanner, SectionHeader } from "@/src/components/ui";
@@ -50,7 +49,7 @@ export default function Paywall() {
   const [error, setError] = useState<string | null>(null);
   const displayError = error || rcError;
 
-  const annual = getPackage("annual");
+  const annual = getPackage("annualFull");
   const monthly = getPackage("monthly");
   const priceHint =
     annual?.product.priceString ||
@@ -63,10 +62,8 @@ export default function Paywall() {
     });
   }, [annual, monthly]);
 
-  const close = (skipped = false) => {
-    if (skipped) trackPaywallSkip("in_app", "none", "close");
-    if (router.canGoBack()) router.back();
-    else router.replace("/(tabs)/home");
+  const leaveAfterPurchase = () => {
+    router.replace("/(tabs)/home");
   };
 
   const onSubscribe = async () => {
@@ -82,7 +79,7 @@ export default function Paywall() {
       if (active) {
         trackPaywallPurchaseSuccess("in_app", "rc_ui");
         await refreshUser();
-        router.replace("/(tabs)/home");
+        leaveAfterPurchase();
       } else {
         trackPaywallPurchaseCancel("in_app", "rc_ui");
       }
@@ -107,7 +104,7 @@ export default function Paywall() {
       if (active) {
         trackPaywallPurchaseSuccess("in_app", "restore");
         await refreshUser();
-        router.replace("/(tabs)/home");
+        leaveAfterPurchase();
       } else {
         setError("No active subscription found for this account.");
       }
@@ -126,7 +123,6 @@ export default function Paywall() {
         size={26}
         style={{ alignSelf: "flex-end", padding: spacing.sm, marginBottom: spacing.sm }}
         testID="paywall-close-btn"
-        onBeforeBack={() => trackPaywallSkip("in_app", "none", "close")}
       />
 
       <LinearGradient
@@ -331,22 +327,19 @@ export default function Paywall() {
             </TouchableOpacity>
           ) : null}
 
-          <TouchableOpacity
-            onPress={() => close(true)}
-            testID="paywall-not-now"
-            style={{ paddingVertical: spacing.sm }}
+          <Text
+            style={{
+              textAlign: "center",
+              fontFamily: fonts.body,
+              color: colors.textMuted,
+              fontSize: 13,
+              marginTop: spacing.sm,
+              lineHeight: 18,
+            }}
+            testID="paywall-hard-note"
           >
-            <Text
-              style={{
-                textAlign: "center",
-                fontFamily: fonts.body,
-                color: colors.textMuted,
-                fontSize: 14,
-              }}
-            >
-              Not now
-            </Text>
-          </TouchableOpacity>
+            A Premium subscription is required to use ChristCalm. Restore if you already purchased.
+          </Text>
         </>
       ) : null}
 

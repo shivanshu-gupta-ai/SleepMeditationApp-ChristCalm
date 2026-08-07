@@ -77,13 +77,16 @@ Any IdP is valid. Map provider `sub` → `User.id`. Upsert user row on first val
 
 ### Products
 
-| Plan | Canonical product id | Aliases | Display (fallback) |
-|------|----------------------|---------|---------------------|
-| Monthly | `cc_999_1m` | `christcalm_monthly`, `monthly` | ~$9.99/mo |
-| Annual | `cc_1999_1y_1w0` | `christcalm_annual`, `annual`, `yearly` | ~$39.99/yr (highlighted) |
+| Plan | Store product id | US list | Onboarding step |
+|------|------------------|---------|-----------------|
+| Monthly | `cc_999_1m` | $9.99/mo | Full step (optional) |
+| Annual full | `cc_5999_1y` | **$59.99**/yr | Full step |
+| Annual mid | `cc_3999_1y` | **$39.99**/yr | Mid ladder |
+| Annual low | `cc_1999_1y` | **$19.99**/yr | Final hard step |
 
-Entitlement: **`christcalm_premium`**. Offering: **`default`**.  
-Prices are store-configured; app shows localized price strings from RevenueCat when packages load.
+Entitlement: **`christcalm_premium`** (all SKUs unlock the same). Offering: **`default`**.  
+Packages: `$rc_monthly`, `$rc_annual`, `$rc_custom_annual_mid`, `$rc_custom_annual_low`.  
+**No free trial.** Prices from StoreKit via RevenueCat at runtime.
 
 ---
 
@@ -91,28 +94,19 @@ Prices are store-configured; app shows localized price strings from RevenueCat w
 
 ### When to show
 
-1. **Primary conversion — onboarding ladder** (screens `paywallFull` → `paywall50` → `paywall80`) with persisted scarcity timers (12m / 5m / 3m)  
-2. **Secondary:** Soft sheet after **first practice** (value-first, dismissible)  
-3. Premium-gated item tap  
-4. Me → Unlock Premium / Manage subscription  
-
-### When NOT to show
-
-- Blocking **SOS**  
-- Replacing calm content with a hard wall on first open before any practice (outside onboarding)  
+1. **Onboarding multi-tier hard ladder** (`paywallFull` → mid → low) with urgency timers; each step sells a real annual SKU ($59.99 / $39.99 / $19.99)  
+2. **Hard gate** after auth: no `christcalm_premium` → `/paywall` (tabs blocked)  
+3. Me → Unlock Premium / Customer Center  
 
 ### Tone
 
-- Warm, invitational, transparent on in-app modal  
-- Onboarding uses time-limited offers (documented timers) — still clear pricing, Restore, and skip paths  
-- Feature checklist, dual plan cards  
-- Avoid fake “only 3 seats left” social-pressure copy  
+- StoreKit prices only; **no free trial**  
+- Timers escalate to lower real SKUs; final step is purchase or restore only  
 
-### Soft vs hard
+### Hard paywall
 
-- Soft: dismissible after first practice  
-- Hard: gate premium catalog items only  
-- Onboarding ladder: primary monetization moment before auth
+- Unpaid users never reach main tabs  
+- In-app shell uses RevenueCat `presentPaywall` on offering `default`  
 
 ---
 

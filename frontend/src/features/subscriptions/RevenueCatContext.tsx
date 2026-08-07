@@ -30,7 +30,9 @@ import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import {
   ENTITLEMENT_ID,
   OFFERING_ID,
+  PACKAGE_KEYS,
   PRODUCT_IDS,
+  PRODUCT_ID_ALIASES,
   planFromProductIdentifier,
   type PlanId,
 } from "@/src/features/subscriptions/constants";
@@ -96,7 +98,9 @@ function formatPurchasesError(e: unknown): string {
 
 async function syncBackend(active: boolean, plan: PlanId | null) {
   try {
-    await api.syncSubscription({ active, plan });
+    const apiPlan =
+      plan === "monthly" ? "monthly" : plan ? "annual" : null;
+    await api.syncSubscription({ active, plan: apiPlan });
   } catch {
     // Webhook remains long-term source of truth
   }
@@ -232,21 +236,32 @@ export function RevenueCatProvider({
         null;
       if (!current) return null;
 
-      const targetType = plan === "annual" ? PACKAGE_TYPE.ANNUAL : PACKAGE_TYPE.MONTHLY;
-      const byType = current.availablePackages.find((p) => p.packageType === targetType);
-      if (byType) return byType;
+      const pkgKey = PACKAGE_KEYS[plan];
+      const byKey = current.availablePackages.find(
+        (p) => p.identifier === pkgKey || p.identifier.toLowerCase() === pkgKey.toLowerCase()
+      );
+      if (byKey) return byKey;
+
+      // Monthly: prefer MONTHLY package type when key miss
+      if (plan === "monthly") {
+        const byType = current.availablePackages.find((p) => p.packageType === PACKAGE_TYPE.MONTHLY);
+        if (byType) return byType;
+      }
+      if (plan === "annualFull") {
+        const byType = current.availablePackages.find((p) => p.packageType === PACKAGE_TYPE.ANNUAL);
+        if (byType) return byType;
+      }
 
       const aliases = [
         PRODUCT_IDS[plan],
-        plan === "annual" ? "christcalm_annual" : "christcalm_monthly",
-        plan === "annual" ? "$rc_annual" : "$rc_monthly",
-        plan === "annual" ? "annual" : "monthly",
+        pkgKey,
+        ...(PRODUCT_ID_ALIASES[plan] || []),
       ].map((s) => s.toLowerCase());
 
       return (
         current.availablePackages.find((p) => {
           const hay = `${p.identifier} ${p.product.identifier}`.toLowerCase();
-          return aliases.some((a) => hay.includes(a));
+          return aliases.some((a) => hay === a || hay.includes(a));
         }) ?? null
       );
     },
