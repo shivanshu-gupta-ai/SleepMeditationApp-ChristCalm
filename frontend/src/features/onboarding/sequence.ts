@@ -41,7 +41,7 @@ export const ONBOARDING_SEQUENCE: readonly OnboardingScreenDef[] = [
     index: 3,
     label: "Scripture rest",
     type: "value",
-    grace: "thoughtful",
+    grace: "scripture",
     showProgress: false,
     showBack: true,
     ctaLabel: "Continue",
