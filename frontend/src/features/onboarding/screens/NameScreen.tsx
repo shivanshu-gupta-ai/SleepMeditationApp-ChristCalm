@@ -78,7 +78,7 @@ export function NameScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-name">
       <GraceMoodImage
-        mood="thinking"
+        mood="thinkname"
         size={110}
         showGlow={false}
         testID="grace-name"

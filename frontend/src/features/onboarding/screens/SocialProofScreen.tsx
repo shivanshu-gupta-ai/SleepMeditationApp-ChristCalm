@@ -115,7 +115,7 @@ export function SocialProofScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-socialProof">
       <GraceMoodImage
-        mood="hopeful"
+        mood="review"
         profile="idleHopeful"
         glowTone="gold"
         size={100}

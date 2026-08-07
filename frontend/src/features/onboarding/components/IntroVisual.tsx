@@ -25,7 +25,7 @@ type Props = {
 const MOOD: Record<IntroVisualVariant, GraceExpression | "splash"> = {
   welcome: "welcome",
   noise: "notification",
-  scripture: "smile",
+  scripture: "scripture",
   personal: "anxiety",
 };
 

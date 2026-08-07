@@ -22,6 +22,14 @@ const EXPRESSION_LABEL: Record<GraceExpression, string> = {
   anxiety: "Grace · Anxiety",
   fact: "Grace · Fact",
   thinking: "Grace · Thinking",
+  scripture: "Grace · Scripture",
+  thinkname: "Grace · Think Name",
+  didYouKnow: "Grace · Did You Know",
+  preparing: "Grace · Preparing",
+  seeker: "Grace · Seeker",
+  tracktospend: "Grace · Track To Spend",
+  happy1: "Grace · Happy 1",
+  review: "Grace · Review",
 };
 
 /**

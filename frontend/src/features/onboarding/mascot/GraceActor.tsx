@@ -29,19 +29,27 @@ import { profileForExpression } from "./expressionMap";
 const FALLBACK = require("@/assets/images/grace-mascot.png");
 
 export const GRACE_MOOD_ASSETS: Record<GraceExpression | "splash", any> = {
-  welcome: require("@/animation/gif/bunnyhelloanimation.gif"),
+  welcome: require("@/animation/gif/helloanimation1.gif"),
   listening: require("@/animation/gif/bunnythinking.gif"),
   thoughtful: require("@/animation/gif/bunnythinking.gif"),
   heavy: require("@/animation/gif/sadbunny.gif"),
   hopeful: require("@/animation/gif/bunnysmile.gif"),
-  committed: require("@/animation/gif/bunnysmile.gif"),
+  committed: require("@/animation/gif/commited.gif"),
   peaceful: require("@/animation/gif/bunnysmile.gif"),
-  notification: require("@/animation/gif/bunnynotification.gif"),
-  smile: require("@/animation/gif/bunnysmile.gif"),
-  anxiety: require("@/animation/gif/bunnyanxietyscreen.gif"),
+  notification: require("@/animation/gif/notification1.gif"),
+  smile: require("@/animation/gif/smile.gif"),
+  anxiety: require("@/animation/gif/anxiety.gif"),
   fact: require("@/animation/gif/bunnyfact.gif"),
   thinking: require("@/animation/gif/bunnythinking.gif"),
-  splash: require("@/animation/gif/bunnyhelloanimation.gif"),
+  splash: require("@/animation/gif/helloanimation1.gif"),
+  scripture: require("@/animation/gif/scripture.gif"),
+  thinkname: require("@/animation/gif/thinkname.gif"),
+  didYouKnow: require("@/animation/gif/didyouknow.gif"),
+  preparing: require("@/animation/gif/preparing.gif"),
+  seeker: require("@/animation/gif/seeker.gif"),
+  tracktospend: require("@/animation/gif/tracktospend.gif"),
+  happy1: require("@/animation/gif/happy1.gif"),
+  review: require("@/animation/gif/review.gif"),
 };
 
 export type GraceActorProps = {
@@ -77,7 +85,11 @@ export function GraceActor({
   testID = "grace-actor",
 }: GraceActorProps) {
   const { colors, isDark } = useTheme();
-  const gifSize = Math.round(size * 1.5);
+  // Base scale factor for mascot GIF expressions is 1.8
+  // helloanimation1.gif (welcome/splash) and notification1.gif (notification) size reduced by 20%
+  const isReduced = expression === "welcome" || expression === "splash" || expression === "notification";
+  const scaleFactor = isReduced ? 1.8 * 0.8 : 1.8;
+  const gifSize = Math.round(size * scaleFactor);
   const profileId = profileProp ?? profileForExpression(expression);
   const profile = MOTION_PROFILES[profileId];
   const src = GRACE_MOOD_ASSETS[expression] ?? FALLBACK;

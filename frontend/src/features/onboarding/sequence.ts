@@ -61,7 +61,7 @@ export const ONBOARDING_SEQUENCE: readonly OnboardingScreenDef[] = [
     index: 5,
     label: "Name",
     type: "input",
-    grace: "listening",
+    grace: "thinkname",
     showProgress: true,
     showBack: true,
     ctaLabel: "Continue",

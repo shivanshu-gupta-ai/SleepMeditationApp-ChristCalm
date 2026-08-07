@@ -199,12 +199,11 @@ export function CommitmentScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-commitment">
       <View style={styles.graceStage}>
-        <Animated.View style={[styles.glow, { opacity: glow }]} pointerEvents="none" />
         <Animated.View style={graceLift}>
           <GraceMoodImage
-            mood={done ? "committed" : "hopeful"}
+            mood="committed"
             profile={done ? "idleCelebrate" : "idleCalm"}
-            glowTone="gold"
+            showGlow={false}
             reactToken={celebrateToken}
             reactKind="celebrate"
             size={128}

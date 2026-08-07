@@ -64,7 +64,15 @@ export type GraceExpression =
   | "smile"
   | "anxiety"
   | "fact"
-  | "thinking";
+  | "thinking"
+  | "scripture"
+  | "thinkname"
+  | "didYouKnow"
+  | "preparing"
+  | "seeker"
+  | "tracktospend"
+  | "happy1"
+  | "review";
 
 export type OnboardingScreenDef = {
   /** Route key / component id */
