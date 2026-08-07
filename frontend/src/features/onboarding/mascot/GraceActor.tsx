@@ -111,7 +111,8 @@ export function GraceActor({
     cancelAnimation(sway);
     cancelAnimation(glowOp);
 
-    if (!animate || reduceMotion) {
+    // Static PNG only when reduce-motion, GIF failed, or animation disabled
+    if (!animate || reduceMotion || gifFailed) {
       bob.value = 0;
       scale.value = 1;
       sway.value = 0;
@@ -171,7 +172,7 @@ export function GraceActor({
       cancelAnimation(sway);
       cancelAnimation(glowOp);
     };
-  }, [animate, reduceMotion, profile, bob, scale, sway, glowOp]);
+  }, [animate, reduceMotion, gifFailed, profile, bob, scale, sway, glowOp]);
 
   // One-shot react
   useEffect(() => {
