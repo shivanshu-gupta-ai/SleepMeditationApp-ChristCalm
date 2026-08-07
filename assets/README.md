@@ -36,3 +36,12 @@ aws s3 sync assets/meditations/audio/ \
 ```
 
 See `assets/meditations/audio/README.md` and `assets/meditations/covers/README.md`.
+
+## Onboarding Grace GIFs
+
+Animated mascot GIFs are **not** stored in git. They live on the same media bucket:
+
+`…/onboarding/grace/<expression>.gif`
+
+Client: `frontend/src/features/onboarding/mascot/graceAssets.ts`.  
+PNG stills remain under `frontend/assets/images/onboarding/` as offline fallbacks.

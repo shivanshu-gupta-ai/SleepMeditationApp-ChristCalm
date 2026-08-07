@@ -51,7 +51,7 @@ export type OnboardingScreenType =
   | "motivation"
   | "monetization";
 
-/** Grace expression bands from design §9 */
+/** Grace expression bands — base set + GIF moods (S3-hosted animations) */
 export type GraceExpression =
   | "welcome"
   | "listening"
@@ -59,7 +59,20 @@ export type GraceExpression =
   | "heavy"
   | "hopeful"
   | "committed"
-  | "peaceful";
+  | "peaceful"
+  | "notification"
+  | "smile"
+  | "anxiety"
+  | "fact"
+  | "thinking"
+  | "scripture"
+  | "thinkname"
+  | "didYouKnow"
+  | "preparing"
+  | "seeker"
+  | "tracktospend"
+  | "happy1"
+  | "review";
 
 export type OnboardingScreenDef = {
   /** Route key / component id */

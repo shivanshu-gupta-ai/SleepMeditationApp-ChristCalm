@@ -202,9 +202,9 @@ export function CommitmentScreen() {
         <Animated.View style={[styles.glow, { opacity: glow }]} pointerEvents="none" />
         <Animated.View style={graceLift}>
           <GraceMoodImage
-            mood={done ? "committed" : "hopeful"}
+            mood="committed"
             profile={done ? "idleCelebrate" : "idleCalm"}
-            glowTone="gold"
+            showGlow={false}
             reactToken={celebrateToken}
             reactKind="celebrate"
             size={128}

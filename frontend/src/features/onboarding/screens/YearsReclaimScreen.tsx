@@ -82,7 +82,7 @@ export function YearsReclaimScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-yearsReclaim">
       <GraceMoodImage
-        mood="hopeful"
+        mood="happy1"
         profile="idleHopeful"
         glowTone="gold"
         enterReact="celebrate"

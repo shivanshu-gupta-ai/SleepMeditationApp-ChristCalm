@@ -24,29 +24,29 @@ const HEAVY: GraceStageConfig = {
   glow: "muted",
 };
 
-/** Full onboarding route → mascot stage (expression matches question feeling) */
+/** Full onboarding route → mascot stage (GIF moods + paywall ladder) */
 export const ONBOARDING_GRACE: Record<OnboardingRouteId, GraceStageConfig> = {
   splash: { expression: "splash", profile: "idleCalm", glow: "gold", enterReact: "none" },
   welcome: { expression: "welcome", profile: "idleWave", glow: "gold", enterReact: "celebrate" },
   benefit1: { expression: "peaceful", profile: "idleCalm", glow: "primary", enterReact: "exhale" },
-  benefit2: { expression: "thoughtful", profile: "idleThink", glow: "gold" },
+  benefit2: { expression: "scripture", profile: "idleThink", glow: "gold" },
   benefit3: { expression: "hopeful", profile: "idleHopeful", glow: "primary" },
-  name: { expression: "welcome", profile: "idleListen", glow: "gold", enterReact: "lean" },
+  name: { expression: "thinkname", profile: "idleListen", glow: "gold", enterReact: "lean" },
   heart: { expression: "listening", profile: "idleListen", glow: "primary", enterReact: "lean" },
   faith: { expression: "thoughtful", profile: "idleThink", glow: "gold" },
   concerns: { expression: "heavy", profile: "idleHeavy", glow: "muted", enterReact: "exhale" },
   timing: { expression: "peaceful", profile: "idleCalm", glow: "primary" },
   support: { expression: "hopeful", profile: "idleHopeful", glow: "primary", enterReact: "lean" },
-  didYouKnow: { expression: "listening", profile: "idleListen", glow: "muted" },
-  age: { expression: "listening", profile: "idleListen", glow: "primary" },
-  intensity: { expression: "listening", profile: "idleListen", glow: "primary" },
-  calculating: { expression: "thoughtful", profile: "idleThink", glow: "primary" },
-  profileReveal: { expression: "thoughtful", profile: "idleThink", glow: "primary" },
-  lifetimeLoss: HEAVY,
+  didYouKnow: { expression: "didYouKnow", profile: "idleListen", glow: "muted" },
+  age: LISTEN,
+  intensity: LISTEN,
+  calculating: { expression: "preparing", profile: "idleThink", glow: "primary" },
+  profileReveal: { expression: "seeker", profile: "idleThink", glow: "primary" },
+  lifetimeLoss: { expression: "tracktospend", profile: "idleHeavy", glow: "muted" },
   visualRemaining: { expression: "heavy", profile: "idleFrozen", glow: "muted" },
   visualLost: { expression: "heavy", profile: "idleFrozen", glow: "muted" },
-  yearsReclaim: { expression: "hopeful", profile: "idleHopeful", glow: "gold", enterReact: "celebrate" },
-  socialProof: { expression: "hopeful", profile: "idleHopeful", glow: "gold" },
+  yearsReclaim: { expression: "happy1", profile: "idleHopeful", glow: "gold", enterReact: "celebrate" },
+  socialProof: { expression: "review", profile: "idleHopeful", glow: "gold" },
   commitment: { expression: "committed", profile: "idleCalm", glow: "gold" },
   statsPreview: { expression: "peaceful", profile: "idleCalm", glow: "primary" },
   paywallFull: { expression: "hopeful", profile: "idleCalm", glow: "gold" },
@@ -69,16 +69,29 @@ export function profileForExpression(
 ): MotionProfileId {
   switch (expression) {
     case "listening":
+    case "thinkname":
+    case "didYouKnow":
+    case "thinking":
       return "idleListen";
     case "thoughtful":
+    case "preparing":
+    case "seeker":
+    case "scripture":
+    case "fact":
       return "idleThink";
     case "heavy":
+    case "tracktospend":
+    case "anxiety":
       return "idleHeavy";
     case "hopeful":
+    case "happy1":
+    case "review":
+    case "smile":
       return "idleHopeful";
     case "committed":
       return "idleCelebrate";
     case "peaceful":
+    case "notification":
       return "idleCalm";
     case "welcome":
     case "splash":

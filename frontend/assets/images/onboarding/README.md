@@ -1,6 +1,7 @@
 # Grace onboarding assets
 
-Soft 3D companion for ChristCalm. Produced with **Imagine** (build-time only), not at runtime.
+Soft 3D companion for ChristCalm. Stills are **bundled** for instant/offline display.
+**Animated GIFs are not in the app bundle** — they load from the public media S3 bucket.
 
 ## Character lock
 
@@ -10,7 +11,7 @@ Soft 3D companion for ChristCalm. Produced with **Imagine** (build-time only), n
 - Clean silhouette on **transparent** plate (no solid black plate) for UI crop on app gradients
 - Warm key light + soft rim so she reads on dark (Nest) and light (Cooper)
 
-## Files
+## Bundled stills (PNG)
 
 | Still | Expression |
 |-------|------------|
@@ -23,20 +24,35 @@ Soft 3D companion for ChristCalm. Produced with **Imagine** (build-time only), n
 | `grace-committed.png` | Commitment |
 | `grace-peaceful.png` | Peace / finale |
 
-### Dual-frame animation (`grace-*-b.png`)
+These are wired as fallbacks / reduce-motion / offline in `graceAssets.ts`.
 
-Second pose for soft A↔B crossfade in `GraceActor` (Imagine `image_edit` pose variants).  
-Works offline without MP4. Prefer distinct poses; if missing, copy primary still to `*-b`.
+## Animated GIFs (S3, not git)
 
-### Video loops (optional)
+**Bucket:** `christcalm-preview-media-500696805306`  
+**Prefix:** `onboarding/grace/<expression>.gif`  
+**URL:** `https://christcalm-preview-media-500696805306.s3.us-east-1.amazonaws.com/onboarding/grace/<expression>.gif`
 
-`grace-anim/*.mp4` via Imagine `image_to_video` when the team allows video output.  
-Wire requires in `GRACE_MOOD_VIDEOS`. Soft breathe / sway only — no gamey bounce.
+Optional override: `EXPO_PUBLIC_MEDIA_BASE_URL` (no trailing slash).
+
+Client map: `frontend/src/features/onboarding/mascot/graceAssets.ts`  
+Playback: `GraceActor` via `expo-image` with PNG `placeholder` and `onError` → PNG.
+
+### Upload (after compressing)
+
+```bash
+# Compress aggressively first (≈280px, lossy gifsicle) then:
+aws s3 sync ./dist/ s3://christcalm-preview-media-500696805306/onboarding/grace/ \
+  --cache-control "public,max-age=31536000,immutable" \
+  --content-type "image/gif"
+```
+
+Bucket policy must allow `s3:GetObject` on `onboarding/grace/*` (same pattern as `meditations/audio/*`).
+
+Do **not** commit raw multi‑MB GIFs under `frontend/animation/` or `assets/`.
 
 ## Regeneration
 
 1. `image_edit` from an existing Grace PNG (never pure text-only for variants).
-2. Brighten: clearer eyes, fur highlights, scarf saturation, gold cross.
-3. Generate `*-b.png` pose variants for dual-frame loops.
-4. Optionally `image_to_video` (6s, 480p) when available; map in `GRACE_MOOD_VIDEOS`.
-5. Wire stills in `GRACE_MOOD_ASSETS` / `GRACE_MOOD_FRAME_B`.
+2. Export GIF loops, compress for mobile (target ~0.5–1.5 MB each).
+3. Upload to S3 with the expression filename (`welcome.gif`, `preparing.gif`, …).
+4. Keep PNG stills in this folder as fallbacks.
