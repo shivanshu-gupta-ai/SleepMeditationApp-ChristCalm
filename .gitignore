@@ -77,6 +77,9 @@ __pycache__/
 venv/
 .venv/
 
+# Local tooling (Playwright install for screen capture, etc.)
+.tools/
+
 # Development tools
 chainlit.md
 .chainlit
