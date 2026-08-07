@@ -24,9 +24,9 @@ type Props = {
 
 const MOOD: Record<IntroVisualVariant, GraceExpression | "splash"> = {
   welcome: "welcome",
-  noise: "peaceful",
-  scripture: "thoughtful",
-  personal: "hopeful",
+  noise: "notification",
+  scripture: "scripture",
+  personal: "anxiety",
 };
 
 const PROFILE: Record<IntroVisualVariant, MotionProfileId> = {

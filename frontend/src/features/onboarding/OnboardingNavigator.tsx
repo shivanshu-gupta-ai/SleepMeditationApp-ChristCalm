@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Text,
   TouchableOpacity,
@@ -7,6 +7,7 @@ import {
   type GestureResponderEvent,
   type PanResponderGestureState,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/context/ThemeContext";
@@ -16,6 +17,7 @@ import { useObStyles } from "./components/OnboardingStepLayout";
 import { OnboardingProvider, useOnboarding } from "./OnboardingContext";
 import { previousStepIndex } from "./sequence";
 import type { OnboardingRouteId } from "./types";
+import { PREFETCH_MOODS, graceGifUrl } from "./mascot/graceAssets";
 import {
   SplashScreen,
   WelcomeScreen,
@@ -105,6 +107,13 @@ function OnboardingFlow() {
     slide,
     exitOpacity,
   } = useOnboarding();
+
+  // Warm GIF cache for first screens (S3; PNG still paints immediately)
+  useEffect(() => {
+    PREFETCH_MOODS.forEach((mood) => {
+      Image.prefetch(graceGifUrl(mood)).catch(() => {});
+    });
+  }, []);
 
   const isIntro = INTRO_IDS.has(screen.id);
   const goNextRef = useRef(goNext);

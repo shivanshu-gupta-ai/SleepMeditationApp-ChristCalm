@@ -101,7 +101,7 @@ export function CalculatingScreen() {
   return (
     <View style={styles.root} testID="onboarding-screen-calculating">
       <GraceMoodImage
-        mood="thoughtful"
+        mood="preparing"
         profile="idleThink"
         glowTone="primary"
         size={130}
