@@ -1,22 +1,21 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingOption } from "../components/OnboardingOption";
-import { OnboardingQuestion } from "../components/OnboardingQuestion";
+import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { useOnboarding } from "../OnboardingContext";
 import { AGE_QUESTION, AGE_RANGES } from "../copy";
 
 /**
  * Screen 12 — How old are you? (single)
- * Stores draft.ageRange
  */
 export function AgeScreen() {
   const { draft, setSingle } = useOnboarding();
-  const { spacing } = useTheme();
 
   return (
-    <View style={[styles.root, { paddingHorizontal: spacing.md }]} testID="onboarding-screen-age">
-      <OnboardingQuestion title={AGE_QUESTION.title} />
+    <OnboardingQuestionScreen
+      title={AGE_QUESTION.title}
+      verticallyCenter
+      testID="onboarding-screen-age"
+    >
       {AGE_RANGES.map((opt) => (
         <OnboardingOption
           key={opt.id}
@@ -27,12 +26,8 @@ export function AgeScreen() {
           testID={`age-${opt.id}`}
         />
       ))}
-    </View>
+    </OnboardingQuestionScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { paddingTop: 4, paddingBottom: 8 },
-});
 
 export default AgeScreen;

@@ -1,13 +1,13 @@
 import React, { useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
-import { OnboardingGrace } from "../components/OnboardingGrace";
+import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { NAME_COPY } from "../copy";
 import { useOnboarding } from "../OnboardingContext";
 
 /**
  * Screen 5 — Name (optional)
- * Grace on top; centered copy matching the question layout pattern.
+ * Centered question shell + centered input.
  */
 export function NameScreen() {
   const { draft, patch } = useOnboarding();
@@ -18,36 +18,6 @@ export function NameScreen() {
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        root: {
-          flex: 1,
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.sm,
-          paddingBottom: spacing.sm,
-          alignItems: "center",
-        },
-        graceWrap: {
-          alignItems: "center",
-          marginBottom: spacing.md,
-        },
-        title: {
-          fontFamily: fonts.headingBold,
-          fontSize: 24,
-          lineHeight: 32,
-          letterSpacing: -0.4,
-          color: colors.textPrimary,
-          textAlign: "center",
-          marginBottom: spacing.xs,
-          width: "100%",
-        },
-        sub: {
-          fontFamily: fonts.body,
-          fontSize: 15,
-          lineHeight: 22,
-          color: colors.textSecondary,
-          textAlign: "center",
-          marginBottom: spacing.lg,
-          width: "100%",
-        },
         input: {
           width: "100%",
           backgroundColor: colors.surface,
@@ -77,19 +47,16 @@ export function NameScreen() {
   );
 
   return (
-    <View style={styles.root} testID="onboarding-screen-name">
-      <View style={styles.graceWrap}>
-        <OnboardingGrace
-          size={112}
-          testID="grace-name"
-          reactToken={reactToken}
-          reactKind="nod"
-        />
-      </View>
-
-      <Text style={styles.title}>{NAME_COPY.title}</Text>
-      <Text style={styles.sub}>{NAME_COPY.sub}</Text>
-
+    <OnboardingQuestionScreen
+      title={NAME_COPY.title}
+      subtitle={NAME_COPY.sub}
+      density="roomy"
+      graceSize={112}
+      graceReactToken={reactToken}
+      graceReactKind="nod"
+      verticallyCenter
+      testID="onboarding-screen-name"
+    >
       <TextInput
         style={styles.input}
         placeholder={NAME_COPY.placeholder}
@@ -118,7 +85,7 @@ export function NameScreen() {
       >
         <Text style={styles.friendText}>{NAME_COPY.friendLink}</Text>
       </TouchableOpacity>
-    </View>
+    </OnboardingQuestionScreen>
   );
 }
 

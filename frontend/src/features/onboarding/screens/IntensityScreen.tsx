@@ -6,7 +6,7 @@ import {
   IntensityMascot,
   intensityBandFromValue,
 } from "../components/IntensityMascot";
-import { OnboardingQuestion } from "../components/OnboardingQuestion";
+import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { useOnboarding } from "../OnboardingContext";
 import { INTENSITY_QUESTION } from "../copy";
 import { playHaptic } from "@/src/utils/haptics";
@@ -99,44 +99,44 @@ export function IntensityScreen() {
     <View style={styles.root} testID="onboarding-screen-intensity">
       <IntensityMascot value={value} size={168} testID="grace-intensity" />
 
-      <OnboardingQuestion
+      <OnboardingQuestionScreen
         title={INTENSITY_QUESTION.title}
         subtitle={INTENSITY_QUESTION.sub}
-        center
         density="roomy"
         showGrace={false}
-      />
-
-      <View style={styles.sliderBlock}>
-        <View style={styles.valueRow}>
-          <Text style={styles.valueText}>{value}</Text>
-          <Text style={styles.ofTen}>/ 10</Text>
+        style={{ paddingHorizontal: 0, paddingTop: 0 }}
+      >
+        <View style={styles.sliderBlock}>
+          <View style={styles.valueRow}>
+            <Text style={styles.valueText}>{value}</Text>
+            <Text style={styles.ofTen}>/ 10</Text>
+          </View>
+          <Slider
+            style={{ width: "100%", height: 44 }}
+            minimumValue={0}
+            maximumValue={10}
+            step={1}
+            value={value}
+            onValueChange={(v) => {
+              const next = Math.round(v);
+              if (next !== value) {
+                void playHaptic(next >= 8 ? "medium" : "light");
+              }
+              setSingle("dailyLoad", next);
+            }}
+            minimumTrackTintColor={trackColor}
+            maximumTrackTintColor={colors.borderSoft}
+            thumbTintColor={trackColor}
+            testID="onboarding-intensity-slider"
+            accessibilityLabel={INTENSITY_QUESTION.title}
+          />
+          <View style={styles.labels}>
+            <Text style={styles.endLabel}>{INTENSITY_QUESTION.lowLabel}</Text>
+            <Text style={styles.endLabel}>{INTENSITY_QUESTION.highLabel}</Text>
+          </View>
         </View>
-        <Slider
-          style={{ width: "100%", height: 44 }}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          value={value}
-          onValueChange={(v) => {
-            const next = Math.round(v);
-            if (next !== value) {
-              void playHaptic(next >= 8 ? "medium" : "light");
-            }
-            setSingle("dailyLoad", next);
-          }}
-          minimumTrackTintColor={trackColor}
-          maximumTrackTintColor={colors.borderSoft}
-          thumbTintColor={trackColor}
-          testID="onboarding-intensity-slider"
-          accessibilityLabel={INTENSITY_QUESTION.title}
-        />
-        <View style={styles.labels}>
-          <Text style={styles.endLabel}>{INTENSITY_QUESTION.lowLabel}</Text>
-          <Text style={styles.endLabel}>{INTENSITY_QUESTION.highLabel}</Text>
-        </View>
-      </View>
-      <Text style={styles.bandHint}>Drag — watch how Grace feels with you</Text>
+        <Text style={styles.bandHint}>Drag — watch how Grace feels with you</Text>
+      </OnboardingQuestionScreen>
     </View>
   );
 }

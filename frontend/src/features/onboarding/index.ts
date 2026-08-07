@@ -12,6 +12,7 @@ export {
 export { OnboardingOption } from "./components/OnboardingOption";
 export { ProgressBar } from "./components/ProgressBar";
 export { OnboardingQuestion } from "./components/OnboardingQuestion";
+export { OnboardingQuestionScreen } from "./components/OnboardingQuestionScreen";
 export { default as OnboardingStepLayout, useObStyles } from "./components/OnboardingStepLayout";
 export * from "./sequence";
 export * from "./types";

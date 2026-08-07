@@ -60,7 +60,6 @@ export function useObStyles() {
           textAlign: "center",
           lineHeight: 34,
         },
-        titleLeft: { textAlign: "left" },
         sub: {
           fontFamily: fonts.body,
           fontSize: 16,
@@ -69,7 +68,6 @@ export function useObStyles() {
           marginBottom: spacing.lg,
           textAlign: "center",
         },
-        subLeft: { textAlign: "left" },
         scripture: {
           fontFamily: fonts.scripture,
           fontSize: 20,

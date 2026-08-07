@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingGrace } from "./OnboardingGrace";
+import type { ReactKind } from "../mascot/motionProfiles";
 
 type Props = {
   /** Small label above the question (e.g. "Your heart") */
@@ -11,8 +12,6 @@ type Props = {
   subtitle?: string;
   /** multi | single hint line */
   hint?: string;
-  /** Default true — question copy is centered under Grace */
-  center?: boolean;
   /**
    * compact (default): denser hierarchy for option lists.
    * roomy: welcome-style screens that need more air.
@@ -21,24 +20,29 @@ type Props = {
   /** Route-aware Grace above the question (default true) */
   showGrace?: boolean;
   graceSize?: number;
+  /** Optional Grace react (e.g. typing nod on name) */
+  graceReactToken?: number;
+  graceReactKind?: ReactKind;
+  testID?: string;
 };
 
 /**
- * Question header with Grace on top expressing the screen’s feeling.
- * Hierarchy: Grace → overline → title → optional helper.
+ * Centered question header for all onboarding Q screens.
+ * Hierarchy: Grace → overline → title → optional helper — always centered.
  */
 export function OnboardingQuestion({
   overline,
   title,
   subtitle,
   hint,
-  center = true,
   density = "compact",
   showGrace = true,
   graceSize,
+  graceReactToken,
+  graceReactKind,
+  testID = "onboarding-question",
 }: Props) {
   const { colors, fonts, spacing } = useTheme();
-  const align = center ? ("center" as const) : ("left" as const);
   const compact = density === "compact";
   const mascotSize = graceSize ?? (compact ? 100 : 120);
 
@@ -46,21 +50,15 @@ export function OnboardingQuestion({
   const showHint = compact ? false : Boolean(hint);
 
   return (
-    <View
-      style={{
-        marginBottom: compact ? spacing.md : spacing.lg,
-        alignItems: center ? "center" : "stretch",
-        width: "100%",
-      }}
-    >
+    <View style={[styles.wrap, { marginBottom: compact ? spacing.md : spacing.lg }]} testID={testID}>
       {showGrace ? (
-        <View
-          style={{
-            alignItems: "center",
-            marginBottom: compact ? spacing.sm : spacing.md,
-          }}
-        >
-          <OnboardingGrace size={mascotSize} testID="onboarding-question-grace" />
+        <View style={{ marginBottom: compact ? spacing.sm : spacing.md }}>
+          <OnboardingGrace
+            size={mascotSize}
+            testID="onboarding-question-grace"
+            reactToken={graceReactToken}
+            reactKind={graceReactKind}
+          />
         </View>
       ) : null}
 
@@ -72,13 +70,15 @@ export function OnboardingQuestion({
             letterSpacing: 0.2,
             color: colors.primary,
             marginBottom: compact ? 4 : spacing.sm,
-            textAlign: align,
+            textAlign: "center",
             width: "100%",
+            maxWidth: 340,
           }}
         >
           {overline}
         </Text>
       ) : null}
+
       <Text
         style={{
           fontFamily: fonts.headingBold,
@@ -86,13 +86,15 @@ export function OnboardingQuestion({
           color: colors.textPrimary,
           letterSpacing: -0.5,
           lineHeight: compact ? 28 : 34,
-          textAlign: align,
+          textAlign: "center",
           width: "100%",
+          maxWidth: 340,
           marginBottom: helper || showHint ? (compact ? 4 : spacing.sm) : 0,
         }}
       >
         {title}
       </Text>
+
       {helper ? (
         <Text
           style={{
@@ -100,24 +102,27 @@ export function OnboardingQuestion({
             fontSize: compact ? 14 : 16,
             color: colors.textSecondary,
             lineHeight: compact ? 20 : 24,
-            textAlign: align,
+            textAlign: "center",
             width: "100%",
+            maxWidth: 320,
             marginBottom: showHint ? spacing.sm : 0,
           }}
-          numberOfLines={compact ? 2 : undefined}
+          numberOfLines={compact ? 3 : undefined}
         >
           {helper}
         </Text>
       ) : null}
+
       {showHint && hint ? (
         <Text
           style={{
             fontFamily: fonts.body,
             fontSize: 13,
             color: colors.textMuted,
-            textAlign: align,
+            textAlign: "center",
             letterSpacing: 0.2,
             width: "100%",
+            maxWidth: 320,
           }}
         >
           {hint}
@@ -126,3 +131,13 @@ export function OnboardingQuestion({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: {
+    width: "100%",
+    alignItems: "center",
+    alignSelf: "center",
+  },
+});
+
+export default OnboardingQuestion;

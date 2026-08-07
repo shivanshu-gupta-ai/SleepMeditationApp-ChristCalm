@@ -1,22 +1,21 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingOption } from "../components/OnboardingOption";
-import { OnboardingQuestion } from "../components/OnboardingQuestion";
+import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { useOnboarding } from "../OnboardingContext";
 import { PREFERRED_TIMES, TIMING_QUESTION } from "../copy";
 
 /**
  * Screen 9 — When do you most need peace? (single)
- * Answers → draft.preferredTime via OnboardingContext
  */
 export function TimingScreen() {
   const { draft, setSingle } = useOnboarding();
-  const { spacing } = useTheme();
 
   return (
-    <View style={[styles.root, { paddingHorizontal: spacing.md }]} testID="onboarding-screen-timing">
-      <OnboardingQuestion title={TIMING_QUESTION.title} subtitle={TIMING_QUESTION.sub} />
+    <OnboardingQuestionScreen
+      title={TIMING_QUESTION.title}
+      subtitle={TIMING_QUESTION.sub}
+      testID="onboarding-screen-timing"
+    >
       {PREFERRED_TIMES.map((opt) => (
         <OnboardingOption
           key={opt.id}
@@ -28,12 +27,8 @@ export function TimingScreen() {
           testID={`time-${opt.id}`}
         />
       ))}
-    </View>
+    </OnboardingQuestionScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { paddingTop: 4, paddingBottom: 8 },
-});
 
 export default TimingScreen;
