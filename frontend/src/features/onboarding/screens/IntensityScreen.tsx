@@ -2,10 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useTheme } from "@/src/context/ThemeContext";
-import {
-  IntensityMascot,
-  intensityBandFromValue,
-} from "../components/IntensityMascot";
+import { IntensityMascot } from "../components/IntensityMascot";
 import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { useOnboarding } from "../OnboardingContext";
 import { INTENSITY_QUESTION } from "../copy";
@@ -15,8 +12,7 @@ import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 13 — Intensity slider with interactive mascot.
- * Bands: 0–2 light · 2–4 mild · 4–6 moderate · 6–8 heavy · 8–10 overwhelmed
- * Expression + animation change with the load.
+ * Every integer score from 0–10 has its own Grace emotion state.
  */
 export function IntensityScreen() {
   const { draft, setSingle } = useOnboarding();
@@ -24,7 +20,6 @@ export function IntensityScreen() {
   const { height, isTablet } = useResponsive();
 
   const value = draft.dailyLoad ?? 5;
-  const band = intensityBandFromValue(value);
   const mascotSize =
     !isTablet && height < 720
       ? GRACE_DISPLAY.stageCompact
@@ -39,9 +34,9 @@ export function IntensityScreen() {
   }, [draft.dailyLoad, setSingle]);
 
   const trackColor =
-    band === "light" || band === "mild"
+    value <= 4
       ? colors.primary
-      : band === "moderate"
+      : value <= 6
         ? colors.secondary
         : colors.danger;
 
@@ -53,6 +48,12 @@ export function IntensityScreen() {
           paddingHorizontal: spacing.lg,
           paddingTop: spacing.sm,
           alignItems: "center",
+          justifyContent: "center",
+          transform: [{ translateY: -spacing.lg * 6 }],
+        },
+        mascotPlacement: {
+          marginTop: spacing.sm,
+          marginBottom: spacing.md,
         },
         sliderBlock: {
           width: "100%",
@@ -106,14 +107,21 @@ export function IntensityScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-intensity">
-      <IntensityMascot value={value} size={mascotSize} testID="grace-intensity" />
+      <View style={styles.mascotPlacement}>
+        <IntensityMascot value={value} size={mascotSize} testID="grace-intensity" />
+      </View>
 
       <OnboardingQuestionScreen
         variant="focus"
         title={INTENSITY_QUESTION.title}
         subtitle={INTENSITY_QUESTION.sub}
         showGrace={false}
-        style={{ paddingHorizontal: 0, paddingTop: 0 }}
+        style={{
+          flex: 0,
+          marginTop: spacing.xl * 5,
+          paddingHorizontal: 0,
+          paddingTop: 0,
+        }}
       >
         <View style={styles.sliderBlock}>
           <View style={styles.valueRow}>

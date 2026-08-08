@@ -58,7 +58,7 @@ export function OnboardingQuestion({
       : forceStack
         ? Math.min(168, choiceWidth + 36)
         : choiceWidth;
-  const graceWidth = mascotWidth * QUESTION_GRACE_SCALE;
+  const graceWidth = mascotWidth * (variant === "choice" ? QUESTION_GRACE_SCALE : 1);
   const helper = subtitle || hint;
   const textAlign = "center" as const;
 

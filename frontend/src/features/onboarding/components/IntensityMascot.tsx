@@ -12,38 +12,63 @@ import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Interactive intensity mascot (0–10).
- * Bands drive expression + motion:
- *  0–2  light / calm
- *  2–4  mild weight
- *  4–6  moderate
- *  6–8  heavy
- *  8–10 overwhelmed
+ * Every integer score has a distinct emotional state and its own visual asset.
  */
 
-export type IntensityBand = "light" | "mild" | "moderate" | "heavy" | "overwhelmed";
+export type IntensityVisual =
+  | "0-peaceful"
+  | "1-calm"
+  | "2-light"
+  | "3-uneasy"
+  | "4-strained"
+  | "5-manageable"
+  | "6-heavy"
+  | "7-burdened"
+  | "8-very-heavy"
+  | "9-overwhelmed"
+  | "10-breaking-point";
 
-const INTENSITY_ASSETS: Record<IntensityBand, number> = {
-  light: require("@/assets/images/onboarding/intensity/light.png"),
-  mild: require("@/assets/images/onboarding/intensity/mild.png"),
-  moderate: require("@/assets/images/onboarding/intensity/moderate.png"),
-  heavy: require("@/assets/images/onboarding/intensity/heavy.png"),
-  overwhelmed: require("@/assets/images/onboarding/intensity/overwhelmed.png"),
+export type IntensityState = {
+  score: number;
+  label: string;
+  visual: IntensityVisual;
 };
 
-export function intensityBandFromValue(value: number): IntensityBand {
-  if (value <= 2) return "light";
-  if (value <= 4) return "mild";
-  if (value <= 6) return "moderate";
-  if (value <= 8) return "heavy";
-  return "overwhelmed";
+const INTENSITY_ASSETS: Record<IntensityVisual, number> = {
+  "0-peaceful": require("@/assets/images/onboarding/intensity/0-peaceful.png"),
+  "1-calm": require("@/assets/images/onboarding/intensity/1-calm.png"),
+  "2-light": require("@/assets/images/onboarding/intensity/2-light.png"),
+  "3-uneasy": require("@/assets/images/onboarding/intensity/3-uneasy.png"),
+  "4-strained": require("@/assets/images/onboarding/intensity/4-strained.png"),
+  "5-manageable": require("@/assets/images/onboarding/intensity/5-manageable.png"),
+  "6-heavy": require("@/assets/images/onboarding/intensity/6-heavy.png"),
+  "7-burdened": require("@/assets/images/onboarding/intensity/7-burdened.png"),
+  "8-very-heavy": require("@/assets/images/onboarding/intensity/8-very-heavy.png"),
+  "9-overwhelmed": require("@/assets/images/onboarding/intensity/9-overwhelmed.png"),
+  "10-breaking-point": require("@/assets/images/onboarding/intensity/10-breaking-point.png"),
+};
+
+const INTENSITY_STATES: readonly IntensityState[] = [
+  { score: 0, label: "Peaceful", visual: "0-peaceful" },
+  { score: 1, label: "Calm", visual: "1-calm" },
+  { score: 2, label: "Light", visual: "2-light" },
+  { score: 3, label: "Uneasy", visual: "3-uneasy" },
+  { score: 4, label: "Strained", visual: "4-strained" },
+  { score: 5, label: "Manageable", visual: "5-manageable" },
+  { score: 6, label: "Heavy", visual: "6-heavy" },
+  { score: 7, label: "Burdened", visual: "7-burdened" },
+  { score: 8, label: "Very heavy", visual: "8-very-heavy" },
+  { score: 9, label: "Overwhelmed", visual: "9-overwhelmed" },
+  { score: 10, label: "Breaking point", visual: "10-breaking-point" },
+];
+
+export function intensityStateFromValue(value: number): IntensityState {
+  const score = Math.min(10, Math.max(0, Math.round(value)));
+  return INTENSITY_STATES[score];
 }
 
 export function intensityLabel(value: number): string {
-  if (value <= 2) return "Light";
-  if (value <= 4) return "A little heavy";
-  if (value <= 6) return "Manageable";
-  if (value <= 8) return "Heavy";
-  return "Overwhelming";
+  return intensityStateFromValue(value).label;
 }
 
 type Props = {
@@ -54,19 +79,19 @@ type Props = {
 
 export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "intensity-mascot" }: Props) {
   const { colors, fonts, spacing, isDark } = useTheme();
-  const band = intensityBandFromValue(value);
-  const label = intensityLabel(value);
+  const state = intensityStateFromValue(value);
+  const severity = state.score / 10;
 
   const bob = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const fade = useRef(new Animated.Value(1)).current;
   const glow = useRef(new Animated.Value(0.35)).current;
-  const prevBand = useRef(band);
+  const previousScore = useRef(state.score);
 
-  // Crossfade when band changes
+  // Crossfade whenever the exact score changes.
   useEffect(() => {
-    if (prevBand.current === band) return;
-    prevBand.current = band;
+    if (previousScore.current === state.score) return;
+    previousScore.current = state.score;
     fade.setValue(0.35);
     Animated.timing(fade, {
       toValue: 1,
@@ -74,23 +99,21 @@ export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "i
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [band, fade]);
+  }, [state.score, fade]);
 
-  // Motion profile by band — lighter = bouncy calm; heavier = slow sink
+  // Motion continuously follows the exact score: lighter = bouncy calm;
+  // heavier = slow sink.
   useEffect(() => {
     bob.stopAnimation();
     scale.stopAnimation();
     glow.stopAnimation();
 
-    const light = band === "light" || band === "mild";
-    const heavy = band === "heavy" || band === "overwhelmed";
-
-    const bobAmp = light ? -10 : heavy ? -3 : -6;
-    const bobMs = light ? 900 : heavy ? 1800 : 1300;
-    const scaleLo = light ? 1 : heavy ? 0.96 : 0.98;
-    const scaleHi = light ? 1.04 : heavy ? 1.0 : 1.02;
-    const glowLo = light ? 0.4 : heavy ? 0.15 : 0.28;
-    const glowHi = light ? 0.7 : heavy ? 0.35 : 0.5;
+    const bobAmp = -10 + severity * 7;
+    const bobMs = 900 + severity * 900;
+    const scaleLo = 1 - severity * 0.04;
+    const scaleHi = 1.04 - severity * 0.04;
+    const glowLo = 0.4 - severity * 0.25;
+    const glowHi = 0.7 - severity * 0.35;
 
     const bobLoop = Animated.loop(
       Animated.sequence([
@@ -149,14 +172,14 @@ export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "i
       scaleLoop.stop();
       glowLoop.stop();
     };
-  }, [band, bob, scale, glow]);
+  }, [severity, bob, scale, glow]);
 
   const glowColor =
-    band === "light"
+    state.score <= 2
       ? colors.primary
-      : band === "mild"
+      : state.score <= 4
         ? colors.primary
-        : band === "moderate"
+        : state.score <= 6
           ? isDark
             ? "#E8C06E"
             : "#D4A84A"
@@ -193,7 +216,7 @@ export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "i
           fontFamily: fonts.bodyBold,
           fontSize: 17,
           color:
-            band === "heavy" || band === "overwhelmed"
+            state.score >= 7
               ? isDark
                 ? "#E89B6E"
                 : "#C45C3A"
@@ -202,11 +225,15 @@ export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "i
           letterSpacing: -0.2,
         },
       }),
-    [size, fonts, spacing, colors, band, isDark, glowColor]
+    [size, fonts, spacing, colors, state.score, isDark, glowColor]
   );
 
   return (
-    <View style={styles.wrap} testID={testID} accessibilityLabel={`Mascot feeling ${label}`}>
+    <View
+      style={styles.wrap}
+      testID={testID}
+      accessibilityLabel={`Mascot feeling ${state.label}, intensity ${state.score} out of 10`}
+    >
       <View style={styles.stage}>
         <Animated.View style={[styles.glow, { opacity: glow }]} pointerEvents="none" />
         <Animated.View
@@ -216,13 +243,13 @@ export function IntensityMascot({ value, size = GRACE_DISPLAY.stage, testID = "i
           }}
         >
           <Image
-            source={INTENSITY_ASSETS[band]}
+            source={INTENSITY_ASSETS[state.visual]}
             style={styles.img}
             resizeMode="contain"
           />
         </Animated.View>
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{state.label}</Text>
     </View>
   );
 }

@@ -2,7 +2,13 @@ export { OnboardingNavigator } from "./OnboardingNavigator";
 export { OnboardingProvider, useOnboarding } from "./OnboardingContext";
 export { GraceMoodImage } from "./components/GraceMoodImage";
 export { OnboardingGrace } from "./components/OnboardingGrace";
-export { IntensityMascot, intensityBandFromValue, intensityLabel } from "./components/IntensityMascot";
+export {
+  IntensityMascot,
+  intensityLabel,
+  intensityStateFromValue,
+  type IntensityState,
+  type IntensityVisual,
+} from "./components/IntensityMascot";
 export {
   GraceActor,
   graceConfigForRoute,
