@@ -1,7 +1,7 @@
 # ChristCalm Onboarding — Final Design Spec
 
 **Version:** 3.1 (Full Conversion System + Complete Questions)  
-**Last Updated:** 2026-08-03  
+**Last Updated:** 2026-08-08
 **Style:** High-converting • Loss-aversion driven • Scarcity + Urgency
 
 ---
@@ -265,7 +265,7 @@ Short education cards:
 
 Optional first practices checklist.
 
-**CTA:** Start my journey → **sign-in / create account**, then Home after session
+**CTA:** Start my journey → **sign-in / create account**, then RevenueCat entitlement check → hard paywall or Home
 
 ---
 
@@ -401,7 +401,10 @@ const TIMER_CONFIG = {
 
 - **Grace is the hero** — text never competes; prefer illustration + short lines
 - Progress: continuous thin bar only (no step-number chrome)
-- Soft 3D / cinematic Grace animations: bundled 300×169 GIFs under `frontend/assets/images/onboarding/grace/` (+ intensity frames)
+- Soft 3D / cinematic Grace animations: 21 bundled 300×169 GIFs under `frontend/assets/images/onboarding/grace/` (+ intensity frames); there is no PNG or remote loading fallback
+- Grace width tokens: 112–152 pt beside compact/tablet questions, 220–300 pt on focus/stage screens, 320 pt for the welcome hero; height always follows the 300:169 aspect ratio
+- Choice screens place Grace beside the question when horizontal space permits, keeping the option list higher on screen; compact layouts stack Grace above the question
+- Reduced Motion keeps the GIF presentation stable and suppresses extra Reanimated entry/reaction movement
 - Dot grid (17–18): code-drawn circles (exact counts) — high contrast, spare labels
 - Timer on final paywall: subtle pulse
 - Transitions: fade + gentle slide-up (250–350ms)

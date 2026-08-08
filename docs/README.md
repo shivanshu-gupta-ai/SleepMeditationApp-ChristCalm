@@ -23,11 +23,10 @@ All product and engineering documentation for ChristCalm lives under **`docs/`**
 
 ### Conflict priority
 
-1. Vision & principles (`product/01`)
+1. Live code for implemented behavior
 2. API + data contracts (`product/07–08`)
-3. Screens, onboarding, design (`product/03–05`)
-4. Content catalog (`product/06`)
-5. Architecture / repo of *this* monorepo (`product/12–18`)
-6. Live code last
+3. Screens, onboarding, and design (`product/03–05`)
+4. Architecture / operations for this monorepo (`product/12–18`, `architecture/`, `engineering/`)
+5. Vision, roadmap, and any-stack alternatives (`product/01–02`, `product/11`)
 
-Prefer **`docs/product/`** for product truth. Prefer **code** for the live reference implementation when they diverge.
+The product pack defines intent and rebuild guidance; implementation-status statements must match the live code.

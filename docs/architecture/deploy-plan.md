@@ -46,7 +46,7 @@ Re-run with `--force` only if you intentionally want to regenerate `tfvars`.
 
 cd infrastructure/terraform
 cp terraform.tfvars.example terraform.tfvars
-# Fill region, project, Google/Apple/RevenueCat secrets as needed
+# Fill region, project, Apple/RevenueCat secrets as needed
 
 cd ../..
 ./scripts/deploy-aws.sh apply
@@ -57,8 +57,8 @@ cd ../..
 ### What `apply` creates
 
 - HTTP API Gateway → Lambda (FastAPI/Mangum)
-- DynamoDB tables (`users`, journal, ai-prayers, rate-limits, usage-*)
-- Cognito user pool + app client (+ Google/Apple IdPs when configured)
+- Ten DynamoDB tables (users, content, billing, rate limits, analytics)
+- Cognito user pool + app client (+ Apple IdP when configured)
 - S3 buckets (build artifacts, voice uploads)
 - CodeBuild project for Lambda packaging
 - SSM parameters for secrets referenced by Lambda

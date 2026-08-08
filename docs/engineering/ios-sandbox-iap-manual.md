@@ -18,13 +18,13 @@ Verified live as of repo config / MCP checks:
 | Bundle ID | `com.christcalm.app` |
 | Subscription group | **ChristCalm Premium** · ASC `22217597` |
 | Monthly product | `cc_999_1m` · ~$9.99 · Ready to Submit |
-| Annual product | `cc_1999_1y_1w0` · ~$39.99 · 1 week free trial (USA) · Ready to Submit |
+| Annual products | `cc_5999_1y` · $59.99; `cc_3999_1y` · $39.99; `cc_1999_1y` · $19.99; no trial |
 | RevenueCat project | `proj43f1dce8` (ChristCalm) |
 | RC App Store app | `app7793b2074c` (ChristCalm iOS) |
 | RC public iOS key | `appl_cccgVPkKesnGrFTnzfXMEjQvfRA` |
 | RC Test Store key | `test_iOFZidqNcAXQabRbTcHHYiAEKug` (web/preview only) |
 | Entitlement | `christcalm_premium` |
-| Offering | `default` (current) · packages `$rc_monthly` / `$rc_annual` |
+| Offering | `default` (current) · monthly + full/mid/low annual packages |
 | RC ↔ ASC credentials | In-App Purchase key **configured** · ASC API key **configured** |
 | Apple Server Notifications | **V2** → RevenueCat (production **and** sandbox) |
 | Backend webhook | `https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com/api/revenuecat/webhook` |
@@ -286,8 +286,8 @@ eas submit -p ios --profile production
 
 Any of:
 
-- **Me** tab → **Unlock Premium** / **Upgrade**  
-- Soft paywall after a completed free session (with `UNLOCK_ALL=0`)  
+- Complete onboarding and auth; the hard premium gate opens automatically
+- **Me** → **Unlock Premium** in preview/previously entitled test paths
 - Navigate to paywall route if you have a deep link  
 
 ### 5.3 Confirm products load
@@ -304,7 +304,7 @@ You should see **real prices** (localized), not “unavailable” forever.
 
 ### 5.4 Buy
 
-1. Tap **Monthly** (`cc_999_1m`) or **Annual** (`cc_1999_1y_1w0`)  
+1. Tap an offered package: monthly (`cc_999_1m`) or an annual tier (`cc_5999_1y`, `cc_3999_1y`, `cc_1999_1y`)
 2. Apple sheet appears → use **Sandbox** password when asked  
 3. Confirm purchase  
 4. App should show premium (badge, unlocked content, Customer Center options)
@@ -330,7 +330,7 @@ On paywall: **Restore purchases** — should re-apply entitlement after reinstal
 3. Find the user (by App User ID = your Cognito/backend user id if login sync works, or anonymous id)  
 4. Confirm:
    - Active entitlement **`christcalm_premium`**
-   - Product `cc_999_1m` or `cc_1999_1y_1w0`
+   - One of the four active product ids
    - Environment **Sandbox**
 
 ### 6.3 Backend (optional but recommended)
@@ -404,9 +404,11 @@ python3 scripts/e2e/revenuecat_config_check.py
 | Entitlement | `christcalm_premium` |
 | Offering | `default` |
 | Monthly product | `cc_999_1m` |
-| Annual product | `cc_1999_1y_1w0` |
+| Annual full / mid / low | `cc_5999_1y` / `cc_3999_1y` / `cc_1999_1y` |
 | Package monthly | `$rc_monthly` |
 | Package annual | `$rc_annual` |
+| Package annual mid | `$rc_custom_annual_mid` |
+| Package annual low | `$rc_custom_annual_low` |
 | Device SDK key | `appl_cccgVPkKesnGrFTnzfXMEjQvfRA` |
 | Preview SDK key | `test_iOFZidqNcAXQabRbTcHHYiAEKug` |
 | API base | `https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com` |

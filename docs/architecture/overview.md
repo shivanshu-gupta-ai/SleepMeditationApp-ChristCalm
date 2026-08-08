@@ -42,6 +42,8 @@ Canonical layout: [current-architecture.md](current-architecture.md) · Deploy: 
 | `users` | Accounts, premium, AI monthly quota |
 | `mood-logs` | Emotion logs |
 | `journal-entries` | Journal |
+| `meditation-ratings` | Per-session ratings |
+| `user-feedback` | Private product feedback |
 | `ai-prayers` | Wisdom turns / prayers history |
 | `payment-transactions` | RevenueCat-related |
 | `rate-limits` | Distributed burst limits |

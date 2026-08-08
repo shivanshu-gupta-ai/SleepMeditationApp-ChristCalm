@@ -13,10 +13,10 @@ Orchestration: `scripts/deploy-aws.sh`, `scripts/bootstrap-new-account.sh`
 | **Lambda function** | FastAPI via Mangum |
 | **IAM role** | DynamoDB, SSM read, Bedrock invoke, S3 voice, Transcribe, logs |
 | **DynamoDB tables** | users (+ email GSI), mood-logs, journal-entries, meditation-ratings, user-feedback, ai-prayers, payment-transactions, rate-limits, usage-events, usage-daily |
-| **Cognito User Pool** | Email users + federation |
+| **Cognito User Pool** | Email users + optional Apple federation |
 | **Cognito App Client** | Mobile/public client |
 | **Cognito Domain** | Hosted UI (`christcalm-dev`) |
-| **Google / Apple IdP** | When flags + secrets set |
+| **Apple IdP** | When the Apple flag + credentials are set |
 | **S3 build bucket** | CodeBuild source / artifacts |
 | **S3 voice bucket** | Temporary audio uploads |
 | **S3 media bucket** (if used) | Meditation audio/covers public or CF |
@@ -82,7 +82,7 @@ Steps performed:
 
 cd infrastructure/terraform
 cp terraform.tfvars.example terraform.tfvars
-# edit: region, project, Google/Apple/RevenueCat secrets as needed
+# edit: region, project, Apple/RevenueCat secrets as needed
 
 cd ../..
 ./scripts/deploy-aws.sh apply
@@ -166,8 +166,8 @@ Typical phases:
 | `api_throttle_rate` / `burst` | API GW stage |
 | `ai_monthly_limit` | User quota default |
 | `lambda_provisioned_concurrency` | 0 by default |
-| `enable_apple_sign_in` / Google | IdP toggles |
-| Apple/Google/RevenueCat secrets | → SSM |
+| `enable_apple_sign_in` | Apple IdP toggle |
+| Apple/RevenueCat secrets | → SSM |
 
 `terraform.tfvars` is **gitignored**.
 

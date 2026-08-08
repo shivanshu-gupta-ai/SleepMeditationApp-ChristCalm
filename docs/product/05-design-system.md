@@ -194,7 +194,7 @@ Avoid: bouncy game physics, confetti spam, aggressive parallax.
 - One **unique cover image** per meditation track  
 - Covers: calm abstract / nature; not stock-church kitsch  
 - Audio: host on CDN/S3; client streams HTTPS  
-- Grace assets: still + short companion video/wave optional  
+- Grace assets: local 300×169 animated GIFs only; preserve aspect ratio and do not introduce still-image loading placeholders
 
 ---
 

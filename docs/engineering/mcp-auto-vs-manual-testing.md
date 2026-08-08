@@ -19,7 +19,7 @@
 | RC iOS app | `app7793b2074c` |
 | Entitlement | `christcalm_premium` |
 | Offering | `default` |
-| Products | `cc_999_1m` (monthly), `cc_1999_1y_1w0` (annual) |
+| Products | `cc_999_1m` monthly; `cc_5999_1y`, `cc_3999_1y`, `cc_1999_1y` annual tiers |
 | API | `https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com` |
 | Expo project | `@shivanshu_here/christcalm` |
 
@@ -122,14 +122,14 @@ Use this as a “green list” from prior automated runs; re-run MCP tools to re
 
 | Check | Expected |
 |-------|----------|
-| Entitlement `christcalm_premium` | Active; monthly + annual attached |
-| Offering `default` | Current; packages map to `cc_999_1m` / `cc_1999_1y_1w0` |
+| Entitlement `christcalm_premium` | Active; all four products attached |
+| Offering `default` | Current; monthly + full/mid/low annual packages map to active SKUs |
 | ASC app on RC | Bundle `com.christcalm.app`; API key + subscription key configured |
 | Public key | `appl_…` for store/sandbox builds |
-| Product pricing | US monthly ~$9.99, annual ~$39.99; multi-territory prices present |
+| Product pricing | US $9.99 monthly; annual tiers $59.99 / $39.99 / $19.99; multi-territory prices present |
 | Product status | Often `READY_TO_SUBMIT` / `needs_action` until submitted with app |
 | Privacy policy on products | Often **null** — add manually or via RC MCP |
-| Annual trial | 1 week when configured |
+| Trial | None on the active products |
 
 ### App Store Connect (MCP)
 

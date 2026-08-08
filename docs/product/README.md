@@ -1,6 +1,6 @@
 # ChristCalm — Complete product & engineering pack
 
-**Last synced to code:** 2026-08-07 (Journey tab, light theme default, 27-step onboarding, streaming Wisdom, Apple auth).
+**Last synced to code:** 2026-08-08 (hard premium gate, four active products, local Grace GIFs, adaptive onboarding, full API/table inventory).
 
 **Single folder that explains everything** about ChristCalm: product, UX, design, content, API, AI, architecture, repo structure, deploy, config, and how to rebuild in **any language** (Swift, Kotlin, React Native, Flutter, web, …).
 
@@ -23,7 +23,7 @@ Implementation of the current Expo + FastAPI + AWS stack is documented in full. 
 
 ### Definition of done (MVP)
 
-User can: complete **27-step onboarding** (including escalating paywalls) → **auth** (email or Apple) → Home emotion → meditation complete → SOS → Wisdom (streaming + optional voice) → journal → **Journey** stats → soft paywall after first practice.
+User can: complete **27-step onboarding** (including the hard escalating paywall ladder) → **auth** (email or Apple) → premium check → Home emotion → meditation complete → SOS → Wisdom (streaming + optional voice) → journal → **Journey** stats. A post-practice soft paywall remains a secondary resurfacing trigger in preview/limited-access configurations.
 
 ---
 
@@ -79,8 +79,10 @@ User can: complete **27-step onboarding** (including escalating paywalls) → **
 
 ```
 Open → “How do you feel?” → Meditation (or SOS / Wisdom)
-     → Complete practice → progress + soft paywall
+     → Complete practice → progress + rating
 ```
+
+Production access is gated earlier: onboarding → auth → RevenueCat entitlement check → hard paywall or Home.
 
 ## Feature modules (current product)
 
@@ -90,12 +92,13 @@ Open → “How do you feel?” → Meditation (or SOS / Wisdom)
 | Auth | Email + password; **Sign in with Apple** (Cognito Hosted UI) | `/(auth)/*` |
 | Home | Stage-aware greeting, Today’s Path, emotions, today’s word, quick paths | Tab |
 | Meditate | Emotion filter + session cards → full-screen player | Tab |
+| Player | Audio controls, Scripture, completion stats, 1–5 star session rating | Full-screen modal |
 | Wisdom | Guardrailed RAG chat (**SSE stream** + optional voice) | Tab |
 | Journey | Practice recognition: ranges, chart, breakdown, recent sessions | Tab (`stats`) |
-| Me | Account, plan, theme, links to Journey / Journal / SOS | Tab (`profile`) |
+| Me | Account, plan, theme, private feedback, links to Journey / Journal / SOS | Tab (`profile`) |
 | Journal | Mood + text + voice-to-text; open from Me / Home | Hidden tab |
 | SOS | 4-7-8 breathing + rotating verses | Modal `/sos` |
-| Paywall | Onboarding ladder + in-app modal + soft after first practice | Modal `/paywall` |
+| Paywall | Hard onboarding ladder + post-auth RevenueCat gate; secondary post-practice resurfacing | Modal `/paywall` |
 | Prayers | Catalog API still ships; **UI deferred** (hidden tab) | Deferred |
 
 **Visible tabs:** Home · Meditate · Wisdom · Journey · Me (+ center **Start Calm** FAB).
@@ -110,7 +113,7 @@ Open → “How do you feel?” → Meditation (or SOS / Wisdom)
 | API | FastAPI + Mangum on AWS Lambda (`backend/api/routes/*`) |
 | Edge | API Gateway HTTP API |
 | Data | DynamoDB (on-demand) |
-| Auth | Amazon Cognito (email + **Apple**; Google IdP optional in infra only) |
+| Auth | Amazon Cognito (email/password + optional **Apple**) |
 | AI | Amazon Bedrock Converse + multi-model fallback |
 | Voice | S3 + Amazon Transcribe |
 | Payments | RevenueCat (`christcalm_premium`) |

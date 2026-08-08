@@ -36,7 +36,7 @@ Sandbox IAP alone is **not** C. This document is A → B → C.
 | Marketing version (`app.json`) | `1.0.0` (bump when you ship a new store version) |
 | Entitlement | `christcalm_premium` |
 | Monthly IAP | `cc_999_1m` (~$9.99) |
-| Annual IAP | `cc_1999_1y_1w0` (~$39.99, 1-week free trial USA) |
+| Annual IAPs | `cc_5999_1y` ($59.99), `cc_3999_1y` ($39.99), `cc_1999_1y` ($19.99); no trial |
 | Subscription group | ChristCalm Premium |
 | RC public key (device/prod) | `appl_cccgVPkKesnGrFTnzfXMEjQvfRA` |
 | API | `https://u2r7gwyg3j.execute-api.us-east-1.amazonaws.com` |
@@ -60,9 +60,11 @@ Sandbox IAP alone is **not** C. This document is A → B → C.
 1. Open [App Store Connect](https://appstoreconnect.apple.com/)
 2. **Apps → Christ Calm**
 3. **Subscriptions** → group **ChristCalm Premium**
-4. Confirm both products exist and are **Ready to Submit** (or clear of missing metadata):
+4. Confirm all active products exist and are **Ready to Submit** (or clear of missing metadata):
    - `cc_999_1m`
-   - `cc_1999_1y_1w0`
+   - `cc_5999_1y`
+   - `cc_3999_1y`
+   - `cc_1999_1y`
 5. For **each** product, open **Review Information**:
    - [ ] Screenshot uploaded (use repo assets below)
    - [ ] Optional review notes
@@ -71,7 +73,7 @@ Sandbox IAP alone is **not** C. This document is A → B → C.
 
 ```text
 assets/store/subscription-review/monthly-review-1242.png   # for monthly
-assets/store/subscription-review/annual-review-1242.png    # for annual
+assets/store/subscription-review/annual-review-1242.png    # legacy; replace before submission
 ```
 
 Upload path: ASC → product → **Review Information** → screenshot.
@@ -82,7 +84,7 @@ Also see: `assets/store/subscription-review/README.md`.
 
 1. [RevenueCat](https://app.revenuecat.com) → ChristCalm  
 2. Offering **default** is **Current**  
-3. Packages map to App Store products `cc_999_1m` / `cc_1999_1y_1w0`  
+3. Packages map to the four active App Store products listed above
 4. Entitlement `christcalm_premium` attached  
 5. You already completed a **sandbox** purchase on device (manual above)
 
@@ -227,10 +229,10 @@ SIGN-IN
 
 SUBSCRIPTIONS (Sandbox)
 • Premium unlocks unlimited meditations, Wisdom, and related features.
-• Products: cc_999_1m (monthly), cc_1999_1y_1w0 (annual with free trial where available).
+• Products: cc_999_1m monthly; cc_5999_1y, cc_3999_1y, and cc_1999_1y annual. No active product has a free trial.
 • Billing is via Apple In-App Purchase / StoreKit. RevenueCat manages entitlements.
-• To test paywall: Me tab → Unlock Premium (or complete a free session if soft paywall appears).
-• UNLOCK_ALL is disabled in this build; free users see gates as designed.
+• To test paywall: complete onboarding and sign in; the app then opens the hard premium gate.
+• UNLOCK_ALL is disabled in this build; signed-in non-premium users see the hard premium gate.
 
 VOICE
 • Microphone is used only when the user chooses voice input for Wisdom chat.
@@ -355,7 +357,9 @@ Missing compliance?
 3. **Build** → **+** → select the processed build  
 4. Scroll to **In-App Purchases and Subscriptions** (wording varies):  
    - [ ] Add **`cc_999_1m`**  
-   - [ ] Add **`cc_1999_1y_1w0`**  
+   - [ ] Add **`cc_5999_1y`**
+   - [ ] Add **`cc_3999_1y`**
+   - [ ] Add **`cc_1999_1y`**
 
 > **Important:** The **first** subscription for an app is typically submitted **together with a new app version**. Do not leave IAPs out of this first submit.
 
@@ -427,7 +431,7 @@ npm run submit:ios
 
 # 4) Then in App Store Connect UI:
 #    - Attach build to version 1.0.0
-#    - Attach subscriptions cc_999_1m + cc_1999_1y_1w0
+#    - Attach subscriptions cc_999_1m + cc_5999_1y + cc_3999_1y + cc_1999_1y
 #    - Complete metadata + privacy + review notes
 #    - Submit for Review
 ```
@@ -439,7 +443,7 @@ npm run submit:ios
 ### Before build
 - [ ] Privacy Policy URL live  
 - [ ] Support URL/email  
-- [ ] IAP review screenshots on both products  
+- [ ] Current IAP review screenshots attached to all four active products
 - [ ] Sandbox purchase already succeeded once  
 - [ ] Listing copy drafted  
 

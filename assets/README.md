@@ -39,9 +39,8 @@ See `assets/meditations/audio/README.md` and `assets/meditations/covers/README.m
 
 ## Onboarding Grace GIFs
 
-Animated mascot GIFs are **not** stored in git. They live on the same media bucket:
+The 21 animated mascot GIFs are committed and bundled under:
 
-`…/onboarding/grace/<expression>.gif`
+`frontend/assets/images/onboarding/grace/<expression>.gif`
 
-Client: `frontend/src/features/onboarding/mascot/graceAssets.ts`.  
-PNG stills remain under `frontend/assets/images/onboarding/` as offline fallbacks.
+The static Metro map is `frontend/src/features/onboarding/mascot/graceAssets.ts`. Every asset uses a 300×169 canvas and is available offline. The runtime has no remote URL or PNG loading placeholder, which prevents a still-image flash before animation begins.

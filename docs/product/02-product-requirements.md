@@ -13,7 +13,7 @@ ChristCalm provides:
 3. Conversational Wisdom (RAG + LLM, streaming, guardrailed; optional voice)  
 4. Private journal with mood (+ voice-to-text; optional Share with Wisdom)  
 5. **Journey** progress (streak, minutes, sessions, charts — recognition, not shame)  
-6. Conversion-first onboarding (27 steps + escalating paywalls) + soft freemium after first practice  
+6. Conversion-first onboarding (27 steps + escalating paywalls) and a hard post-auth premium gate
 7. Prayer **catalog** (API); dedicated Prayers UI is deferred in the reference app  
 
 ## Personas
@@ -32,17 +32,17 @@ ChristCalm provides:
 
 | # | Feature | Acceptance |
 |---|---------|------------|
-| 1 | Onboarding (27 screens, design v3.1) | Completes; draft persisted; **escalating paywalls**; lands **auth** then Home |
+| 1 | Onboarding (27 screens, design v3.1) | Completes; draft persisted; **escalating paywalls**; lands on auth, then the premium gate |
 | 2 | Auth (email + Apple) | Session secure; `GET /auth/me` works |
 | 3 | Home | Stage-aware greeting, emotions, SOS, path, today’s word, first-steps / JourneyStats |
 | 4 | Meditate list + filter | Filter by emotion; cards show duration, Scripture |
-| 5 | Meditation player | Play/pause, scrub, verse, complete → progress + soft paywall |
+| 5 | Meditation player | Play/pause, scrub, verse, complete → progress/rating; secondary soft paywall trigger remains |
 | 6 | SOS | 4-7-8 cycles; start/pause; rotating verses |
 | 7 | Wisdom chat | Text + **stream**; history; quota; guardrails |
 | 8 | Journal | Create + list; mood tags; voice optional |
 | 9 | **Journey** tab | Ranges, hero, chart, recent sessions |
 | 10 | Me (Profile) | Name/plan, theme, subscription, links; **not** primary stats home |
-| 11 | Monetization | Onboarding ladder + in-app paywall; monthly + annual via RevenueCat |
+| 11 | Monetization | Onboarding ladder + hard in-app gate; monthly + three annual SKUs via RevenueCat |
 | 12 | Dual theme | **Light default**; dark opt-in |
 
 ### Should ship / shipped in reference
@@ -117,7 +117,7 @@ ChristCalm provides:
 | Area | Requirement |
 |------|-------------|
 | Performance | Catalog endpoints &lt; 200ms typical; AI 1–8s |
-| Security | Secrets not in client; passwords hashed server-side |
+| Security | Secrets not in client; Cognito owns password storage and policy |
 | Privacy | Journal private; analytics scalar props only |
 | Accessibility | Min touch 44pt; readable contrast both themes |
 | i18n | English MVP; structure strings for later localization |
@@ -128,9 +128,9 @@ ChristCalm provides:
 - **Model:** Freemium  
 - **Free:** Core meditations/prayers (policy-configurable), SOS, limited Wisdom  
 - **Premium:** Unlimited content, AI features, premium library, offline (future)  
-- **Trigger:** Soft paywall after first completed practice  
-- **Plans:** Monthly + Annual (annual highlighted respectfully)  
-- Example pricing: $9.99/mo or $39.99/yr (configure in store)  
+- **Primary triggers:** onboarding ladder and post-auth hard gate
+- **Secondary trigger:** post-practice resurfacing in preview/limited-access configurations
+- **Plans:** $9.99 monthly; annual ladder at $59.99 / $39.99 / $19.99; no trial
 
 ## Roadmap (post-MVP)
 

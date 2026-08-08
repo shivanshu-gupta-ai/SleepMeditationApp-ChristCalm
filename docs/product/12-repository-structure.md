@@ -179,7 +179,7 @@ src/
 ├── features/
 │   ├── auth/
 │   │   ├── AuthContext.tsx
-│   │   ├── cognito.ts            # Email + hosted UI / Apple / Google
+│   │   ├── cognito.ts            # Email + Cognito Hosted UI / Apple
 │   │   └── components/
 │   ├── onboarding/
 │   │   ├── OnboardingNavigator.tsx  # Step machine (0–26)
@@ -284,7 +284,7 @@ backend/
 | `outputs.tf` | `api_url`, Cognito ids, prefixes |
 | `dynamodb.tf` | users, journal, meditation-ratings, user-feedback, ai-prayers, mood, payments, rate-limits, usage-* |
 | `lambda.tf` | Function, IAM (DynamoDB, SSM, Bedrock, S3, Transcribe), API GW |
-| `cognito.tf` | User pool, app client, domain, Google/Apple IdP |
+| `cognito.tf` | User pool, app client, domain, optional Apple IdP |
 | `cognito_triggers.tf` | Optional triggers |
 | `codebuild.tf` | Package pipeline for Lambda zip |
 | `ssm.tf` | SecureString parameters |

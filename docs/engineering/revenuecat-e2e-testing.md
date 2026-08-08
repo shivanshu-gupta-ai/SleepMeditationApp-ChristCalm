@@ -19,7 +19,7 @@ iOS device / TestFlight
 | Public SDK key | `appl_cccgVPkKesnGrFTnzfXMEjQvfRA` |
 | Entitlement | `christcalm_premium` |
 | Offering | `default` (current) |
-| Packages | `$rc_annual` → `cc_1999_1y_1w0`, `$rc_monthly` → `cc_999_1m` |
+| Packages | `$rc_monthly` → `cc_999_1m`; `$rc_annual` / custom mid / custom low → `cc_5999_1y` / `cc_3999_1y` / `cc_1999_1y` |
 | Paywall (RC) | `pw8ae5b0bdce044611` on offering `default` |
 | Webhook | `{api_url}api/revenuecat/webhook` |
 
@@ -37,9 +37,9 @@ python3 scripts/e2e/revenuecat_config_check.py
 What it asserts:
 
 1. RC project has App Store app `com.christcalm.app`
-2. Products `cc_999_1m` and `cc_1999_1y_1w0` exist on that app
-3. Both attach to entitlement `christcalm_premium`
-4. Offering `default` is current and packages map to those products
+2. All four active products exist on that app
+3. All attach to entitlement `christcalm_premium`
+4. Offering `default` is current and all four packages map to those products
 5. Paywall exists for the offering
 6. Webhook URL points at your API
 7. Backend `/api/health` is up
@@ -85,9 +85,9 @@ npx expo run:ios --device
 |---|------|-------|
 | 1 | Launch app, sign in | ☐ |
 | 2 | Settings → App Store → Sandbox Account = your sandbox Apple ID | ☐ |
-| 3 | Trigger paywall (complete a free meditation or Profile → Upgrade) | ☐ |
-| 4 | Custom paywall shows Annual + Monthly with **Store prices** (not only placeholders) | ☐ |
-| 5 | Tap **More plans (RevenueCat paywall)** → native RC UI opens | ☐ |
+| 3 | Complete onboarding and auth; verify the hard gate opens `/paywall` | ☐ |
+| 4 | RevenueCat paywall shows active packages with **Store prices** | ☐ |
+| 5 | Restore action is visible and responsive | ☐ |
 | 6 | Purchase **Annual** (sandbox) → StoreKit sheet → success | ☐ |
 | 7 | Entitlement: premium content unlocked; Profile shows premium | ☐ |
 | 8 | Kill app, relaunch → still premium (CustomerInfo cache + restore) | ☐ |
@@ -126,17 +126,16 @@ Use **Test Store** app + `test_…` public key in a separate debug build if you 
 | Capability | How ChristCalm uses it |
 |------------|-------------------------|
 | Entitlements | Single `christcalm_premium` |
-| Offerings / packages | `default` with monthly + annual |
-| Custom paywall | Branded `app/paywall.tsx` (primary UX) |
-| RC Paywalls | `RevenueCatUI.presentPaywall` via “More plans” + experiments |
+| Offerings / packages | `default` with monthly + three annual tiers |
+| RC Paywalls | `RevenueCatUI.presentPaywall` from `app/paywall.tsx` |
 | Webhooks | Sync `is_premium` to DynamoDB |
 | Customer identity | `Purchases.logIn(userId)` with Cognito user id |
 | Experiments / Targeting | Create extra offerings in RC dashboard; no app release needed if using remote paywall |
 
 **Do you need RC Paywalls in the app?**  
 - **Yes**, if you want dashboard-driven UI / A-B without shipping a new binary.  
-- **No**, if you only use the branded custom paywall + `purchasePackage` (already enough for production IAP).  
-We integrated **both**: custom screen remains default; remote paywall is one tap away and ready for experiments.
+- **No**, if you build and maintain a fully custom purchase surface.
+The current app uses the RevenueCat paywall UI for the post-auth hard gate and direct package purchase UI for onboarding tiers.
 
 ---
 

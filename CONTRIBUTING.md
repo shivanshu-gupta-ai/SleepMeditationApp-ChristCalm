@@ -13,7 +13,7 @@ You can explore the app and improve **onboarding, themes, screens, and UX** with
 | **GitHub Secrets** | Encrypted CI secrets | Only if you put them there (avoid for Apple/AWS private keys) | CI only; values not readable after save |
 | **Owner AWS SSM** | Real secrets + stack | No (server-side) | **No access needed** |
 
-**Bottom line:** store **public** client config (`EXPO_PUBLIC_*`) as GitHub **Variables**. Keep Apple `.p8`, JWT, AWS keys on the **owner’s SSM** only. The GitHub MCP server is for collaboration (issues/PRs), not for shipping env files to laptops.
+**Bottom line:** store **public** client config (`EXPO_PUBLIC_*`) as GitHub **Variables**. Keep Apple `.p8`, RevenueCat webhook authorization, AWS keys, and the legacy Terraform JWT input on the **owner’s SSM** only. The current app authenticates with Cognito; it does not use a local JWT signer. The GitHub MCP server is for collaboration (issues/PRs), not for shipping env files to laptops.
 
 ---
 

@@ -50,7 +50,7 @@ Lambda zip (via CodeBuild) includes: `server.py`, `handler.py`, `seed_data.py`, 
 Order of precedence (typical):
 
 1. Process env (Lambda environment: `SSM_PREFIX`, table prefix, region, voice bucket)  
-2. SSM SecureString parameters under `SSM_PREFIX` (JWT, webhook auth, model ids, etc.)  
+2. SSM parameters under `SSM_PREFIX` (Cognito config, webhook auth, model ids, etc.)
 3. Local `.env` **non-secret flags only** when developing  
 
 `core/config.py` loads SSM at startup when prefix is set.  
@@ -63,7 +63,6 @@ Order of precedence (typical):
 | `SSM_PREFIX` | e.g. `/christcalm-dev` |
 | `DYNAMODB_TABLE_PREFIX` | Table name prefix |
 | `AWS_REGION` | DynamoDB, Bedrock, S3 |
-| `JWT_SECRET` | Legacy/local JWT if used |
 | `LLM_PROVIDER` | `bedrock` |
 | `BEDROCK_MODEL_ID` | Primary model |
 | `BEDROCK_MAX_TOKENS` | Default ~900 |
@@ -128,15 +127,10 @@ Prefix: `/api`
 ### Cognito mode (production path)
 
 1. Client obtains Cognito **access token**.  
-2. `get_current_user` calls Cognito (or verifies JWT) via `auth/cognito.py`.  
+2. `get_current_user` validates the Cognito access token through `auth/cognito.py`.
 3. Extract `sub`, email, name.  
 4. Find DynamoDB user by id/email; **create** if missing.  
 5. Attach user dict to request.  
-
-### Legacy email JWT (dev fallback)
-
-When Cognito disabled: signup stores password hash; signin returns HS256 JWT (`JWT_SECRET`).  
-Not the primary production path when Cognito is on.
 
 ### Premium resolution
 
@@ -150,7 +144,8 @@ Responsibilities:
 
 - Table name resolution from prefix  
 - User get/put/update (stats, onboarding, quota, premium)  
-- Journal list/create  
+- Journal and mood list/create
+- Meditation ratings and product feedback
 - Mood logs  
 - AI prayer / wisdom turns  
 - Payment transactions  
@@ -195,7 +190,6 @@ Use boto3 resource/client. On-demand capacity.
 
 | Key pattern | Limit (reference) |
 |-------------|-------------------|
-| Auth signup/signin per IP | 30 / 15 min |
 | Wisdom per user | ~12 / hour |
 | Wisdom per IP | looser secondary |
 | Monthly AI turns | `AI_MONTHLY_LIMIT` on user record |

@@ -20,6 +20,8 @@ expo-router entry
   → app/index.tsx
       · if onboarding incomplete → /onboarding
       · else if no session → /(auth)/sign-in
+      · else wait for RevenueCat
+      · else if not premium → /paywall
       · else → /(tabs)/home
 ```
 
@@ -124,7 +126,8 @@ Canonical design: [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md) · pr
 
 - RevenueCat configure with public keys  
 - `ENTITLEMENT_ID = christcalm_premium`  
-- Products: `cc_999_1m` / `cc_1999_1y_1w0` (+ aliases)  
+- Products: monthly `cc_999_1m`; annual ladder `cc_5999_1y`, `cc_3999_1y`, `cc_1999_1y`
+- Offering `default`; packages `$rc_monthly`, `$rc_annual`, `$rc_custom_annual_mid`, `$rc_custom_annual_low`
 - After purchase → `POST /subscription/sync`  
 - `usePremium()`: unlock-all flag → RC entitlement → `user.is_premium`  
 

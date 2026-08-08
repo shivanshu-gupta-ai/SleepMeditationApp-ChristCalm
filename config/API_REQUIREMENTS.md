@@ -33,7 +33,6 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-d
 
 | Variable | Required | Default | Notes |
 |----------|----------|---------|--------|
-| `JWT_SECRET` | **Yes** | — | HS256 signing; SecureString in SSM |
 | `AWS_REGION` | Yes (AWS) | `us-east-1` | DynamoDB + Bedrock |
 | `DYNAMODB_TABLE_PREFIX` | Yes | `christcalm` | Table names |
 | `SSM_PREFIX` | **Yes (Lambda + local)** | `/christcalm-dev` | Loads **all secrets** from SSM |
@@ -44,6 +43,8 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-d
 | `BEDROCK_TEMPERATURE` | No | `0.6` | |
 | `REVENUECAT_WEBHOOK_AUTHORIZATION` | Prod | — | Bearer for webhooks |
 | `REVENUECAT_ENTITLEMENT_ID` | No | `christcalm_premium` | |
+| `AI_MONTHLY_LIMIT` | No | `100` | Free Wisdom text/voice turns per calendar month |
+| `VOICE_BUCKET` | Voice | — | Temporary Wisdom audio uploads |
 
 ### Frontend (public)
 
@@ -65,10 +66,12 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-d
 - Corpus: `backend/ai/corpus/*.md` packaged into Lambda.
 - SSM: `/christcalm-dev/BEDROCK_MODEL_ID`, `LLM_PROVIDER=bedrock`
 
-### Google OAuth
+### Amazon Cognito
 
-- Web client ID/secret; redirect = API callback URL.
-- Allowed mobile redirect prefixes: `exp://`, `com.christcalm.app://`, localhost.
+- Email/password authentication runs directly against the Cognito public app client.
+- Sign in with Apple uses Cognito Hosted UI when `enable_apple_sign_in` is configured.
+- The API accepts Cognito **access tokens** and validates them with Cognito `GetUser`.
+- Google Sign-In and API-owned password/JWT endpoints are not implemented.
 
 ### RevenueCat
 
@@ -78,7 +81,9 @@ Templates live in this folder; production values live in **SSM** (`/christcalm-d
 ### DynamoDB tables
 
 - `{prefix}-users` (+ GSI `email-index`)
-- `{prefix}-mood-logs`, `journal-entries`, `ai-prayers`, `payment-transactions`
+- `{prefix}-mood-logs`, `journal-entries`, `meditation-ratings`, `user-feedback`
+- `{prefix}-ai-prayers`, `payment-transactions`, `rate-limits`
+- `{prefix}-usage-events`, `usage-daily`
 
 ---
 
@@ -89,30 +94,36 @@ Base: `{EXPO_PUBLIC_BACKEND_URL}/api`
 | Method | Path | Auth | Rate limit (app) |
 |--------|------|------|------------------|
 | GET | `/` or `/health` | No | — |
-| POST | `/auth/signup` | No | 30 / 15 min / IP |
-| POST | `/auth/signin` | No | 30 / 15 min / IP |
+| GET | `/auth/config` | No | Public Cognito/Apple readiness |
 | GET | `/auth/me` | Bearer | — |
 | POST | `/auth/onboarding` | Bearer | — |
-| GET | `/auth/google/start` | No | — |
-| GET | `/auth/google/callback` | No | — |
 | GET | `/emotions` | No | — |
 | GET | `/meditations` | No | — |
 | GET | `/meditations/{id}` | No | — |
 | POST | `/meditations/complete` | Bearer | — |
+| POST | `/meditations/rate` | Bearer | — |
+| GET | `/meditations/ratings` | Bearer | — |
 | GET | `/prayers` | No | — |
 | GET | `/devotional/today` | No | — |
 | POST | `/mood/log` | Bearer | — |
 | GET | `/mood/history` | Bearer | — |
 | POST | `/journal` | Bearer | — |
 | GET | `/journal` | Bearer | — |
+| POST | `/feedback` | Bearer | **~12 / hour / user** |
+| GET | `/feedback` | Bearer | — |
 | GET | `/wisdom/status` | No | Corpus + model diagnostic |
+| GET | `/wisdom/quota` | Bearer | Monthly text + voice allowance |
 | POST | `/wisdom/chat` | Bearer | **12 / hour / user** (+ IP) — conversational RAG |
+| POST | `/wisdom/chat/stream` | Bearer | SSE primary client path |
 | GET | `/wisdom/history` | Bearer | Past turns |
-| POST | `/ai/prayer` | Bearer | **Legacy alias** → wisdom |
-| GET | `/ai/prayers/history` | Bearer | Legacy |
+| POST | `/wisdom/voice/presign` | Bearer | Presigned S3 upload |
+| POST | `/wisdom/voice/transcribe` | Bearer | Transcribe; counts toward quota |
 | POST | `/subscription/sync` | Bearer | — |
 | GET | `/subscription/status` | Bearer | — |
 | POST | `/revenuecat/webhook` | Webhook secret | — |
+| POST | `/analytics/events` | Optional | Batched scalar-only events |
+| GET | `/analytics/me` | Bearer | User event summary |
+| GET | `/analytics/summary` | Bearer | Aggregate window |
 
 API Gateway stage throttle: **100 rps**, burst **50** (Terraform).
 
@@ -123,8 +134,8 @@ Response header: `X-Response-Time-Ms` on all requests.
 ## 5. Security notes
 
 - Never commit real secrets; only `*.example` templates.
-- JWT: 30-day HS256; store in SecureStore on device.
-- Passwords: PBKDF2-HMAC-SHA256 (100k iterations).
+- Store Cognito tokens in platform secure storage; never persist passwords.
+- Authentication and password policy are owned by Cognito, not the FastAPI service.
 - AI errors do **not** return stack traces to clients.
 - Webhook auth is shared-secret Bearer (rotate if leaked).
 
@@ -136,7 +147,7 @@ Response header: `X-Response-Time-Ms` on all requests.
 |------------|---------------|--------|
 | Static content (emotions, meds) | &lt; 200 ms | Seeded in-memory |
 | Auth + DynamoDB | 100–400 ms | Cold start + DDB |
-| AI prayer (Bedrock) | 1–8 s | Model latency; 30s Lambda timeout |
+| Wisdom (Bedrock) | 1–8 s | Model latency; streaming starts earlier when supported |
 | Lambda cold start | 1–3 s | First invoke after idle |
 
 Measure with `X-Response-Time-Ms` or `tests/backend/test_performance.py`.

@@ -22,7 +22,15 @@
       },
       {
         "lookup_key": "$rc_annual",
-        "product_store_id": "cc_1999_1y_1w0"
+        "product_store_id": "cc_5999_1y"
+      },
+      {
+        "lookup_key": "$rc_custom_annual_mid",
+        "product_store_id": "cc_3999_1y"
+      },
+      {
+        "lookup_key": "$rc_custom_annual_low",
+        "product_store_id": "cc_1999_1y"
       }
     ]
   },
@@ -32,11 +40,20 @@
       "display_name": "Monthly",
       "billing_period": "P1M"
     },
-    "annual": {
-      "store_product_id": "cc_1999_1y_1w0",
-      "display_name": "Annual",
-      "billing_period": "P1Y",
-      "intro_offer": "1 week free trial (territory-dependent)"
+    "annual_full": {
+      "store_product_id": "cc_5999_1y",
+      "display_name": "Annual — Full",
+      "billing_period": "P1Y"
+    },
+    "annual_mid": {
+      "store_product_id": "cc_3999_1y",
+      "display_name": "Annual — Mid",
+      "billing_period": "P1Y"
+    },
+    "annual_low": {
+      "store_product_id": "cc_1999_1y",
+      "display_name": "Annual — Low",
+      "billing_period": "P1Y"
     }
   },
   "webhook": {

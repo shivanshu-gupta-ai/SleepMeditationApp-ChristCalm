@@ -7,7 +7,7 @@ Local `.env` files are disposable and must not hold secrets.
 
 | What | Where |
 |------|--------|
-| Secrets (JWT, Apple, webhooks, …) | SSM `/christcalm-dev/*` via Terraform `ssm.tf` |
+| Secrets (Apple, webhooks, …) | SSM `/christcalm-dev/*` via Terraform `ssm.tf` |
 | Infra inputs (once) | `infrastructure/terraform/terraform.tfvars` (**gitignored**) |
 | Frontend public config (owner) | `./scripts/sync-env-from-aws.sh` → `frontend/.env` |
 | Frontend public config (collaborators) | GitHub Actions **Variables** → `./scripts/sync-env-from-github.sh` |
@@ -42,7 +42,7 @@ config/
 ./scripts/bootstrap-new-account.sh
 ```
 
-Deploys the **ChristCalm-Dev** stack (`christcalm-dev` resource prefix, SSM `/christcalm-dev/*`). Generates `jwt_secret`, applies Terraform (SSM auto-filled), deploys code, syncs env, seeds test user. Meditation media uses the shared bucket `christcalm-preview-media-<account>`.
+Deploys the **ChristCalm-Dev** stack (`christcalm-dev` resource prefix, SSM `/christcalm-dev/*`), applies Terraform, deploys code, syncs public env, and seeds the test user. Terraform still provisions a legacy `jwt_secret` input, but the current runtime authenticates only through Cognito and does not load or use it. Meditation media uses the shared bucket `christcalm-preview-media-<account>`.
 
 ## Day-to-day
 

@@ -48,17 +48,17 @@ See also [11-rebuild-playbook.md](./11-rebuild-playbook.md) acceptance list.
 |------|--------|
 | Catalog | Exclusive emotion→track mapping |
 | Guardrails | Code prompts denied; anxiety allowed |
-| Auth | Bad token → 401; signup/signin limits |
+| Auth | Missing/invalid Cognito access token → 401; confirm/reset flows pass |
 | Quota | Over monthly limit blocked |
 | Webhook | Bad secret rejected; good secret sets premium |
-| Complete | Stats increment; streak rules |
+| Complete | Backend minutes/practice count increment; client local streak/history rules |
 | Analytics | No journal body in props |
 | Perf | Catalog p50 under ~200ms warm |
 
 ### Manual QA script
 
-1. Onboarding complete → auth → Home  
-2. Emotion → player → complete → soft paywall  
+1. Onboarding complete → auth → hard paywall; purchase/restore → Home
+2. Emotion → player → complete → rating/progress; verify secondary paywall only in a limited-access configuration
 3. SOS one cycle  
 4. Wisdom emotional + denied coding prompt  
 5. Journal create + list  
@@ -140,7 +140,7 @@ curl -I "$API_URL/api/emotions" | grep -i cache
 | Architecture | Good | Serverless FE/BE split |
 | Security | Medium→Good | Set webhook secret; distributed limits |
 | AI errors | Good | Client-safe messages |
-| Rate limiting | Good | Auth + AI + GW |
+| Rate limiting | Good | Cognito + Wisdom/feedback + API Gateway |
 | Performance | Acceptable | Catalog fast; AI 1–8s; cold start 1–3s |
 | Config hygiene | Good | SSM-first |
 | Tests | Improved | Unit + security + e2e API |
@@ -150,7 +150,7 @@ curl -I "$API_URL/api/emotions" | grep -i cache
 | Item | Severity | Mitigation |
 |------|----------|------------|
 | Premium not always enforced server-side on AI | Med | Gate if product requires |
-| JWT long-lived without rotation | Low | Access + refresh |
+| Token/session lifetime | Low | Cognito access + refresh policy; validate expiry handling |
 | CORS misconfig | Low | Explicit origins |
 | Webhook open if secret empty | Med | Require in prod |
 | Hardcoded colors in stray screens | Low | useTheme only |

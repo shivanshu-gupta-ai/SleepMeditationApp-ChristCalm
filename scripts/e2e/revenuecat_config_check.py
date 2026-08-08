@@ -26,7 +26,13 @@ API_BASE = os.environ.get(
 EXPECTED_BUNDLE = "com.christcalm.app"
 EXPECTED_ENTITLEMENT = "christcalm_premium"
 EXPECTED_OFFERING = "default"
-EXPECTED_PRODUCTS = {"cc_999_1m", "cc_1999_1y_1w0"}
+EXPECTED_PRODUCTS = {"cc_999_1m", "cc_5999_1y", "cc_3999_1y", "cc_1999_1y"}
+EXPECTED_PACKAGES = {
+    "$rc_monthly",
+    "$rc_annual",
+    "$rc_custom_annual_mid",
+    "$rc_custom_annual_low",
+}
 
 
 def die(msg: str) -> None:
@@ -103,7 +109,7 @@ def main() -> None:
     ent_store = {p.get("store_identifier") for p in ent_prods}
     if not EXPECTED_PRODUCTS.issubset(ent_store):
         die(f"Entitlement products incomplete: {ent_store}")
-    ok("Entitlement attached to both products")
+    ok("Entitlement attached to all active products")
 
     offs = rc(f"/projects/{PROJECT}/offerings").get("items") or []
     off = next((o for o in offs if o.get("lookup_key") == EXPECTED_OFFERING), None)
@@ -116,9 +122,11 @@ def main() -> None:
         print("WARN No paywall attached to offering (SDK will use default package UI)")
 
     pkgs = rc(f"/projects/{PROJECT}/offerings/{off['id']}/packages").get("items") or []
-    if len(pkgs) < 2:
-        die(f"Expected 2 packages, got {len(pkgs)}")
-    ok(f"Packages: {[p.get('lookup_key') for p in pkgs]}")
+    package_keys = {p.get("lookup_key") for p in pkgs}
+    missing_packages = EXPECTED_PACKAGES - package_keys
+    if missing_packages:
+        die(f"Offering packages incomplete: missing {sorted(missing_packages)}")
+    ok(f"Packages: {sorted(EXPECTED_PACKAGES)}")
 
     hooks = rc(f"/projects/{PROJECT}/integrations/webhooks").get("items") or []
     if not hooks:

@@ -53,7 +53,7 @@ Verified live (2026-07):
 - ASC app `6788769964` · bundle `com.christcalm.app`
 - Apple Server Notifications **V2** → RevenueCat (prod + sandbox)
 - RC App Store app: IAP key ✓ · ASC API key ✓
-- Products `cc_999_1m` / `cc_1999_1y_1w0` on entitlement + current offering
+- Products `cc_999_1m`, `cc_5999_1y`, `cc_3999_1y`, and `cc_1999_1y` on the entitlement + current offering
 - Webhook → Lambda API
 
 **Full click-by-click + command manual:**  
@@ -68,12 +68,13 @@ Verified live (2026-07):
 | Entitlement | `christcalm_premium` |
 | Offering (current) | `default` |
 | Package monthly | `$rc_monthly` |
-| Package annual | `$rc_annual` |
+| Package annual full | `$rc_annual` |
+| Package annual mid | `$rc_custom_annual_mid` |
+| Package annual low | `$rc_custom_annual_low` |
 | App Store monthly | `cc_999_1m` |
-| App Store annual | `cc_1999_1y_1w0` |
-| Test Store aliases | `christcalm_monthly`, `christcalm_annual` |
+| App Store annual full / mid / low | `cc_5999_1y` / `cc_3999_1y` / `cc_1999_1y` |
 
-App code maps **all four product ids** via `PRODUCT_ID_ALIASES` in `constants.ts`.
+App code maps the four active product ids in `constants.ts`. All unlock the same entitlement; there is no free trial.
 
 ---
 
@@ -85,7 +86,7 @@ App code maps **all four product ids** via `PRODUCT_ID_ALIASES` in `constants.ts
 | `src/features/subscriptions/RevenueCatContext.tsx` | Configure, login, purchase, paywall, customer center |
 | `src/features/subscriptions/use-premium.ts` | Premium gating helpers |
 | `app/_layout.tsx` | Wraps tree in `RevenueCatProvider` |
-| `app/paywall.tsx` | Branded UI + “More plans” → RC Paywall |
+| `app/paywall.tsx` | Branded feature shell + RevenueCat Paywalls checkout |
 | `app/(tabs)/profile.tsx` | Upgrade + Customer Center |
 
 ---
@@ -131,7 +132,7 @@ const { isPremium, storePremium } = usePremium();
 ```tsx
 const { purchase, getPackage, restore } = useRevenueCat();
 
-await purchase("annual");  // or "monthly"
+await purchase("annualFull");  // or "annualMid", "annualLow", "monthly"
 await restore();
 ```
 
@@ -154,10 +155,7 @@ Docs: [Displaying paywalls](https://www.revenuecat.com/docs/tools/paywalls)
 
 Customize UI in **RC Dashboard → Paywalls → Publish**. Until published, SDK shows the **default package paywall**.
 
-ChristCalm keeps a **branded** `/paywall` route as primary UX; remote paywall is available from:
-
-- Paywall screen → “More plans (RevenueCat paywall)”
-- Profile → “Unlock Premium” → `presentPaywallIfNeeded`
+ChristCalm keeps a branded `/paywall` feature shell. Its subscribe action opens RevenueCat Paywalls UI for offering `default`; the onboarding ladder purchases its tier-specific package directly. Profile routes non-premium users to `/paywall` and opens Customer Center for active members.
 
 ---
 

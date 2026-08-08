@@ -4,6 +4,8 @@ Christian faith-based meditation & mental wellness app.
 
 **Stack (reference):** Expo (React Native) · FastAPI on AWS Lambda · DynamoDB · Cognito · Bedrock Wisdom
 
+**Current app:** 27-step Grace-led onboarding → Cognito email/Apple auth → RevenueCat hard premium gate → Home, Meditate, Wisdom, Journey, and Me. SOS is a modal, Journal is a hidden route reachable from Me/Home, and the Prayers UI is deferred while its catalog API remains available.
+
 ---
 
 ## Contributing (UI without AWS)
@@ -136,8 +138,7 @@ Optional:
 **What bootstrap does (using the account id from STS):**
 
 1. Runs `aws sts get-caller-identity` → account id + region  
-2. Writes `infrastructure/terraform/terraform.tfvars` (gitignored) with  
-   `name_suffix = "<account_id>"` and a generated `jwt_secret`  
+2. Writes `infrastructure/terraform/terraform.tfvars` (gitignored) with account isolation and Terraform-required inputs. The generated `jwt_secret` is legacy/provisioned but unused by the Cognito-only runtime.
 3. `terraform apply` → API Gateway, Lambda, DynamoDB, Cognito, S3, CodeBuild  
 4. **Populates SSM automatically** under `/christcalm-dev/`  
 5. Builds & deploys Lambda code (CodeBuild)  

@@ -42,14 +42,18 @@ RC_IOS_KEY=""
 RC_ENT=""
 RC_OFF=""
 RC_MONTHLY=""
-RC_ANNUAL=""
+RC_ANNUAL_FULL=""
+RC_ANNUAL_MID=""
+RC_ANNUAL_LOW=""
 RC_UNLOCK=""
 if [[ -f "$ROOT/frontend/.env" ]]; then
   RC_IOS_KEY="$(grep -E '^EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
   RC_ENT="$(grep -E '^EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
   RC_OFF="$(grep -E '^EXPO_PUBLIC_REVENUECAT_OFFERING_ID=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
   RC_MONTHLY="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
-  RC_ANNUAL="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_ANNUAL_FULL="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_FULL=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_ANNUAL_MID="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_MID=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
+  RC_ANNUAL_LOW="$(grep -E '^EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_LOW=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
   RC_UNLOCK="$(grep -E '^EXPO_PUBLIC_UNLOCK_ALL=' "$ROOT/frontend/.env" | cut -d= -f2- || true)"
 fi
 
@@ -78,7 +82,9 @@ esac
 RC_ENT="${RC_ENT:-christcalm_premium}"
 RC_OFF="${RC_OFF:-default}"
 RC_MONTHLY="${RC_MONTHLY:-cc_999_1m}"
-RC_ANNUAL="${RC_ANNUAL:-cc_1999_1y_1w0}"
+RC_ANNUAL_FULL="${RC_ANNUAL_FULL:-cc_5999_1y}"
+RC_ANNUAL_MID="${RC_ANNUAL_MID:-cc_3999_1y}"
+RC_ANNUAL_LOW="${RC_ANNUAL_LOW:-cc_1999_1y}"
 
 # --- Frontend: public Expo vars only (shipped in the client bundle) ---
 cat > "$ROOT/frontend/.env" <<EOF
@@ -97,7 +103,9 @@ EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=${RC_IOS_KEY}
 EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=${RC_ENT}
 EXPO_PUBLIC_REVENUECAT_OFFERING_ID=${RC_OFF}
 EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=${RC_MONTHLY}
-EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=${RC_ANNUAL}
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_FULL=${RC_ANNUAL_FULL}
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_MID=${RC_ANNUAL_MID}
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_LOW=${RC_ANNUAL_LOW}
 
 # 1 = unlock all content (local preview). 0 = real paywall / RC entitlement gates
 EXPO_PUBLIC_UNLOCK_ALL=${RC_UNLOCK}

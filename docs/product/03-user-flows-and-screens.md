@@ -41,9 +41,10 @@ Floating bottom tab bar (pill) + center **FAB** (“Start calm”).
 
 ```
 Install → Onboarding (27 steps, incl. escalating paywalls)
-  → Auth (email or Apple) → Home
+  → Auth (email or Apple) → RevenueCat entitlement check
+  → Non-premium: hard /paywall · Premium: Home
   → Tap emotion → Meditate filtered → Open session → Complete
-  → Soft paywall (optional dismiss) → Journey stats updated
+  → Rating/progress → Journey stats updated
 ```
 
 ### B. Panic / hard moment
@@ -69,10 +70,12 @@ Open → Home greeting + streak → Today’s path or emotion → Practice
 ### E. Subscribe
 
 ```
-Complete first practice → Soft paywall
-  → Choose Monthly / Annual → Store purchase → Entitlement sync
+Onboarding ladder or post-auth hard paywall
+  → Choose an offered monthly/annual tier → Store purchase → Entitlement sync
   → Premium badge / unlock gates
 ```
+
+The post-practice soft sheet remains implemented as a secondary resurfacing trigger for preview/limited-access configurations; it is not the production route around the hard gate.
 
 ---
 
@@ -131,7 +134,7 @@ Close · title · progress
 Large circular artwork (gentle pulse when playing)
 Verse + reference
 Scrub + play/pause
-On complete: celebration / soft sheet (not instant hard paywall)
+On complete: rating/progress celebration; the soft sheet may appear only in preview/limited-access configurations
 ```
 
 ### 4. SOS — “Regulate now”
@@ -208,14 +211,16 @@ Sign out
 | 50% | Discount | 5 min |
 | 80% | Final offer | 3 min |
 
-**Secondary — in-app** (`/paywall` modal + soft sheet after first practice):
+**Post-auth hard gate** (`/paywall` modal):
 
 ```
 Warm headline
 Feature checklist
-Monthly | Annual (RevenueCat packages)
-Restore · Not now
+Continue → RevenueCat Paywalls UI (offering `default`)
+Restore purchases
 ```
+
+The separately implemented post-practice soft sheet is a secondary resurfacing trigger for preview/limited-access configurations.
 
 ### 11. Auth screens
 
@@ -227,7 +232,7 @@ Restore · Not now
 
 ### 12. Onboarding
 
-Full conversion flow (**27 screens**, indices 0–26): design in [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md), overview in [04-onboarding.md](./04-onboarding.md). Exit → **auth**, then Home after session.
+Full conversion flow (**27 screens**, indices 0–26): design in [Onboarding-Design-Spec.md](./Onboarding-Design-Spec.md), overview in [04-onboarding.md](./04-onboarding.md). Exit → **auth**, then entitlement check → hard paywall or Home.
 
 ---
 

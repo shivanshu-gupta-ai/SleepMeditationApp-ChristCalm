@@ -14,7 +14,7 @@ backend/
 │   ├── deps.py            # Auth dependencies
 │   ├── middleware.py
 │   └── routes/            # health, auth, catalog, user_content, wisdom, billing, analytics
-├── auth/                  # Cognito JWT + Apple federation helpers
+├── auth/                  # Cognito access-token validation + user upsert helpers
 ├── ai/                    # Wisdom LLM, RAG, guardrails, voice
 │   └── corpus/            # Handbook + jesus_voice (RAG source)
 ├── core/                  # Env bootstrap, rate limits
@@ -34,6 +34,8 @@ backend/
 | Wisdom | status, quota, chat, **chat/stream**, history, voice presign/transcribe |
 | Billing | subscription sync/status, RevenueCat webhook |
 | Analytics | events, me, summary |
+
+The API has no password or local-token endpoints. Email/password and optional Apple federation are handled by Cognito on the client; protected API routes validate the resulting Cognito access token.
 
 ## Local run (secrets from SSM)
 

@@ -14,7 +14,7 @@
 |--------|-------|
 | Email + password | Cognito user pool; confirm email when required |
 | **Sign in with Apple** | Cognito Hosted UI IdP + PKCE (`christcalm://oauth`); required when offering social on iOS |
-| Google Sign In | **Not implemented** in the reference client (optional IdP only if you add it later) |
+| Google Sign In | **Not implemented** in the client or Terraform stack |
 
 Hosted UI / native SDK / custom forms are all fine if the **API contract** is met.
 
@@ -35,13 +35,15 @@ Any IdP is valid. Map provider `sub` → `User.id`. Upsert user row on first val
 
 ---
 
-## Authorization matrix
+## Capability and access matrix
+
+The catalog and SOS endpoints are public, but the current app shell applies a **hard premium gate before the tabs**. The free capabilities below describe backend/product capability and preview mode (`EXPO_PUBLIC_UNLOCK_ALL=1`), not a route around the production gate.
 
 | Resource | Anonymous | Signed-in free | Premium |
 |----------|-----------|----------------|---------|
 | Emotions / meditations list | Yes | Yes | Yes |
-| Play free meditation | Yes* | Yes | Yes |
-| Premium meditation | Soft paywall | Soft paywall | Yes |
+| Play catalog meditation | Product-optional* | Preview only | Yes |
+| Main tabs | No | No (hard paywall) | Yes |
 | SOS | Yes | Yes | Yes |
 | Devotional | Yes | Yes | Yes |
 | Journal R/W | No | Yes | Yes |
@@ -55,7 +57,7 @@ Any IdP is valid. Map provider `sub` → `User.id`. Upsert user row on first val
 
 ## Freemium model
 
-### Free tier
+### Free/preview capability
 
 - Core meditations and basic prayers (configurable)  
 - SOS always available (safety)  
@@ -144,7 +146,7 @@ Handle: initial purchase, renewal, cancellation, expiration, billing issues (gra
 
 ## Compliance notes
 
-- Follow Apple/Google subscription guidelines (clear manage links, no misleading claims)  
+- Follow Apple App Store and Google Play subscription guidelines (clear manage links, no misleading claims)
 - Religious content: no medical cure claims  
 - Privacy policy should cover journal, AI messages, analytics  
 - Account deletion path (post-MVP minimum: support email)  

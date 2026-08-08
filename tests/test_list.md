@@ -13,12 +13,13 @@
 | Area | Client | Backend |
 |------|--------|---------|
 | Auth | Email Cognito + Sign in with Apple | Cognito tokens → `/api/*` Bearer |
-| Onboarding | Multi-step draft → sync | `POST /api/onboarding` |
-| Home / Meditate / SOS / Prayers | Expo Router tabs | Catalog: emotions, meditations, prayers, devotional |
+| Onboarding | 27-step draft + Grace GIFs + paywall ladder → sync | `POST /api/auth/onboarding` |
+| Home / Meditate / Wisdom / Journey / Me | Five visible Expo Router tabs | Catalog, user stats, Wisdom |
+| SOS / Journal / Prayers | SOS modal; Journal hidden route; Prayers UI deferred | SOS client flow; journal CRUD; prayers/devotional catalog |
 | Wisdom chat + voice | Chat UI, mic → S3 | Guardrails + RAG + Bedrock; quota; voice presign |
 | Journal | Private entries + mood | User-scoped DynamoDB |
 | Paywall / Premium | RevenueCat SDK | `is_premium` + RevenueCat webhook |
-| Profile | Stats, theme, sign out | `/api/me` |
+| Profile | Plan, theme, feedback, links, sign out | `/api/auth/me`, feedback, subscription status |
 
 **Environments**
 
@@ -36,7 +37,7 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 
 ### 1.1 Secrets & config
 
-- [ ] No AWS keys, Cognito secrets, JWT secrets, ASC `.p8`, or RevenueCat **secret** keys in git
+- [ ] No AWS keys, Cognito/Apple secrets, legacy Terraform JWT input, ASC `.p8`, or RevenueCat **secret** keys in git
 - [ ] Backend secrets only via **SSM** (`SSM_PREFIX=/christcalm-dev/…`); local `backend/.env` is non-secret
 - [ ] `infrastructure/terraform/terraform.tfvars` and `frontend/credentials.json` stay gitignored
 - [ ] EAS / `eas.json` only holds **public** Expo env (`EXPO_PUBLIC_*`); never private Apple keys
@@ -47,7 +48,7 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 
 ### 1.2 Authentication (Cognito + Apple)
 
-- [ ] Unauthenticated calls to protected routes return **401** (`/api/me`, journal, wisdom chat, complete meditation)
+- [ ] Unauthenticated calls to protected routes return **401** (`/api/auth/me`, journal, wisdom chat, complete meditation)
 - [ ] Invalid / expired / wrong-audience Cognito access tokens are rejected
 - [ ] Apple Sign-In only via Cognito Hosted UI; backend trusts **Cognito**, not raw Apple ID tokens from the client
 - [ ] Password policy enforced (8+, upper, lower, number)
@@ -97,7 +98,7 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 - [ ] CORS allowlist is appropriate (not `*` with credentials if that ever appears)
 - [ ] Health (`/api/health`) does not leak secrets or internal ARNs
 - [ ] Production errors do not return Python stack traces
-- [ ] Auth endpoints rate-limited (signup/signin)
+- [ ] Cognito authentication policy and throttling verified; API protected routes reject invalid/expired access tokens
 - [ ] Dependencies scanned (`npm audit`, Python pins in Lambda requirements)
 
 **Possible vulns:** open CORS + token theft XSS on web; verbose 500s; unauthenticated expensive endpoints; dependency CVEs in Expo tree.
@@ -128,7 +129,8 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 
 ### 2.1 Onboarding & auth
 
-- [ ] Onboarding (~11–12 steps) completes; draft persists; lands on Home
+- [ ] Onboarding (27 steps) completes; draft persists; lands on auth, then the hard premium gate for a non-premium user
+- [ ] Grace uses the bundled GIF immediately (no PNG flash); question/option placement remains usable on compact phone and tablet widths
 - [ ] Email sign-up / sign-in / confirm email
 - [ ] Forgot + reset password
 - [ ] Sign in with Apple (when IdP seeded)
@@ -138,12 +140,12 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 
 - [ ] Home: greeting, emotions, SOS entry, path, today’s word
 - [ ] Meditate list filters by emotion; cards show duration / Scripture
-- [ ] Player: play/pause, scrub, complete → stats update
+- [ ] Player: play/pause, scrub, complete → backend minutes/count + local streak/history + Journey update
 - [ ] SOS: 4-7-8 cycles, verses rotate, start/pause
-- [ ] Prayers library lists by category
+- [ ] Prayers catalog API lists by category; confirm the deferred Prayers route remains hidden from tab navigation
 - [ ] Journal create + list with mood
-- [ ] Profile: name, stats, theme toggle, sign out
-- [ ] Soft paywall after first practice (with `UNLOCK_ALL=0`)
+- [ ] Profile: name, plan, feedback, theme toggle, navigation links, sign out
+- [ ] Secondary post-practice paywall trigger works in a preview/limited-access configuration; it is not a bypass around the production hard gate
 
 ### 2.3 Wisdom
 
@@ -155,7 +157,7 @@ These are the realistic vulnerabilities for *this* codebase (not a generic web c
 
 ### 2.4 Monetization
 
-- [ ] Monthly `cc_999_1m` and annual `cc_1999_1y_1w0` packages resolve in RC
+- [ ] Monthly `cc_999_1m` plus annual `cc_5999_1y`, `cc_3999_1y`, and `cc_1999_1y` packages resolve in RC
 - [ ] Purchase restores entitlement
 - [ ] Restore purchases works
 - [ ] Backend `is_premium` flips after webhook (or RC sync path)
@@ -189,7 +191,7 @@ pytest tests/backend/test_wisdom_guardrails.py \
 pytest tests/backend/ -v --junitxml=tests/reports/pytest/full_backend.xml
 ```
 
-- [ ] Security suite green (auth required, invalid JWT, health clean)
+- [ ] Security suite green (auth required, invalid Cognito access token, health clean)
 - [ ] Guardrails + rate limit + LLM validation + AI quota green
 - [ ] Subscription / webhook tests green
 - [ ] E2E flow test green against preview API

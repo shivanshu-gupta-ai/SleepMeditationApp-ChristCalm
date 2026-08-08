@@ -25,10 +25,15 @@ Optional alternate stacks may implement password `signup`/`signin` on the API; t
 
 ```json
 {
-  "name": "Ada",
+  "display_name": "Ada",
   "faith_journey": "growing",
   "concerns": ["anxiety", "sleep"],
-  "onboarding_data": { /* full draft */ }
+  "emotional_state": "anxious",
+  "desired_support": ["peace", "sleep"],
+  "preferred_time": "evening",
+  "commitment_accepted": true,
+  "commitment_date": "2026-08-08",
+  "first_practices_done": [false, false, false]
 }
 ```
 
@@ -49,9 +54,11 @@ Cache-Control recommended for catalog (e.g. 5 minutes).
 ### GET `/emotions`
 
 ```json
-[
-  { "id": "anxious", "label": "Anxious", "color": "#F4C77B", "emoji": "🌊" }
-]
+{
+  "emotions": [
+    { "id": "anxious", "label": "Anxious", "color": "#F4C77B", "emoji": "🌊" }
+  ]
+}
 ```
 
 ### GET `/meditations`
@@ -89,7 +96,7 @@ Optional query `emotion`. Returns array of meditation objects (see content-catal
 ### POST `/journal`
 
 ```json
-{ "body": "Today I felt…", "moods": ["anxious", "hopeful"] }
+{ "content": "Today I felt…", "mood": "anxious" }
 ```
 
 ---
@@ -102,11 +109,12 @@ Optional query `emotion`. Returns array of meditation objects (see content-catal
 
 ```json
 // request
-{ "meditation_id": "med-anxious-shanti", "duration_sec": 600 }
-// response: updated UserOut or { ok: true, user: … }
+{ "meditation_id": "med-anxious-shanti", "minutes": 10 }
+// response
+{ "ok": true, "minutes_meditated": 42 }
 ```
 
-Server updates streak, minutes, practices_completed.
+Server updates lifetime minutes, `prayers_completed`, and `last_activity`. The current client maintains its calendar-day streak locally and Journey uses the greater of local and server streak values.
 
 ---
 
@@ -190,7 +198,6 @@ Rate-limited per user (~12/hour). Message stored only in `{prefix}-user-feedback
 | GET | `/wisdom/history` | Yes | Past turns |
 | POST | `/wisdom/voice/presign` | Yes | Upload URL for audio |
 | POST | `/wisdom/voice/transcribe` | Yes | Speech → text (counts toward AI quota) |
-| GET | `/ai/prayers/history` | Yes | Legacy |
 
 ### POST `/wisdom/chat/stream`
 
@@ -238,10 +245,16 @@ If guardrail blocks:
 
 `christcalm_premium` (configurable)
 
-### Product ids (example)
+### Active products and packages
 
-- `christcalm_monthly`  
-- `christcalm_annual`  
+| Package | Store product | Current US price |
+|---------|---------------|------------------|
+| `$rc_monthly` | `cc_999_1m` | $9.99/month |
+| `$rc_annual` | `cc_5999_1y` | $59.99/year |
+| `$rc_custom_annual_mid` | `cc_3999_1y` | $39.99/year |
+| `$rc_custom_annual_low` | `cc_1999_1y` | $19.99/year |
+
+Offering: `default`. Entitlement: `christcalm_premium`. There is currently **no free trial**.
 
 ### POST `/subscription/sync`
 
@@ -309,8 +322,8 @@ AI failures: friendly message, never raw provider errors.
 
 ## Security requirements
 
-- Passwords: strong KDF (e.g. PBKDF2 100k+ / bcrypt / Argon2)  
-- JWT or opaque tokens; store on device in secure storage  
+- Cognito owns password storage and policy; the API has no password endpoints
+- Store Cognito access/refresh tokens in platform secure storage
 - CORS allowlist for web clients  
 - Secrets only on server (env / secret manager)  
 - Webhook auth required in production  

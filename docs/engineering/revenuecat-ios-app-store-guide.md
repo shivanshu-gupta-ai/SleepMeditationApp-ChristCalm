@@ -6,14 +6,14 @@ End-to-end guide to wire **iOS in-app subscriptions** for ChristCalm using **Rev
 **Project (RevenueCat):** `proj43f1dce8` — **ChristCalm**  
 **App code entitlement:** `christcalm_premium`  
 **Offering:** `default`  
-**Products:** `christcalm_monthly`, `christcalm_annual`
+**Products:** `cc_999_1m`, `cc_5999_1y`, `cc_3999_1y`, `cc_1999_1y`
 
 Related files in this repo:
 
 | Path | Role |
 |------|------|
 | `frontend/src/features/subscriptions/` | SDK wiring (`RevenueCatContext`, constants, `usePremium`) |
-| `frontend/app/paywall.tsx` | Paywall UI (monthly / annual) |
+| `frontend/app/paywall.tsx` | Branded premium shell + RevenueCat Paywalls checkout |
 | `config/auth/revenuecat.example.json` | Current RC IDs snapshot |
 | `config/auth/README.md` | Short RC notes |
 | `backend/server.py` | `/api/revenuecat/webhook` + `/api/subscription/sync` |
@@ -46,12 +46,12 @@ Related files in this repo:
 
 | Layer | Owns |
 |-------|------|
-| **App Store Connect** | Real products, prices, free trials, tax, review, sandbox testers |
+| **App Store Connect** | Real products, prices, tax, review, sandbox testers |
 | **RevenueCat** | Entitlements, offerings/packages, product mapping, analytics, SDK abstraction |
 | **Your app** | Paywall UI, `Purchases.configure`, purchase/restore, check `entitlements.active.christcalm_premium` |
 | **Your backend** | Optional mirror of premium via webhook + client sync for API gates |
 
-**Rule:** The store product **identifier** in App Store Connect must match the **store identifier** RevenueCat knows about (e.g. `christcalm_monthly`). Your app rarely hardcodes prices; it loads them from RevenueCat offerings → StoreKit.
+**Rule:** The store product **identifier** in App Store Connect must exactly match the RevenueCat store identifier. The app loads localized prices from RevenueCat/StoreKit.
 
 ---
 
@@ -64,7 +64,7 @@ As of the current setup:
 | RevenueCat project | `proj43f1dce8` (name: ChristCalm) |
 | Entitlement lookup key | `christcalm_premium` (RC id `entl6f7711a266`) |
 | Offering | `default` (current; RC id `ofrngd353e9c397`) |
-| Packages | `$rc_monthly` → `christcalm_monthly`, `$rc_annual` → `christcalm_annual` |
+| Packages | `$rc_monthly` → `cc_999_1m`; full/mid/low annual packages → their corresponding `cc_*_1y` SKUs |
 | Test Store app | `app1d119d1b47` (sandbox without real App Store products) |
 | Test Store public key | `test_iOFZidqNcAXQabRbTcHHYiAEKug` |
 | App env (local) | `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=test_…` |
@@ -84,8 +84,10 @@ Use the **same strings** everywhere.
 | Entitlement | `christcalm_premium` | RC Product catalog → Entitlements · app `ENTITLEMENT_ID` · backend `REVENUECAT_ENTITLEMENT_ID` |
 | Offering | `default` | RC Offerings · app `OFFERING_ID` |
 | Monthly product ID | `cc_999_1m` | ASC subscription product · RC product store identifier · app `PRODUCT_IDS.monthly` |
-| Annual product ID | `cc_1999_1y_1w0` | ASC annual (Ready to Submit) · RC App Store product · app `PRODUCT_IDS.annual` |
-| Package types | `$rc_monthly`, `$rc_annual` | RC packages inside offering `default` |
+| Annual full product ID | `cc_5999_1y` | `$rc_annual` · $59.99/year |
+| Annual mid product ID | `cc_3999_1y` | `$rc_custom_annual_mid` · $39.99/year |
+| Annual low product ID | `cc_1999_1y` | `$rc_custom_annual_low` · $19.99/year |
+| Package types | `$rc_monthly`, `$rc_annual`, `$rc_custom_annual_mid`, `$rc_custom_annual_low` | RC packages inside offering `default` |
 | iOS public SDK key | `appl_…` (prod) or `test_…` (Test Store) | RC App → API keys · `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` |
 | Secret API key (server/MCP) | `sk_…` (v2) | RC Project settings → API keys · **never** in the app |
 | Webhook auth | random secret you invent | RC Integrations → Webhooks · SSM `REVENUECAT_WEBHOOK_AUTHORIZATION` |
@@ -147,13 +149,13 @@ Subscriptions **will not work** until contracts are active.
 
 1. Open your app → **Monetization** → **Subscriptions** (or **Features** → **In-App Purchases** depending on ASC UI).
 2. Create a **Subscription Group**, e.g. `ChristCalm Premium`.
-   - One group holds monthly + annual so users upgrade/downgrade cleanly.
+   - One group holds monthly + all annual tiers so users upgrade/downgrade cleanly.
 
 #### B. Monthly subscription
 
 1. **+** inside the group → **Auto-Renewable Subscription**.
 2. **Reference Name** (internal): `ChristCalm Monthly`.
-3. **Product ID** (immutable): **`christcalm_monthly`**  
+3. **Product ID** (immutable): **`cc_999_1m`**
    - Must match RevenueCat + app constants.  
    - Use only letters, numbers, underscores; no spaces.
 4. Subscription duration: **1 Month**.
@@ -162,24 +164,17 @@ Subscriptions **will not work** until contracts are active.
 7. **Review screenshot** (required for submission): paywall or subscription UI.
 8. Save → status progresses toward **Ready to Submit** / **Approved** with a binary.
 
-#### C. Annual subscription
+#### C. Annual subscriptions
 
-Same steps:
+Create three one-year products in the same subscription group:
 
-| Field | Value |
-|-------|--------|
-| Product ID | **`christcalm_annual`** |
-| Duration | **1 Year** |
-| Example price | $39.99 USD |
-| Optional | Introductory offer / free trial (e.g. 7 days) — configure in ASC |
+| Product ID | US price | Package |
+|------------|----------|---------|
+| `cc_5999_1y` | $59.99 | `$rc_annual` |
+| `cc_3999_1y` | $39.99 | `$rc_custom_annual_mid` |
+| `cc_1999_1y` | $19.99 | `$rc_custom_annual_low` |
 
-**Introductory free trial (optional)**
-
-1. Open `christcalm_annual` → **Subscription Prices** → **Introductory Offers**.
-2. Free trial: 3 / 7 / 14 days, etc.
-3. Eligibility: new subscribers (typical).
-
-RevenueCat will surface trial eligibility via StoreKit; you do not need a separate product ID for the trial.
+The current product design has **no introductory offer or free trial**.
 
 ---
 
@@ -272,7 +267,7 @@ Switch to `appl_…` when the App Store app is connected and products are live i
 1. **Product catalog** → **Entitlements** → **+ New**.
 2. Identifier (lookup key): **`christcalm_premium`**.
 3. Display name: `ChristCalm Premium`.
-4. **Attach products** `christcalm_monthly` and `christcalm_annual` (after products exist).
+4. Attach all four active `cc_*` products after they exist.
 
 **Already created:** lookup key `christcalm_premium`.
 
@@ -286,8 +281,10 @@ For each store product:
 1. **Product catalog** → **Products** → **+ New**.
 2. **App:** your **App Store** app (not only Test Store, for production).
 3. **Store product identifier:** exact ASC Product ID  
-   - `christcalm_monthly`  
-   - `christcalm_annual`
+   - `cc_999_1m`
+   - `cc_5999_1y`
+   - `cc_3999_1y`
+   - `cc_1999_1y`
 4. Type: Subscription; duration P1M / P1Y.
 
 If products already exist on **Test Store**, either:
@@ -295,7 +292,7 @@ If products already exist on **Test Store**, either:
 - Create **additional** product rows attached to the **App Store** app with the **same store identifiers**, or  
 - Follow RC’s import-from-store flow once credentials are valid.
 
-**Already on Test Store:** `christcalm_monthly`, `christcalm_annual`.
+Test Store aliases may exist for preview builds, but active App Store packages must map to the four `cc_*` identifiers above.
 
 ### 5.6 Offering + packages (paywall catalog)
 
@@ -303,11 +300,13 @@ If products already exist on **Test Store**, either:
 2. Identifier: **`default`**.
 3. Make it **Current** (SDK `Purchases.getOfferings().current`).
 4. Add packages:
-   - **`$rc_monthly`** → attach `christcalm_monthly`
-   - **`$rc_annual`** → attach `christcalm_annual`
+   - **`$rc_monthly`** → attach `cc_999_1m`
+   - **`$rc_annual`** → attach `cc_5999_1y`
+   - **`$rc_custom_annual_mid`** → attach `cc_3999_1y`
+   - **`$rc_custom_annual_low`** → attach `cc_1999_1y`
 5. Position: annual first if you want it highlighted (app UI still defaults to annual).
 
-**Already created:** offering `default` (current) with both packages.
+**Already created:** offering `default` (current) with all four packages.
 
 **How the app uses this**
 
@@ -372,8 +371,10 @@ In `frontend/.env` (also written by `./scripts/sync-env-from-aws.sh`):
 EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=appl_xxxxxxxx
 EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=christcalm_premium
 EXPO_PUBLIC_REVENUECAT_OFFERING_ID=default
-EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=christcalm_monthly
-EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL=christcalm_annual
+EXPO_PUBLIC_REVENUECAT_PRODUCT_MONTHLY=cc_999_1m
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_FULL=cc_5999_1y
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_MID=cc_3999_1y
+EXPO_PUBLIC_REVENUECAT_PRODUCT_ANNUAL_LOW=cc_1999_1y
 
 # Set 0 when testing real paywall gating
 EXPO_PUBLIC_UNLOCK_ALL=0
@@ -387,7 +388,7 @@ Constants resolution:
 // frontend/src/features/subscriptions/constants.ts
 ENTITLEMENT_ID   // christcalm_premium
 OFFERING_ID      // default
-PRODUCT_IDS.monthly / .annual
+PRODUCT_IDS.monthly / .annualFull / .annualMid / .annualLow
 ```
 
 ### 6.2 SDK flow (already implemented)
@@ -399,16 +400,16 @@ PRODUCT_IDS.monthly / .annual
 5. Read **`customerInfo.entitlements.active["christcalm_premium"]`**.
 6. Best-effort **`api.syncSubscription`** so API reflects premium immediately; webhook is long-term source of truth.
 
-### 6.3 Soft paywall product behavior
+### 6.3 Premium gate behavior
 
 - Preview/dev often uses `EXPO_PUBLIC_UNLOCK_ALL=1` so content is free.
 - For real monetization testing: set **`EXPO_PUBLIC_UNLOCK_ALL=0`**.
-- Test account `test@christcalm.dev` may still be treated as premium in `usePremium` — use a normal account when testing paywall.
+- The boot route and tabs redirect a signed-in non-premium user to `/paywall` after RevenueCat finishes loading.
 
 ### 6.4 Where the paywall opens
 
 - Route: `frontend/app/paywall.tsx`
-- Triggers: soft paywall after first practice / premium content (see [`../product/10-auth-and-monetization.md`](../product/10-auth-and-monetization.md)).
+- Primary trigger: post-auth hard gate. A post-practice soft trigger remains for preview/limited-access configurations (see [`../product/10-auth-and-monetization.md`](../product/10-auth-and-monetization.md)).
 
 ---
 
@@ -484,7 +485,7 @@ revenuecat_entitlement_id        = "christcalm_premium"
 ### Apple
 
 - [ ] Bundle ID `com.christcalm.app`  
-- [ ] Subscription group + `christcalm_monthly` + `christcalm_annual`  
+- [ ] Subscription group + all four active `cc_*` products
 - [ ] Prices + localizations + review screenshot  
 - [ ] Banking / tax / Paid Applications **Active**  
 - [ ] Sandbox purchase verified on a device  
@@ -494,7 +495,7 @@ revenuecat_entitlement_id        = "christcalm_premium"
 
 - [ ] App Store app with correct bundle ID + Apple credentials  
 - [ ] Products linked (App Store), attached to `christcalm_premium`  
-- [ ] Offering `default` current with `$rc_monthly` / `$rc_annual`  
+- [ ] Offering `default` current with monthly + full/mid/low annual packages
 - [ ] Public `appl_` key in production app config (EAS secrets / CI)  
 - [ ] Webhook → production API URL + secret  
 - [ ] (Optional) charts / customer lists sanity check after first sandbox purchase  
@@ -524,7 +525,7 @@ revenuecat_entitlement_id        = "christcalm_premium"
 | RC Project ID | RC URL or Project settings → `proj43f1dce8` |
 | Entitlement id | RC → Product catalog → Entitlements → Identifier |
 | Offering id | RC → Offerings → Identifier (`default`) |
-| Package ids | Inside offering (`$rc_monthly`, `$rc_annual`) |
+| Package ids | Inside offering (`$rc_monthly`, `$rc_annual`, `$rc_custom_annual_mid`, `$rc_custom_annual_low`) |
 | iOS public key | RC → Apps → [iOS app] → API keys → Public (`appl_` / `test_`) |
 | Secret key | RC → Project settings → API keys (`sk_`) |
 | Webhook URL | Your API: `terraform output api_url` + `api/revenuecat/webhook` |
@@ -561,7 +562,7 @@ Snapshot of current IDs: [`config/auth/revenuecat.example.json`](../../config/au
 ## 12. Recommended implementation order
 
 1. **Keep using Test Store** (`test_` key) to finish paywall UX against `default` offering.  
-2. **ASC:** agreements → subscription group → `christcalm_monthly` / `christcalm_annual`.  
+2. **ASC:** agreements → subscription group → create the four active products.
 3. **RC:** add App Store app + credentials → create/import App Store products → attach to same entitlement & packages.  
 4. **App:** switch to `appl_` key; `UNLOCK_ALL=0`; test on device with sandbox Apple ID.  
 5. **Backend:** webhook + SSM secret; confirm `is_premium` flips.  
@@ -588,8 +589,10 @@ Snapshot of current IDs: [`config/auth/revenuecat.example.json`](../../config/au
 Bundle ID:        com.christcalm.app
 Entitlement:      christcalm_premium
 Offering:         default  (current)
-Packages:         $rc_monthly → christcalm_monthly
-                  $rc_annual  → christcalm_annual
+Packages:         $rc_monthly           → cc_999_1m
+                  $rc_annual            → cc_5999_1y
+                  $rc_custom_annual_mid → cc_3999_1y
+                  $rc_custom_annual_low → cc_1999_1y
 Public key (dev): test_iOFZidqNcAXQabRbTcHHYiAEKug
 Public key (prod): appl_…   (create after App Store app in RC)
 Webhook:          {api_url}api/revenuecat/webhook

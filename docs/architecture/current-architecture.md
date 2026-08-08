@@ -19,8 +19,9 @@ ChristCalm is a **serverless** Christian meditation & wisdom app.
 ┌──────────────────────────┐     ┌─────────────────────┐
 │  Lambda + FastAPI        │────►│  DynamoDB           │
 │  backend/                │     │  users, journal,    │
-│  · auth/  · ai/          │     │  ai-prayers, usage  │
-│  · core/  · data/        │     └─────────────────────┘
+│  · auth/  · ai/          │     │  content, billing,  │
+│  · core/  · data/        │     │  limits, analytics  │
+│                          │     └─────────────────────┘
 └────────────┬─────────────┘
              │
      ┌───────┴────────┐
@@ -95,7 +96,7 @@ ChristCalmApp/
 | Client | Expo Router, React Native, TypeScript |
 | API | FastAPI + Mangum on Lambda |
 | Data | DynamoDB (on-demand) |
-| Auth | AWS Cognito (email + Apple; Google IdP optional in infra only) |
+| Auth | AWS Cognito (email/password + optional Sign in with Apple) |
 | AI | Amazon Bedrock Converse, multi-model fallback chain |
 | Voice | S3 upload + Amazon Transcribe |
 | Payments | RevenueCat (client) + webhook → DynamoDB premium flags |
@@ -109,6 +110,8 @@ ChristCalmApp/
 | `users` | Accounts, premium, AI monthly quota |
 | `mood-logs` | Emotion logs |
 | `journal-entries` | Journal |
+| `meditation-ratings` | Per-session 1–5 star ratings |
+| `user-feedback` | Private product feedback from Me |
 | `ai-prayers` | Wisdom turns / prayer history |
 | `payment-transactions` | RevenueCat-related |
 | `rate-limits` | Distributed burst limits |

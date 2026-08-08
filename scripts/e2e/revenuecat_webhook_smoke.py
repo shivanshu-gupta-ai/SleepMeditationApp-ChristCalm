@@ -46,7 +46,7 @@ def main() -> None:
             "app_user_id": args.user_id,
             "entitlement_ids": ["christcalm_premium"] if active else [],
             "entitlements": {"christcalm_premium": {"expires_date": None}} if active else {},
-            "product_id": "cc_1999_1y_1w0",
+            "product_id": "cc_1999_1y",
             "store": "APP_STORE",
             "environment": "SANDBOX",
         },
@@ -57,7 +57,7 @@ def main() -> None:
         "app_user_id": args.user_id,
         "type": args.event,
         "entitlement_ids": ["christcalm_premium"] if active else [],
-        "product_id": "cc_1999_1y_1w0",
+        "product_id": "cc_1999_1y",
     }
 
     data = json.dumps(payload).encode()

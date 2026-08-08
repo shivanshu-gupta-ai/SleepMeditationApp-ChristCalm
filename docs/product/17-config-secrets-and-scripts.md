@@ -25,7 +25,7 @@ config/
 │   ├── frontend.env.example     # public EXPO_PUBLIC_* only
 │   └── integrations.env.example # docs: secrets go tfvars → SSM
 ├── auth/
-│   ├── README.md                # Cognito / Apple / Google setup
+│   ├── README.md                # Cognito / Apple setup
 │   ├── env.example
 │   └── revenuecat.example.json
 ├── ci/
@@ -75,7 +75,7 @@ Only things like:
 - `AWS_REGION=us-east-1`  
 - `DYNAMODB_TABLE_PREFIX=christcalm-dev`  
 
-Secrets (JWT, Apple key, webhook auth, …) load **from SSM at process start**.
+Secrets (Apple key, webhook auth, …) load **from SSM at process start**.
 
 ---
 
@@ -85,11 +85,9 @@ Path: `/christcalm-dev/`
 
 | Parameter | Purpose |
 |-----------|---------|
-| `JWT_SECRET` | Legacy/local JWT signing |
 | `REVENUECAT_WEBHOOK_AUTHORIZATION` | Webhook Bearer |
 | `BEDROCK_MODEL_ID` / `LLM_PROVIDER` | AI routing |
 | Apple private key / Team / Key IDs | Cognito IdP (server-side) |
-| Google client secret | If Google federation |
 | Other integration secrets | As added in `ssm.tf` |
 
 Lambda env only needs: `SSM_PREFIX`, table prefix, region, voice bucket name — then reads the rest.
@@ -136,15 +134,10 @@ Source: `config/auth/README.md`
 
 **Sign up and sign in with Apple are the same button** — Cognito creates or links user.
 
-### Google
-
-- Web client id/secret; redirect = Cognito / API callback as configured  
-- Allowed mobile redirect prefixes: `exp://`, `com.christcalm.app://`, localhost  
-
 ### RevenueCat
 
 - Entitlement: `christcalm_premium`  
-- Products: `christcalm_monthly`, `christcalm_annual`  
+- Products: `cc_999_1m`, `cc_5999_1y`, `cc_3999_1y`, `cc_1999_1y`
 - Public SDK keys in Expo env  
 - Webhook → `POST /api/revenuecat/webhook` with Authorization header  
 - Example JSON shape: `config/auth/revenuecat.example.json`  

@@ -109,9 +109,10 @@ GET /api/emotions | /meditations | /prayers | /devotional/today
 
 ```
 Player finish
-  → POST /api/meditations/complete { meditation_id, duration_sec? }
-  → Update user: practices_completed++, minutes, streak
-  → Client may show soft paywall if first practice
+  → POST /api/meditations/complete { meditation_id, minutes }
+  → Backend: prayers_completed++, minutes, last_activity
+  → Client: local calendar-day streak + practice history
+  → Client records progress/rating; may resurface the secondary paywall in limited-access configurations
 ```
 
 ### D. Wisdom chat
@@ -239,8 +240,8 @@ Default: **serverless** — no Fargate/Docker required.
 | Control | Implementation |
 |---------|----------------|
 | Transport | HTTPS only |
-| AuthN | Cognito / JWT Bearer |
-| Passwords | Strong KDF (PBKDF2 100k+) if local hash path |
+| AuthN | Cognito access-token Bearer |
+| Passwords | Owned by Cognito; never handled or stored by FastAPI |
 | Secrets | SSM SecureString; never in git or `EXPO_PUBLIC_*` private keys |
 | AI abuse | Guardrails + rate limits + monthly cap |
 | Webhooks | Shared-secret Bearer (required in prod) |
@@ -251,7 +252,7 @@ Default: **serverless** — no Fargate/Docker required.
 
 - Webhook secret must not be empty  
 - Prefer distributed rate limits (Dynamo) over pure in-process  
-- JWT lifetime / refresh policy  
+- Cognito access/refresh token lifetime policy
 - Server-side premium gates if product requires hard locks  
 
 ---
@@ -315,7 +316,7 @@ Warm instances skip steps 2–3 cost.
 |----------|-----|
 | Serverless API | Idle cost ~0; mobile traffic spiky |
 | Catalog in code | Simple, fast, versioned with deploy |
-| Cognito | Email + Apple federation (Google optional in infra; not in reference client) |
+| Cognito | Email/password + optional Apple federation |
 | Bedrock | IAM auth, multi-model fallback, no long-lived AI keys in app |
 | RevenueCat | Cross-platform entitlements |
 | SSM-first secrets | No secret `.env` in git or laptops long-term |

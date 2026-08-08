@@ -62,7 +62,7 @@ Use this as the **implementation order** for an AI agent or human team rebuildin
 
 ## Phase 3 — Auth & user data
 
-1. Implement signup/signin + secure token storage.  
+1. Implement Cognito email signup/signin, confirmation/reset flows, and secure token storage.
 2. User model + `/auth/me`, `/auth/onboarding`.  
 3. Journal CRUD.  
 4. Mood log.  
@@ -80,7 +80,7 @@ Use this as the **implementation order** for an AI agent or human team rebuildin
 3. Sync on auth.  
 4. Gate first-run → onboarding once.  
 
-**Exit:** New install walks full onboarding (incl. paywall ladder) → auth → Home.
+**Exit:** New install walks full onboarding (incl. paywall ladder) → auth → hard premium gate.
 
 ---
 
@@ -100,8 +100,8 @@ Use this as the **implementation order** for an AI agent or human team rebuildin
 ## Phase 6 — Monetization
 
 1. Integrate store SDK / RevenueCat.  
-2. Paywall UI (Nest/Cooper dual cards).  
-3. Soft paywall after first practice.  
+2. Hard post-auth paywall route + RevenueCat Paywalls UI.
+3. Tier-specific direct purchase UI in onboarding; retain secondary post-practice resurfacing.
 4. Webhook + `/subscription/sync`.  
 5. Premium gates.  
 
@@ -173,7 +173,7 @@ Ship dual theme Nest dark + Cooper light from docs/product/05.
 
 ## What “done” looks like (demo script)
 
-1. Fresh install → onboarding (incl. paywalls) → auth → Home  
+1. Fresh install → onboarding (incl. paywalls) → auth → hard premium gate → purchase/restore → Home
 2. Tap **Anxious** → open **Cast Your Cares** → play 30s → complete  
 3. Soft paywall appears → dismiss  
 4. Open SOS → one breathing cycle  

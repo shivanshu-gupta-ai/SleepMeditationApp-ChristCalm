@@ -201,7 +201,8 @@ aws cognito-idp describe-identity-provider \
 → [`docs/engineering/revenuecat-ios-app-store-guide.md`](../../docs/engineering/revenuecat-ios-app-store-guide.md)
 
 **Project:** `proj43f1dce8` (ChristCalm)  
-**Catalog:** entitlement `christcalm_premium`, offering `default`, products `christcalm_monthly` / `christcalm_annual`  
+**Catalog:** entitlement `christcalm_premium`, offering `default`, products `cc_999_1m`, `cc_5999_1y`, `cc_3999_1y`, `cc_1999_1y` (no trial)
+
 **MCP:** `~/.grok/config.toml` → `[mcp_servers.revenuecat]`
 
 | Env | Purpose |

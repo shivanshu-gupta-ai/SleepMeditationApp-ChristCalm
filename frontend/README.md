@@ -12,7 +12,7 @@ frontend/
 │   │                         # (+ journal, prayers hidden from tab bar)
 │   ├── meditation/[id].tsx   # Player
 │   ├── sos.tsx · paywall.tsx · onboarding.tsx · oauth.tsx
-│   └── index.tsx             # Gate: onboarding → auth → home
+│   └── index.tsx             # Gate: onboarding → auth → RevenueCat → paywall/home
 ├── src/
 │   ├── features/
 │   │   ├── auth/             # Session, Cognito, Apple button
@@ -43,13 +43,15 @@ Or: `./scripts/preview.sh` from repo root.
 
 | Surface | Notes |
 |---------|--------|
-| Onboarding | 27 steps; escalating paywalls; exit → sign-in |
+| Onboarding | 27 steps; 21 bundled Grace GIFs; adaptive question layout; hard escalating paywalls; exit → sign-in |
 | Auth | Email + Sign in with Apple |
+| Access | Signed-in non-premium users are redirected to the RevenueCat paywall before tabs |
 | Tabs | Home · Meditate · Wisdom · Journey · Me + Start Calm FAB |
 | Journal | From Me / Home (hidden tab) |
 | Prayers | UI deferred; API catalog still available |
 | Theme | **Light default**; dark toggle on Me |
 | Wisdom | Streaming chat + optional voice |
+| Feedback | Me form persists private feedback; meditation completion supports 1–5 star ratings |
 
 ## Notes
 

@@ -12,17 +12,22 @@ Storage engine is interchangeable (DynamoDB, Postgres, Mongo, SQLite, Firestore)
 | `id` | string (UUID/Cognito sub) | PK |
 | `email` | string | Unique index |
 | `name` | string | Display name |
-| `password_hash` | string? | Only if local email auth |
 | `is_premium` | bool | Entitlement cache |
-| `premium_plan` | string? | `monthly` / `annual` |
-| `premium_expires_at` | datetime? | |
+| `subscription_tier` | string | Derived `free` / `premium` in API output |
+| `plan` | string? | `monthly` / `annual` |
+| `premium_until` | datetime? | RevenueCat expiry cache |
+| `provider` | string? | Cognito identity provider |
 | `faith_journey` | string? | From onboarding |
 | `concerns` | string[] | |
-| `onboarding_data` | object | Full draft JSON |
-| `onboarding_complete` | bool | |
+| `emotional_state` | string? | From onboarding |
+| `desired_support` | string[] | From onboarding |
+| `preferred_time` | string? | From onboarding |
+| `commitment_accepted` | bool | From onboarding |
+| `commitment_date` | string? | From onboarding |
+| `first_practices_done` | bool[] | Home first-steps state |
 | `streak` | int | Consecutive practice days |
 | `minutes_meditated` | int | Lifetime |
-| `practices_completed` | int | Lifetime |
+| `prayers_completed` | int | Lifetime completed practices (current API field name) |
 | `ai_usage_month` | string? | `YYYY-MM` |
 | `ai_usage_count` | int | Turns this month |
 | `created_at` | datetime | |
@@ -30,7 +35,7 @@ Storage engine is interchangeable (DynamoDB, Postgres, Mongo, SQLite, Firestore)
 
 ### Public user DTO (client)
 
-Never return password hashes. Include premium flags + stats + name/email.
+Return identity, premium flags, onboarding profile, and aggregate stats only. Cognito credentials never enter this table or DTO.
 
 ---
 
@@ -52,8 +57,8 @@ Never return password hashes. Include premium flags + stats + name/email.
 |-------|------|
 | `id` | string |
 | `user_id` | string |
-| `body` | string |
-| `moods` | string[] |
+| `content` | string |
+| `mood` | string? |
 | `created_at` | datetime |
 | `updated_at` | datetime? |
 
@@ -86,15 +91,15 @@ Either update user counters only, or also store:
 | `id` | string |
 | `user_id` | string |
 | `meditation_id` | string |
-| `duration_sec` | int? |
+| `minutes` | int |
 | `completed` | bool |
 | `created_at` | datetime |
 
 On complete:
 
-1. Increment `practices_completed`  
-2. Add minutes (from body or catalog duration)  
-3. Update streak (if last practice was yesterday or today, extend; else reset to 1)  
+1. Increment `prayers_completed` (the current practice-count field)
+2. Add submitted minutes and set `last_activity`
+3. Update the calendar-day streak in client storage (`session-progress.ts`); Journey takes the maximum of local and server streak values
 
 ---
 
@@ -234,6 +239,8 @@ User 1──* MoodLog
 User 1──* JournalEntry
 User 1──* WisdomTurn
 User 1──* MeditationCompletion
+User 1──* MeditationRating
+User 1──* ProductFeedback
 User 1──* PaymentTransaction
 Emotion 1──* Meditation (catalog)
 PrayerCategory 1──* Prayer (catalog)
