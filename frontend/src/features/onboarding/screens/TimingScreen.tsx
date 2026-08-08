@@ -5,10 +5,10 @@ import { useOnboarding } from "../OnboardingContext";
 import { PREFERRED_TIMES, TIMING_QUESTION } from "../copy";
 
 /**
- * Screen 9 — When do you most need peace? (single)
+ * Screen 9 — When do you most need peace? (multi-select)
  */
 export function TimingScreen() {
-  const { draft, setSingle } = useOnboarding();
+  const { draft, toggleMulti } = useOnboarding();
 
   return (
     <OnboardingQuestionScreen
@@ -23,8 +23,9 @@ export function TimingScreen() {
           icon={opt.icon}
           label={opt.label}
           labelLines={2}
-          selected={draft.preferredTime === opt.id}
-          onPress={() => setSingle("preferredTime", opt.id)}
+          multi
+          selected={draft.preferredTime.includes(opt.id)}
+          onPress={() => toggleMulti("preferredTime", opt.id)}
           testID={`time-${opt.id}`}
         />
       ))}

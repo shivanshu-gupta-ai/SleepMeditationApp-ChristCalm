@@ -9,7 +9,7 @@ export type OnboardingDraft = {
   emotionalState: string[];
   faithStage: string | null;
   concerns: string[];
-  preferredTime: string | null;
+  preferredTime: string[];
   desiredSupport: string[];
   ageRange: string | null;
   /** 0–10 mental load (intensity slider) */
@@ -30,7 +30,7 @@ export const defaultOnboardingDraft = (): OnboardingDraft => ({
   emotionalState: [],
   faithStage: null,
   concerns: [],
-  preferredTime: null,
+  preferredTime: [],
   desiredSupport: [],
   ageRange: null,
   dailyLoad: null,
@@ -86,7 +86,9 @@ export async function loadOnboardingDraft(): Promise<OnboardingDraft> {
     desiredSupport: Array.isArray(d.desiredSupport)
       ? d.desiredSupport.filter((c) => typeof c === "string")
       : [],
-    preferredTime: typeof d.preferredTime === "string" ? d.preferredTime : null,
+    preferredTime: Array.isArray(d.preferredTime)
+      ? d.preferredTime.filter((c): c is string => typeof c === "string")
+      : [],
     ageRange: typeof d.ageRange === "string" ? d.ageRange : null,
     dailyLoad: typeof d.dailyLoad === "number" ? d.dailyLoad : null,
     profileType: typeof d.profileType === "string" ? d.profileType : null,
@@ -118,7 +120,7 @@ export function draftToApiPayload(draft: OnboardingDraft) {
     concerns: draft.concerns,
     emotional_state: draft.emotionalState.length ? draft.emotionalState.join(",") : null,
     desired_support: draft.desiredSupport,
-    preferred_time: draft.preferredTime,
+    preferred_time: draft.preferredTime.length ? draft.preferredTime.join(",") : null,
     commitment_accepted: draft.commitmentAccepted,
     commitment_date: draft.commitmentDate,
     first_practices_done: practiceFlags,

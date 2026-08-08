@@ -100,7 +100,7 @@ export const ONBOARDING_SEQUENCE: readonly OnboardingScreenDef[] = [
     id: "timing",
     index: 9,
     label: "Timing",
-    type: "single",
+    type: "multi-select",
     grace: "listening",
     showProgress: true,
     showBack: true,

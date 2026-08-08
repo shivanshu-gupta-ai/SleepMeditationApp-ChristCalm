@@ -22,6 +22,7 @@ export function DidYouKnowScreen() {
           paddingTop: spacing.sm,
           paddingBottom: spacing.md,
           alignItems: "center",
+          justifyContent: "center",
         },
         title: {
           fontFamily: fonts.headingBold,
@@ -88,7 +89,7 @@ export function DidYouKnowScreen() {
       <GraceMoodImage
         mood="didYouKnow"
         glowTone="muted"
-        size={GRACE_DISPLAY.question}
+        size={GRACE_DISPLAY.question * 3}
         testID="grace-did-you-know"
       />
       <Text style={styles.title}>{DID_YOU_KNOW.title}</Text>

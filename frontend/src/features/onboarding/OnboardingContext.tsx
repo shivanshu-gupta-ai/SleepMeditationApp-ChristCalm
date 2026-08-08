@@ -24,7 +24,7 @@ import {
 } from "./sequence";
 import type { OnboardingRouteId, OnboardingScreenDef } from "./types";
 
-type MultiKey = "emotionalState" | "concerns" | "desiredSupport";
+type MultiKey = "emotionalState" | "concerns" | "preferredTime" | "desiredSupport";
 
 export type OnboardingContextValue = {
   hydrated: boolean;
@@ -70,7 +70,7 @@ function canProceedForStep(step: number, draft: OnboardingDraft): boolean {
     case "concerns":
       return draft.concerns.length > 0;
     case "timing":
-      return !!draft.preferredTime;
+      return draft.preferredTime.length > 0;
     case "support":
       return draft.desiredSupport.length > 0;
     case "age":

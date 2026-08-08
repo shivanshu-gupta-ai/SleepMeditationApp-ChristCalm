@@ -8,6 +8,8 @@ import type { ReactKind } from "../mascot/motionProfiles";
 
 export type OnboardingQuestionVariant = "choice" | "focus";
 
+const QUESTION_GRACE_SCALE = 3;
+
 type Props = {
   variant: OnboardingQuestionVariant;
   overline?: string;
@@ -21,8 +23,7 @@ type Props = {
 };
 
 /**
- * Choice screens use a conversational Grace + prompt row. Focus screens keep
- * Grace centered and larger. Narrow widths and large type fall back to a stack.
+ * All onboarding prompts use a centered Grace + prompt stack.
  */
 export function OnboardingQuestion({
   variant,
@@ -40,7 +41,6 @@ export function OnboardingQuestion({
   const { fontScale } = useWindowDimensions();
   const shortPhone = !isTablet && height < 720;
   const forceStack = variant === "focus" || width < 350 || fontScale >= 1.3;
-  const isChoiceRow = variant === "choice" && !forceStack;
 
   const choiceWidth = shortPhone
     ? GRACE_DISPLAY.questionCompact
@@ -58,18 +58,19 @@ export function OnboardingQuestion({
       : forceStack
         ? Math.min(168, choiceWidth + 36)
         : choiceWidth;
+  const graceWidth = mascotWidth * QUESTION_GRACE_SCALE;
   const helper = subtitle || hint;
-  const textAlign = isChoiceRow ? "left" : "center";
+  const textAlign = "center" as const;
 
   return (
     <View
       style={[
         styles.root,
         {
-          flexDirection: isChoiceRow ? "row" : "column",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: isChoiceRow ? "flex-start" : "center",
-          gap: isChoiceRow ? spacing.sm : spacing.xs,
+          justifyContent: "center",
+          gap: spacing.xs,
           marginBottom:
             variant === "choice"
               ? shortPhone
@@ -82,7 +83,7 @@ export function OnboardingQuestion({
     >
       {showGrace ? (
         <OnboardingGrace
-          size={mascotWidth}
+          size={graceWidth}
           testID="onboarding-question-grace"
           reactToken={graceReactToken}
           reactKind={graceReactKind}
@@ -94,9 +95,8 @@ export function OnboardingQuestion({
         style={[
           styles.copy,
           {
-            flex: isChoiceRow ? 1 : undefined,
-            alignItems: isChoiceRow ? "flex-start" : "center",
-            maxWidth: isChoiceRow ? 300 : 350,
+            alignItems: "center",
+            maxWidth: 350,
           },
         ]}
       >

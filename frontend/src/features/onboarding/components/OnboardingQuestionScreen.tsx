@@ -45,6 +45,8 @@ export function OnboardingQuestionScreen({
       style={[
         styles.root,
         {
+          flex: 1,
+          justifyContent: "center",
           paddingHorizontal: spacing.md,
           paddingTop:
             variant === "focus"
