@@ -84,7 +84,6 @@ export function YearsReclaimScreen() {
     <View style={styles.root} testID="onboarding-screen-yearsReclaim">
       <GraceMoodImage
         mood="happy1"
-        profile="idleHopeful"
         glowTone="gold"
         enterReact="celebrate"
         size={GRACE_DISPLAY.question}

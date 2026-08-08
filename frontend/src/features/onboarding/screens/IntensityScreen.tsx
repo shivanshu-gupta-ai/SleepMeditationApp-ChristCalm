@@ -10,6 +10,7 @@ import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen
 import { useOnboarding } from "../OnboardingContext";
 import { INTENSITY_QUESTION } from "../copy";
 import { playHaptic } from "@/src/utils/haptics";
+import { useResponsive } from "@/src/hooks/use-responsive";
 import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
@@ -20,9 +21,16 @@ import { GRACE_DISPLAY } from "../mascot/graceAssets";
 export function IntensityScreen() {
   const { draft, setSingle } = useOnboarding();
   const { colors, fonts, spacing, radius } = useTheme();
+  const { height, isTablet } = useResponsive();
 
   const value = draft.dailyLoad ?? 5;
   const band = intensityBandFromValue(value);
+  const mascotSize =
+    !isTablet && height < 720
+      ? GRACE_DISPLAY.stageCompact
+      : isTablet
+        ? GRACE_DISPLAY.stageTablet
+        : GRACE_DISPLAY.stage;
 
   useEffect(() => {
     if (draft.dailyLoad == null) {
@@ -98,12 +106,12 @@ export function IntensityScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen-intensity">
-      <IntensityMascot value={value} size={GRACE_DISPLAY.stage} testID="grace-intensity" />
+      <IntensityMascot value={value} size={mascotSize} testID="grace-intensity" />
 
       <OnboardingQuestionScreen
+        variant="focus"
         title={INTENSITY_QUESTION.title}
         subtitle={INTENSITY_QUESTION.sub}
-        density="roomy"
         showGrace={false}
         style={{ paddingHorizontal: 0, paddingTop: 0 }}
       >

@@ -51,7 +51,7 @@ export type OnboardingScreenType =
   | "motivation"
   | "monetization";
 
-/** Grace expression bands — base set + GIF moods (S3-hosted animations) */
+/** Grace expression bands — base set + bundled animated moods. */
 export type GraceExpression =
   | "welcome"
   | "listening"

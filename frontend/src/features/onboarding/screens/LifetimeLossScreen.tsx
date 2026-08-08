@@ -77,7 +77,6 @@ export function LifetimeLossScreen() {
     <View style={styles.root} testID="onboarding-screen-lifetimeLoss">
       <GraceMoodImage
         mood="tracktospend"
-        profile="idleHeavy"
         glowTone="muted"
         size={GRACE_DISPLAY.question}
         testID="grace-lifetime-loss"

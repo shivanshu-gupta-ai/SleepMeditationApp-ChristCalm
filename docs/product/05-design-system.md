@@ -3,7 +3,7 @@
 **Style names:** Nest (dark) + Cooper (light)  
 **Default theme:** **Light (Cooper)** — dark is explicit user choice only  
 **Icons:** System-like outline icons (Ionicons in reference app). Do not use emoji as structural UI icons.  
-**Mascot:** Grace — onboarding + loading/empty states (`GraceActor` + mood PNGs).
+**Mascot:** Grace — onboarding + loading/empty states (`GraceActor` + bundled mood GIFs).
 
 Implement tokens as named semantic colors in **any** stack (Swift Asset Catalog, Compose ColorScheme, CSS variables, RN theme).
 

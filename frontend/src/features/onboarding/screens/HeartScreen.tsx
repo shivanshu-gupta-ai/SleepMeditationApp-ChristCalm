@@ -12,6 +12,7 @@ export function HeartScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="choice"
       title={HEART_QUESTION.title}
       subtitle={HEART_QUESTION.sub}
       testID="onboarding-screen-heart"

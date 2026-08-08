@@ -1,46 +1,44 @@
 import React from "react";
 import { View, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
-import { OnboardingQuestion } from "./OnboardingQuestion";
+import { useResponsive } from "@/src/hooks/use-responsive";
+import {
+  OnboardingQuestion,
+  type OnboardingQuestionVariant,
+} from "./OnboardingQuestion";
 import type { ReactKind } from "../mascot/motionProfiles";
 
 type Props = {
+  variant: OnboardingQuestionVariant;
   title: string;
   subtitle?: string;
   overline?: string;
   hint?: string;
-  density?: "compact" | "roomy";
   showGrace?: boolean;
-  graceSize?: number;
   graceReactToken?: number;
   graceReactKind?: ReactKind;
-  /** When true, pin the block toward the vertical middle (short screens: name, age). */
-  verticallyCenter?: boolean;
   testID?: string;
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
 };
 
-/**
- * Shared shell for every onboarding question screen:
- * centered Grace + question copy, full-width options below.
- */
+/** Shared adaptive shell for onboarding prompts and their controls. */
 export function OnboardingQuestionScreen({
+  variant,
   title,
   subtitle,
   overline,
   hint,
-  density = "compact",
   showGrace = true,
-  graceSize,
   graceReactToken,
   graceReactKind,
-  verticallyCenter = false,
   testID,
   style,
   children,
 }: Props) {
   const { spacing } = useTheme();
+  const { height, isTablet } = useResponsive();
+  const shortPhone = !isTablet && height < 720;
 
   return (
     <View
@@ -48,24 +46,27 @@ export function OnboardingQuestionScreen({
         styles.root,
         {
           paddingHorizontal: spacing.md,
-          paddingTop: verticallyCenter ? spacing.md : 4,
+          paddingTop:
+            variant === "focus"
+              ? shortPhone
+                ? spacing.sm
+                : isTablet
+                  ? spacing.xl
+                  : spacing.lg
+              : 4,
           paddingBottom: spacing.sm,
-          justifyContent: verticallyCenter ? "center" : "flex-start",
-          // With parent ScrollView contentContainerStyle flexGrow:1, centers short Q screens
-          flexGrow: verticallyCenter ? 1 : undefined,
         },
         style,
       ]}
       testID={testID}
     >
       <OnboardingQuestion
+        variant={variant}
         title={title}
         subtitle={subtitle}
         overline={overline}
         hint={hint}
-        density={density}
         showGrace={showGrace}
-        graceSize={graceSize}
         graceReactToken={graceReactToken}
         graceReactKind={graceReactKind}
       />

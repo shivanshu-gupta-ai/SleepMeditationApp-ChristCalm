@@ -14,6 +14,7 @@ type Props = {
   reactToken?: number;
   reactKind?: ReactKind;
   showGlow?: boolean;
+  decorative?: boolean;
 };
 
 /**
@@ -26,6 +27,7 @@ export function OnboardingGrace({
   reactToken,
   reactKind,
   showGlow = true,
+  decorative = false,
 }: Props) {
   const { screen } = useOnboarding();
   const cfg = graceConfigForRoute(screen.id);
@@ -33,7 +35,6 @@ export function OnboardingGrace({
   return (
     <GraceMoodImage
       mood={cfg.expression}
-      profile={cfg.profile}
       glowTone={cfg.glow}
       enterReact={cfg.enterReact ?? "none"}
       size={size}
@@ -42,6 +43,7 @@ export function OnboardingGrace({
       showGlow={showGlow}
       reactToken={reactToken}
       reactKind={reactKind}
+      decorative={decorative}
     />
   );
 }

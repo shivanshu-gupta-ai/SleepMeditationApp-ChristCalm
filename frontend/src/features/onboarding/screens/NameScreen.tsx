@@ -1,10 +1,9 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@/src/context/ThemeContext";
 import { OnboardingQuestionScreen } from "../components/OnboardingQuestionScreen";
 import { NAME_COPY } from "../copy";
 import { useOnboarding } from "../OnboardingContext";
-import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 /**
  * Screen 5 — Name (optional)
@@ -49,13 +48,11 @@ export function NameScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="focus"
       title={NAME_COPY.title}
       subtitle={NAME_COPY.sub}
-      density="roomy"
-      graceSize={GRACE_DISPLAY.roomy}
       graceReactToken={reactToken}
       graceReactKind="nod"
-      verticallyCenter
       testID="onboarding-screen-name"
     >
       <TextInput

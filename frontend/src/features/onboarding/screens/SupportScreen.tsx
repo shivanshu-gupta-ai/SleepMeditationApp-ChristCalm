@@ -12,6 +12,7 @@ export function SupportScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="choice"
       title={SUPPORT_QUESTION.title}
       subtitle={SUPPORT_QUESTION.sub}
       testID="onboarding-screen-support"

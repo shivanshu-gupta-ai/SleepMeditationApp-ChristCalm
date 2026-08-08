@@ -401,7 +401,7 @@ const TIMER_CONFIG = {
 
 - **Grace is the hero** — text never competes; prefer illustration + short lines
 - Progress: continuous thin bar only (no step-number chrome)
-- Soft 3D / cinematic Grace assets: `frontend/assets/images/onboarding/grace-*.png` (+ intensity frames)
+- Soft 3D / cinematic Grace animations: bundled 300×169 GIFs under `frontend/assets/images/onboarding/grace/` (+ intensity frames)
 - Dot grid (17–18): code-drawn circles (exact counts) — high contrast, spare labels
 - Timer on final paywall: subtle pulse
 - Transitions: fade + gentle slide-up (250–350ms)

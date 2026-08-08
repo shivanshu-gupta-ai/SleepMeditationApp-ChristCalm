@@ -204,7 +204,6 @@ export function CommitmentScreen() {
         <Animated.View style={graceLift}>
           <GraceMoodImage
             mood="committed"
-            profile={done ? "idleCelebrate" : "idleCalm"}
             showGlow={false}
             reactToken={celebrateToken}
             reactKind="celebrate"

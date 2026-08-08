@@ -135,7 +135,6 @@ export function HowAppWorksScreen() {
       >
         <GraceMoodImage
           mood="peaceful"
-          profile="idleWave"
           glowTone="primary"
           enterReact="celebrate"
           size={GRACE_DISPLAY.question}

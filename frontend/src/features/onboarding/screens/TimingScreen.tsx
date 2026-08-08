@@ -12,6 +12,7 @@ export function TimingScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="choice"
       title={TIMING_QUESTION.title}
       subtitle={TIMING_QUESTION.sub}
       testID="onboarding-screen-timing"

@@ -1,61 +1,31 @@
 # Grace onboarding assets
 
-Soft 3D companion for ChristCalm. Stills are **bundled** for instant/offline display.
-**Animated GIFs are not in the app bundle** — they load from the public media S3 bucket.
+Grace is ChristCalm's soft 3D companion. Production GIF loops are bundled under
+`grace/` so onboarding starts instantly, works offline, and never swaps a static
+pose for an animated one.
 
 ## Character lock
 
 - Cream/white fluffy bunny, soft 3D / Pixar-adjacent
 - Large sparkly blue eyes, pink nose, rosy cheeks
-- Knitted **lavender/purple scarf** with **gold cross** pendant and optional heart detail
-- Clean silhouette on **transparent** plate (no solid black plate) for UI crop on app gradients
-- Warm key light + soft rim so she reads on dark (Nest) and light (Cooper)
+- Knitted lavender scarf with a gold cross pendant
+- Clean silhouette on a transparent plate
+- Warm key light and soft rim for both light and dark themes
 
-## Bundled stills (PNG)
+## Runtime assets
 
-| Still | Expression |
-|-------|------------|
-| `grace-splash.png` | First impression |
-| `grace-welcome.png` | Welcome / greeting |
-| `grace-listening.png` | Attentive questions |
-| `grace-thoughtful.png` | Reflection / calculating |
-| `grace-heavy.png` | Weight / loss screens |
-| `grace-hopeful.png` | Hope / reclaim |
-| `grace-committed.png` | Commitment |
-| `grace-peaceful.png` | Peace / finale |
+- All animation files use a 300 × 169 canvas.
+- `graceAssets.ts` maps every expression with a static `require` for Metro.
+- `GraceActor` renders the native aspect ratio with `expo-image`.
+- Reduce Motion pauses the same local GIF on its first frame.
+- The current bundled set is approximately 8.5 MB total.
 
-These are wired as fallbacks / reduce-motion / offline in `graceAssets.ts`.
+## Updating Grace
 
-## Animated GIFs (S3, not git)
+1. Start from an approved Grace asset so the character remains consistent.
+2. Export a short looping GIF at 300 × 169 and compress it for mobile.
+3. Replace the matching file under `grace/<expression>.gif`.
+4. Confirm all expressions typecheck and test normal and Reduce Motion playback.
 
-**Bucket:** `christcalm-preview-media-500696805306`  
-**Prefix:** `onboarding/grace/<expression>.gif`  
-**URL:** `https://christcalm-preview-media-500696805306.s3.us-east-1.amazonaws.com/onboarding/grace/<expression>.gif`
-
-Optional override: `EXPO_PUBLIC_MEDIA_BASE_URL` (no trailing slash).
-
-Client map: `frontend/src/features/onboarding/mascot/graceAssets.ts`  
-Playback: `GraceActor` via `expo-image` with PNG `placeholder` and `onError` → PNG.
-
-### Upload (after compressing)
-
-Sources usually come from a collaborator branch (extract with `git archive`, never merge GIF binaries into main).
-
-```bash
-# Compress aggressively first (≈280–300px, lossy Gifsicle) then:
-aws s3 sync ./canonical/ s3://christcalm-preview-media-500696805306/onboarding/grace/ \
-  --cache-control "public,max-age=31536000,immutable" \
-  --content-type "image/gif"
-```
-
-After overwrite, bump `GRACE_GIF_VERSION` in `graceAssets.ts` so clients skip stale cache.
-
-Bucket policy must allow `s3:GetObject` on `onboarding/grace/*` (same pattern as `meditations/audio/*`).
-
-Do **not** commit raw multi‑MB GIFs under `frontend/animation/` or `assets/`.
-## Regeneration
-
-1. `image_edit` from an existing Grace PNG (never pure text-only for variants).
-2. Export GIF loops, compress for mobile (target ~0.5–1.5 MB each).
-3. Upload to S3 with the expression filename (`welcome.gif`, `preparing.gif`, …).
-4. Keep PNG stills in this folder as fallbacks.
+Do not add a separate PNG placeholder. A different placeholder pose recreates
+the visible flash this local animation pipeline is designed to avoid.

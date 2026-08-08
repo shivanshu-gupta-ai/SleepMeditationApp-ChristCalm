@@ -110,7 +110,7 @@ Synced after auth: `POST /api/auth/onboarding` (`draftToApiPayload`).
 | Sequence + navigator + ProgressBar | **Done** |
 | OnboardingContext (shared answers) | **Done** |
 | All screens 0–26 UI | **Done** |
-| GraceActor motion + mood assets (PNG) | **Done** |
+| GraceActor reactions + bundled mood animations (GIF) | **Done** |
 | Intro carousel (welcome + benefits) | **Done** |
 | Profile derivation (`deriveProfile`) | **Done** |
 | Lifetime loss / reclaim math | **Done** |

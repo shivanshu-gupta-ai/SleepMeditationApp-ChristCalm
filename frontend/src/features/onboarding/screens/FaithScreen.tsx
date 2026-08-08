@@ -12,6 +12,7 @@ export function FaithScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="choice"
       title={FAITH_QUESTION.title}
       subtitle={FAITH_QUESTION.sub}
       testID="onboarding-screen-faith"

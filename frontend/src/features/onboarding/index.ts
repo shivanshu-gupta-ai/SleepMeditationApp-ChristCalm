@@ -5,9 +5,7 @@ export { OnboardingGrace } from "./components/OnboardingGrace";
 export { IntensityMascot, intensityBandFromValue, intensityLabel } from "./components/IntensityMascot";
 export {
   GraceActor,
-  MOTION_PROFILES,
   graceConfigForRoute,
-  profileForExpression,
 } from "./mascot";
 export { OnboardingOption } from "./components/OnboardingOption";
 export { ProgressBar } from "./components/ProgressBar";

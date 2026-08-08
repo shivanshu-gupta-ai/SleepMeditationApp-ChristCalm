@@ -12,6 +12,7 @@ export function ConcernsScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="choice"
       title={CONCERNS_QUESTION.title}
       subtitle={CONCERNS_QUESTION.sub}
       testID="onboarding-screen-concerns"

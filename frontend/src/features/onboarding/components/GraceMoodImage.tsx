@@ -3,8 +3,7 @@ import { type StyleProp, type ViewStyle } from "react-native";
 import type { GraceExpression } from "../types";
 import { GraceActor } from "../mascot/GraceActor";
 import { GRACE_DISPLAY } from "../mascot/graceAssets";
-import { profileForExpression } from "../mascot/expressionMap";
-import type { MotionProfileId, ReactKind } from "../mascot/motionProfiles";
+import type { ReactKind } from "../mascot/motionProfiles";
 
 export type GraceMoodImageProps = {
   mood?: GraceExpression | "splash";
@@ -13,8 +12,6 @@ export type GraceMoodImageProps = {
   animate?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
-  /** Optional motion profile override */
-  profile?: MotionProfileId;
   showGlow?: boolean;
   glowTone?: "primary" | "gold" | "muted" | "warm";
   /** One-shot react when token changes */
@@ -22,6 +19,7 @@ export type GraceMoodImageProps = {
   reactKind?: ReactKind;
   /** Fire enter react once on mount */
   enterReact?: ReactKind;
+  decorative?: boolean;
 };
 
 /**
@@ -33,12 +31,12 @@ export function GraceMoodImage({
   animate = true,
   style,
   testID = "grace-mood",
-  profile,
   showGlow = true,
   glowTone = "primary",
   reactToken = 0,
   reactKind = "none",
   enterReact = "none",
+  decorative = false,
 }: GraceMoodImageProps) {
   const [enterToken, setEnterToken] = useState(0);
   const [enterKind, setEnterKind] = useState<ReactKind>("none");
@@ -56,13 +54,13 @@ export function GraceMoodImage({
   return (
     <GraceActor
       expression={mood}
-      profile={profile ?? profileForExpression(mood)}
       size={size}
       animate={animate}
       showGlow={showGlow}
       glowTone={glowTone}
       reactToken={effectiveToken}
       reactKind={effectiveKind}
+      decorative={decorative}
       style={style}
       testID={testID}
     />

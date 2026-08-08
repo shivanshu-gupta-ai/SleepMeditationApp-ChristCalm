@@ -13,7 +13,7 @@ import Animated, {
 import { useTheme } from "@/src/context/ThemeContext";
 import { GraceMoodImage } from "./GraceMoodImage";
 import type { GraceExpression } from "../types";
-import type { MotionProfileId, ReactKind } from "../mascot/motionProfiles";
+import type { ReactKind } from "../mascot/motionProfiles";
 import { GRACE_DISPLAY } from "../mascot/graceAssets";
 
 export type IntroVisualVariant = "welcome" | "noise" | "scripture" | "personal";
@@ -28,13 +28,6 @@ const MOOD: Record<IntroVisualVariant, GraceExpression | "splash"> = {
   noise: "notification",
   scripture: "scripture",
   personal: "anxiety",
-};
-
-const PROFILE: Record<IntroVisualVariant, MotionProfileId> = {
-  welcome: "idleWave",
-  noise: "idleCalm",
-  scripture: "idleThink",
-  personal: "idleHopeful",
 };
 
 const ENTER: Record<IntroVisualVariant, ReactKind> = {
@@ -56,7 +49,7 @@ const GLOW: Record<IntroVisualVariant, "primary" | "gold" | "muted" | "warm"> = 
  * Uses existing tokens/mascot only (no new design system).
  */
 export function IntroVisual({ variant, testID }: Props) {
-  const { colors, fonts, spacing, radius, shadows, isDark } = useTheme();
+  const { colors, fonts, shadows, isDark } = useTheme();
   const floatA = useSharedValue(0);
   const floatB = useSharedValue(0);
   const glow = useSharedValue(0.35);
@@ -296,7 +289,6 @@ export function IntroVisual({ variant, testID }: Props) {
       <View style={styles.graceWrap}>
         <GraceMoodImage
           mood={MOOD[variant]}
-          profile={PROFILE[variant]}
           glowTone={GLOW[variant]}
           enterReact={ENTER[variant]}
           size={variant === "welcome" ? GRACE_DISPLAY.hero : GRACE_DISPLAY.roomy}

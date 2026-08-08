@@ -80,7 +80,6 @@ export function StatsPreviewScreen() {
     <View style={styles.root} testID="onboarding-screen-statsPreview">
       <GraceMoodImage
         mood="peaceful"
-        profile="idleCalm"
         glowTone="primary"
         size={GRACE_DISPLAY.question}
         testID="grace-stats-preview"

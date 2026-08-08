@@ -87,7 +87,6 @@ export function DidYouKnowScreen() {
     <View style={styles.root} testID="onboarding-screen-didYouKnow">
       <GraceMoodImage
         mood="didYouKnow"
-        profile="idleListen"
         glowTone="muted"
         size={GRACE_DISPLAY.question}
         testID="grace-did-you-know"

@@ -93,7 +93,6 @@ export function ProfileRevealScreen() {
     <View style={styles.root} testID="onboarding-screen-profileReveal">
       <GraceMoodImage
         mood="seeker"
-        profile="idleThink"
         glowTone="primary"
         size={GRACE_DISPLAY.stage}
         testID="grace-profile"

@@ -12,8 +12,8 @@ export function AgeScreen() {
 
   return (
     <OnboardingQuestionScreen
+      variant="choice"
       title={AGE_QUESTION.title}
-      verticallyCenter
       testID="onboarding-screen-age"
     >
       {AGE_RANGES.map((opt) => (
